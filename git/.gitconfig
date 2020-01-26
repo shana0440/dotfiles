@@ -1,0 +1,12 @@
+[user]
+  name = kwguo
+  email = shana0440@gmail.com
+
+[core]
+  editor = vim
+  excludesfile = ~/.gitignore_global
+  ignorecase = false
+
+[alias]
+  la = log --all --date-order --decorate --graph --oneline
+
