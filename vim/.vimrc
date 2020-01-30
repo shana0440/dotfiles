@@ -49,6 +49,8 @@ map <C-p> :FZF<CR>
 
 map <C-m> <Plug>NERDCommenterToggle
 
+map <C-e> :NERDTreeToggle<CR>
+
 if exists('+termguicolors')
 	let &t_8f = "\<Esc>[38;2;%lu;%lu;%lum"
 	let &t_8b = "\<Esc>[48;2;%lu;%lu;%lum"
@@ -81,3 +83,6 @@ let g:ale_linters = {
 let g:ale_linter_aliases = {
 \   'typescriptreact': 'typescript'
 \}
+
+map <F2> :ALEGoToDefinition<CR>
+map <F1> :ALEDetail<CR>
