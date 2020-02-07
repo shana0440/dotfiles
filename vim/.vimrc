@@ -5,7 +5,7 @@ if empty(glob('~/.vim/autoload/plug.vim'))
 endif
 
 call plug#begin('~/.vim/plugged')
-Plug 'tomasiser/vim-code-dark'
+Plug 'sainnhe/edge'
 Plug 'airblade/vim-gitgutter'
 Plug 'brooth/far.vim'
 Plug 'junegunn/fzf', { 'dir': '~/.fzf', 'do': './install --all' }
@@ -42,8 +42,6 @@ set undoreload=10000
 
 "set clipboard+=unnamed
 
-colorscheme codedark
-
 let $FZF_DEFAULT_COMMAND = 'ag --hidden --ignore .git -g ""'
 map <C-p> :FZF<CR>
 
@@ -56,6 +54,15 @@ if exists('+termguicolors')
 	let &t_8b = "\<Esc>[48;2;%lu;%lu;%lum"
 	set termguicolors
 endif
+
+set background=dark
+
+" the configuration options should be placed before `colorscheme edge`
+let g:edge_style = 'neon'
+let g:edge_disable_italic_comment = 1
+
+colorscheme edge
+
 
 cab W  w
 cab Wq wq
