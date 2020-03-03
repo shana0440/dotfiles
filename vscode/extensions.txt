@@ -1,2 +1,3 @@
 esbenp.prettier-vscode
+kaiwood.center-editor-window
 streetsidesoftware.code-spell-checker
