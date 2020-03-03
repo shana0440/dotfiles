@@ -7,5 +7,7 @@
     "[json]": {
         "editor.defaultFormatter": "esbenp.prettier-vscode"
     },
-    "explorer.autoReveal": false
+    "explorer.autoReveal": false,
+    "files.trimTrailingWhitespace": true,
+    "terminal.integrated.fontSize": 16
 }
