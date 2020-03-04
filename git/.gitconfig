@@ -9,4 +9,4 @@
 
 [alias]
   la = log --all --date-order --decorate --graph --oneline
-
+  sync = "!git pull -r --autostash upstream \"$(git rev-parse --abbrev-ref HEAD)\""
