@@ -108,5 +108,17 @@
         "key": "ctrl+l",
         "command": "-center-editor-window.center",
         "when": "editorTextFocus || findWidgetVisible"
+    },
+    {
+        "key": "shift+cmd+u",
+        "command": "-workbench.action.output.toggleOutput"
+    },
+    {
+        "key": "shift+cmd+u",
+        "command": "editor.action.transformToUppercase"
+    },
+    {
+        "key": "shift+cmd+l",
+        "command": "editor.action.transformToLowercase"
     }
 ]
