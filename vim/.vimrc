@@ -16,6 +16,8 @@ Plug 'scrooloose/nerdtree', { 'on':  'NERDTreeToggle' }
 Plug 'preservim/nerdcommenter'
 Plug 'w0rp/ale'
 Plug 'vim-airline/vim-airline'
+Plug 'godlygeek/tabular'
+Plug 'dhruvasagar/vim-zoom'
 call plug#end()
 
 set number
