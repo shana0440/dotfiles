@@ -9,5 +9,7 @@
     },
     "explorer.autoReveal": false,
     "files.trimTrailingWhitespace": true,
-    "terminal.integrated.fontSize": 16
+    "[javascript]": {
+        "editor.defaultFormatter": "esbenp.prettier-vscode"
+    }
 }
