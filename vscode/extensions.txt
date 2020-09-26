@@ -1,4 +1,5 @@
 alefragnani.Bookmarks
 esbenp.prettier-vscode
 kaiwood.center-editor-window
+sleistner.vscode-fileutils
 streetsidesoftware.code-spell-checker
