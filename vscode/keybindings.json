@@ -39,12 +39,7 @@
     },
     {
         "key": "f1",
-        "command": "editor.action.marker.nextInFiles",
-        "when": "editorFocus && !editorReadonly"
-    },
-    {
-        "key": "f8",
-        "command": "-editor.action.marker.nextInFiles",
+        "command": "editor.action.marker.next",
         "when": "editorFocus && !editorReadonly"
     },
     {
