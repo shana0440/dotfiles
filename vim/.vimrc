@@ -18,6 +18,7 @@ Plug 'w0rp/ale'
 Plug 'vim-airline/vim-airline'
 Plug 'godlygeek/tabular'
 Plug 'dhruvasagar/vim-zoom'
+Plug 'udalov/kotlin-vim'
 call plug#end()
 
 set number

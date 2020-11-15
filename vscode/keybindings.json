@@ -115,5 +115,13 @@
     {
         "key": "shift+cmd+l",
         "command": "editor.action.transformToLowercase"
+    },
+    {
+        "key": "ctrl+b t",
+        "command": "bookmarks.toggle"
+    },
+    {
+        "key": "ctrl+b l",
+        "command": "bookmarks.listFromAllFiles"
     }
 ]

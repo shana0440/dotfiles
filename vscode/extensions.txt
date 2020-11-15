@@ -1,5 +1,10 @@
 alefragnani.Bookmarks
+Dart-Code.dart-code
 esbenp.prettier-vscode
+formulahendry.code-runner
+formulahendry.github-actions
 kaiwood.center-editor-window
+ms-python.python
+octref.vetur
 sleistner.vscode-fileutils
 streetsidesoftware.code-spell-checker
