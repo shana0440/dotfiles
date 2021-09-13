@@ -7,6 +7,8 @@ end
 alias gst='git status'
 alias glas='git log --all --date-order --decorate --graph --oneline'
 
+alias less = 'less -r'
+
 set -x FZF_DEFAULT_COMMAND 'fd --type f --hidden --follow --exclude .git'
 source /usr/local/opt/asdf/asdf.fish
 set -x PATH $HOME/.asdf/shims $PATH
