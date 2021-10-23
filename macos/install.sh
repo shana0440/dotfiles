@@ -1,8 +1,10 @@
 #!/bin/bash
 
-stow alacritty fish git skhd tmux vim yabai
+bash ./setup.sh
 
-bash ./macos/macos.sh
+stow kitty fish git tmux vim
 
 stow vscode --target="$HOME/Library/Application Support/Code/User/"
 bash ./vscode/install-extensions.sh
+
+bash ./appearance.sh
