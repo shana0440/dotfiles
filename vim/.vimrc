@@ -97,3 +97,5 @@ let g:ale_linter_aliases = {
 
 map <F2> :ALEGoToDefinition<CR>
 map <F1> :ALEDetail<CR>
+
+let NERDTreeShowHidden=1
