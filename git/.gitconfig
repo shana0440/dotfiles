@@ -13,3 +13,6 @@
 
 [rebase]
   autoStash = true
+
+[commit]
+  template = ~/.gitcommit.template
