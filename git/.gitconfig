@@ -6,6 +6,7 @@
   editor = vim
   excludesfile = ~/.gitignore_global
   ignorecase = false
+  autocrlf = true
 
 [alias]
   la = log --all --date-order --decorate --graph --oneline
