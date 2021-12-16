@@ -1,10 +1,14 @@
 alefragnani.Bookmarks
+bradlc.vscode-tailwindcss
 Dart-Code.dart-code
 esbenp.prettier-vscode
 formulahendry.code-runner
 formulahendry.github-actions
+golang.go
 kaiwood.center-editor-window
 ms-python.python
+ms-python.vscode-pylance
 octref.vetur
 sleistner.vscode-fileutils
 streetsidesoftware.code-spell-checker
+svelte.svelte-vscode
