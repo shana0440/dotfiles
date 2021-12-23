@@ -9,7 +9,7 @@
   autocrlf = true
 
 [alias]
-  la = log --all --date-order --decorate --graph --oneline
+  la = log --all --graph --pretty=format:'%C(auto)%h%d %s %C(bold black)(%ar by <%aN>)%Creset' --date=short
   sync = "!git pull -r --autostash upstream \"$(git rev-parse --abbrev-ref HEAD)\""
 
 [rebase]
