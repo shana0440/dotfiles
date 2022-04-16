@@ -6,7 +6,7 @@
   editor = vim
   excludesfile = ~/.gitignore_global
   ignorecase = false
-  autocrlf = true
+  autocrlf = false
 
 [alias]
   la = log --all --graph --pretty=format:'%C(auto)%h%d %s %C(bold black)(%ar by <%aN>)%Creset' --date=short
