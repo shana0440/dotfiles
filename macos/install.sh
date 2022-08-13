@@ -1,10 +1,12 @@
 #!/bin/bash
 
-bash ./setup.sh
+export PATH=$PATH:/opt/homebrew/bin
 
-stow kitty fish git tmux vim
+bash ./macos/setup.sh
+
+stow --adopt kitty fish git tmux vim
 
 stow vscode --target="$HOME/Library/Application Support/Code/User/"
 bash ./vscode/install-extensions.sh
 
-bash ./appearance.sh
+bash ./macos/appearance.sh
