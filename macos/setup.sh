@@ -21,4 +21,5 @@ brew install --cask \
   kitty \
   firefox \
   fork \
-  visual-studio-code
+  visual-studio-code \
+  telegram
