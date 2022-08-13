@@ -11,4 +11,4 @@ alias less = 'less -r'
 
 set -x FZF_DEFAULT_COMMAND 'fd --type f --hidden --follow --exclude .git'
 source /usr/local/opt/asdf/asdf.fish
-set -x PATH $HOME/.asdf/shims $PATH
+set -x PATH $HOME/.asdf/shims /opt/homebrew/bin $PATH
