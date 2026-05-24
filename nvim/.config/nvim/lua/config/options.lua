@@ -15,3 +15,14 @@ opt.splitright = true
 opt.splitbelow = true
 opt.ignorecase = true
 opt.smartcase = true
+opt.clipboard = "unnamedplus"
+opt.autoread = true
+opt.list = true
+opt.listchars = {
+  space = "·",
+  tab = ">-",
+}
+
+vim.api.nvim_create_autocmd({ "FocusGained", "BufEnter", "CursorHold", "CursorHoldI" }, {
+  command = "checktime",
+})

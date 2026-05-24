@@ -14,11 +14,14 @@ vim.opt.rtp:prepend(lazypath)
 require("lazy").setup({
   -- Theme
   {
-    "folke/tokyonight.nvim",
+    "rebelot/kanagawa.nvim",
     lazy = false,
     priority = 1000,
     config = function()
-      vim.cmd.colorscheme("tokyonight")
+      require("kanagawa").setup({
+        theme = "wave",
+      })
+      vim.cmd.colorscheme("kanagawa")
     end,
   },
 
@@ -28,7 +31,15 @@ require("lazy").setup({
     commit = vim.fn.has("nvim-0.10") == 1 and nil or "e16cd38962bc40c22a51ee004aa4f43726d74a16",
     dependencies = { "nvim-tree/nvim-web-devicons" },
     config = function()
+      local api = require("nvim-tree.api")
+
       require("nvim-tree").setup({
+        on_attach = function(bufnr)
+          api.config.mappings.default_on_attach(bufnr)
+          vim.keymap.del("n", "s", { buffer = bufnr })
+          vim.keymap.del("n", "<C-x>", { buffer = bufnr })
+          vim.keymap.set("n", "<C-s>", api.node.open.horizontal, { buffer = bufnr, desc = "Open: Horizontal Split" })
+        end,
         renderer = {
           icons = {
             show = {
@@ -60,7 +71,22 @@ require("lazy").setup({
     build = ":TSUpdate",
     config = function()
       require("nvim-treesitter.configs").setup({
-        ensure_installed = { "lua", "vim", "vimdoc", "bash", "json", "markdown", "markdown_inline" },
+        ensure_installed = {
+          "lua",
+          "vim",
+          "vimdoc",
+          "bash",
+          "json",
+          "markdown",
+          "markdown_inline",
+          "javascript",
+          "typescript",
+          "tsx",
+          "html",
+          "css",
+          "php",
+          "blade",
+        },
         highlight = { enable = true },
         indent = { enable = true },
       })
@@ -105,11 +131,43 @@ require("lazy").setup({
     end,
   },
 
+  -- 10) Formatting (Prettier)
+  {
+    "stevearc/conform.nvim",
+    opts = {
+      formatters_by_ft = {
+        javascript = { "prettier" },
+        javascriptreact = { "prettier" },
+        typescript = { "prettier" },
+        typescriptreact = { "prettier" },
+        json = { "prettier" },
+        jsonc = { "prettier" },
+        css = { "prettier" },
+        scss = { "prettier" },
+        html = { "prettier" },
+        markdown = { "prettier" },
+        yaml = { "prettier" },
+      },
+    },
+  },
+
   -- 9) Comment toggling
   {
     "numToStr/Comment.nvim",
     config = function()
       require("Comment").setup({})
+    end,
+  },
+
+  -- 11) Multiple cursors
+  {
+    "mg979/vim-visual-multi",
+    branch = "master",
+    init = function()
+      vim.g.VM_maps = {
+        ["Find Under"] = "<C-d>",
+        ["Find Subword Under"] = "<C-d>",
+      }
     end,
   },
 
@@ -163,7 +221,7 @@ require("lazy").setup({
       local capabilities = require("cmp_nvim_lsp").default_capabilities()
 
       require("mason-lspconfig").setup({
-        ensure_installed = { "lua_ls" },
+        ensure_installed = { "lua_ls", "ts_ls", "tailwindcss", "intelephense" },
         automatic_enable = true,
       })
 
@@ -171,10 +229,28 @@ require("lazy").setup({
         vim.lsp.config("lua_ls", {
           capabilities = capabilities,
         })
-        vim.lsp.enable("lua_ls")
+        vim.lsp.config("ts_ls", {
+          capabilities = capabilities,
+        })
+        vim.lsp.config("tailwindcss", {
+          capabilities = capabilities,
+        })
+        vim.lsp.config("intelephense", {
+          capabilities = capabilities,
+        })
+        vim.lsp.enable({ "lua_ls", "ts_ls", "tailwindcss", "intelephense" })
       else
         local lspconfig = require("lspconfig")
         lspconfig.lua_ls.setup({
+          capabilities = capabilities,
+        })
+        lspconfig.ts_ls.setup({
+          capabilities = capabilities,
+        })
+        lspconfig.tailwindcss.setup({
+          capabilities = capabilities,
+        })
+        lspconfig.intelephense.setup({
           capabilities = capabilities,
         })
       end
