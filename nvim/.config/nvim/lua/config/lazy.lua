@@ -64,6 +64,11 @@ require("lazy").setup({
         defaults = {
           preview = false,
         },
+        pickers = {
+          find_files = {
+            hidden = true,
+          },
+        },
       })
     end,
   },
@@ -71,7 +76,8 @@ require("lazy").setup({
   -- 4) Better syntax parsing/highlighting
   {
     "nvim-treesitter/nvim-treesitter",
-    version = vim.fn.has("nvim-0.10") == 1 and "*" or "v0.9.3",
+    branch = vim.fn.has("nvim-0.10") == 1 and "main" or nil,
+    version = vim.fn.has("nvim-0.10") == 1 and nil or "v0.9.3",
     build = ":TSUpdate",
     config = function()
       require("nvim-treesitter.configs").setup({
@@ -90,6 +96,8 @@ require("lazy").setup({
           "css",
           "php",
           "blade",
+          "rust",
+          "svelte",
         },
         highlight = { enable = true },
         indent = { enable = true },
@@ -103,21 +111,12 @@ require("lazy").setup({
     dependencies = {
       "hrsh7th/cmp-nvim-lsp",
       "hrsh7th/cmp-buffer",
-      "L3MON4D3/LuaSnip",
-      "saadparwaiz1/cmp_luasnip",
-      "rafamadriz/friendly-snippets",
     },
     config = function()
       local cmp = require("cmp")
-      local luasnip = require("luasnip")
-
-      require("luasnip.loaders.from_vscode").lazy_load()
-
       cmp.setup({
         snippet = {
-          expand = function(args)
-            luasnip.lsp_expand(args.body)
-          end,
+          expand = function() end,
         },
         mapping = cmp.mapping.preset.insert({
           ["<C-Space>"] = cmp.mapping.complete(),
@@ -127,7 +126,6 @@ require("lazy").setup({
         }),
         sources = cmp.config.sources({
           { name = "nvim_lsp" },
-          { name = "luasnip" },
         }, {
           { name = "buffer" },
         }),
@@ -173,6 +171,28 @@ require("lazy").setup({
         ["Find Subword Under"] = "<C-d>",
       }
     end,
+  },
+
+  -- 12) Floating terminal
+  {
+    "akinsho/toggleterm.nvim",
+    version = "*",
+    config = function()
+      require("toggleterm").setup({
+        direction = "float",
+        float_opts = {
+          border = "curved",
+        },
+      })
+    end,
+  },
+
+  -- Buffer tabs
+  {
+    "akinsho/bufferline.nvim",
+    version = "*",
+    dependencies = { "nvim-tree/nvim-web-devicons" },
+    opts = {},
   },
 
   -- 7) Statusline
@@ -223,9 +243,10 @@ require("lazy").setup({
     },
     config = function()
       local capabilities = require("cmp_nvim_lsp").default_capabilities()
+      capabilities.textDocument.completion.completionItem.snippetSupport = false
 
       require("mason-lspconfig").setup({
-        ensure_installed = { "lua_ls", "ts_ls", "tailwindcss", "intelephense" },
+        ensure_installed = { "lua_ls", "ts_ls", "tailwindcss", "intelephense", "rust_analyzer", "svelte" },
         automatic_enable = true,
       })
 
@@ -242,7 +263,13 @@ require("lazy").setup({
         vim.lsp.config("intelephense", {
           capabilities = capabilities,
         })
-        vim.lsp.enable({ "lua_ls", "ts_ls", "tailwindcss", "intelephense" })
+        vim.lsp.config("rust_analyzer", {
+          capabilities = capabilities,
+        })
+        vim.lsp.config("svelte", {
+          capabilities = capabilities,
+        })
+        vim.lsp.enable({ "lua_ls", "ts_ls", "tailwindcss", "intelephense", "rust_analyzer", "svelte" })
       else
         local lspconfig = require("lspconfig")
         lspconfig.lua_ls.setup({
@@ -257,11 +284,17 @@ require("lazy").setup({
         lspconfig.intelephense.setup({
           capabilities = capabilities,
         })
+        lspconfig.rust_analyzer.setup({
+          capabilities = capabilities,
+        })
+        lspconfig.svelte.setup({
+          capabilities = capabilities,
+        })
       end
     end,
   },
 }, {
-  checker = { enabled = true },
+  checker = { enabled = true, notify = false },
   ui = {
     icons = {
       cmd = "C",
@@ -278,4 +311,13 @@ require("lazy").setup({
       lazy = "L",
     },
   },
+})
+
+vim.api.nvim_create_autocmd("User", {
+  pattern = "LazyCheck",
+  callback = function()
+    if require("lazy.status").has_updates() then
+      require("lazy").sync({ wait = false })
+    end
+  end,
 })
