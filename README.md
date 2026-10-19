@@ -31,11 +31,18 @@ Imported from https://github.com/shana0440/dotfiles at commit
   are included; the old `init.vim.bak` is not used.
 - Edit `tmux/.tmux.conf` for terminal colors, mouse support, vi-style keys, and
   extended key handling. This file is also copied from the upstream repo.
-- The Nix modules install programs/dependencies and link files; Git settings and
-  Neovim Lua are not generated from Nix. Apply edits with `make home`.
-- Keep this checkout at `~/dotfiles`: the Neovim plugin lockfile is linked directly
-  to the writable checkout so lazy.nvim can update it. Other configuration files
-  are linked through the Nix store. Review lockfile updates before committing.
+- The Nix modules install programs/dependencies and create live, out-of-store
+  links for Git, Neovim, tmux, Kitty, and Hyprland. Keep this checkout at
+  `~/dotfiles`: the active config files resolve directly to this writable checkout.
+  Edits through either path modify the same Git-tracked files.
+- Native config edits do not require `make home`: Git reads changes automatically;
+  restart Neovim, run `tmux source-file ~/.tmux.conf`, reload Kitty with
+  Ctrl+Shift+F5 (or `kill -USR1 <kitty-pid>`), or run `hyprctl reload`.
+- New Neovim Lua files also work without switching because the entire config
+  directory is linked. Review lazy.nvim lockfile changes before committing.
+- Changes to `.nix` files, packages, or link declarations still need `make home`
+  (and NixOS system changes need `make nixos`). Fish remains Nix-generated as
+  configured in `shell/fish.nix`; do not edit its read-only generated files.
 - First Neovim launch downloads plugins and Mason language servers. This requires
   network access. Mason-downloaded binaries may need additional NixOS integration;
   full plugin/LSP compatibility has not been verified.
@@ -90,7 +97,9 @@ On macOS, changing the login shell is a separate host-specific step.
 
 ## Hyprland configuration
 
-Edit `hyprland/hyprland.lua`, run `make home`, then `hyprctl reload`.
+Edit `hyprland/hyprland.lua` (or `~/.config/hypr/hyprland.lua`), then run
+`hyprctl reload`. After the initial Home Manager activation, no switch is needed
+for Lua edits.
 Home Manager links it to `~/.config/hypr/hyprland.lua` on desktop Linux only (not WSL);
 Hyprland installation and the login session stay in `nixos/desktop.nix`.
 

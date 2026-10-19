@@ -1,5 +1,5 @@
 # Install Neovim; editor settings and plugins live in native Lua files.
-{ config, pkgs, ... }:
+{ config, lib, pkgs, ... }:
 
 {
   programs.neovim = {
@@ -21,18 +21,10 @@
     ];
   };
 
-  xdg.configFile = {
-    "nvim/init.lua".source = ./config/init.lua;
-    "nvim/lua" = {
-      source = ./config/lua;
-      recursive = true;
-    };
-    "nvim/queries" = {
-      source = ./config/queries;
-      recursive = true;
-    };
-    # lazy.nvim updates this file, so link to the writable checkout, not /nix/store.
-    "nvim/lazy-lock.json".source = config.lib.file.mkOutOfStoreSymlink
-      "${config.home.homeDirectory}/dotfiles/neovim/config/lazy-lock.json";
-  };
+  # Do not place a generated init.lua inside the live-linked directory.
+  xdg.configFile."nvim/init.lua".enable = lib.mkForce false;
+
+  # Link the whole directory so edits and newly added Lua files work immediately.
+  xdg.configFile."nvim".source = config.lib.file.mkOutOfStoreSymlink
+    "${config.home.homeDirectory}/dotfiles/neovim/config";
 }
