@@ -32,7 +32,10 @@
     # Set the password interactively during installation.
   };
 
-  services.openssh.enable = false;
+  services.openssh = {
+    enable = true;
+    openFirewall = true;
+  };
 
   security.polkit.enable = true;
   security.rtkit.enable = true;
