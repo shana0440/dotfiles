@@ -17,5 +17,6 @@
   # Installs Quickshell; its UI configuration and autostart are separate.
   environment.systemPackages = with pkgs; [
     quickshell
+    wl-clipboard
   ];
 }

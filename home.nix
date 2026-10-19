@@ -1,6 +1,12 @@
 { ... }:
 
 {
+  imports = [
+    ./git.nix
+    ./vim.nix
+    ./programs.nix
+  ];
+
   home.username = "kwguo";
   home.homeDirectory = "/home/kwguo";
 

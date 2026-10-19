@@ -4,9 +4,20 @@ Standalone Home Manager for kwguo on x86_64-linux, using NixOS/Home Manager 26.0
 
 - `nixos/applications.nix`: system application list, Firefox/Steam integration, and unfree-package policy
 - `home.nix`: user settings and module imports
+- `programs.nix`: portable command-line tools (GNU Make, fzf, and ripgrep)
+- `git.nix`: portable Home Manager Git configuration (name and email)
+- `vim.nix`: portable Home Manager Neovim configuration and vi/vim aliases
 - `flake.nix` / `flake.lock`: Home Manager entry point and pinned dependencies
 - `nixos/desktop.nix`: Hyprland, Quickshell, and login/session settings
 - `nixos/`: system configuration and this VM's hardware configuration
+
+## Shared Git configuration
+
+`git.nix` is a Home Manager module usable on both NixOS and macOS. Import it in
+any Home Manager configuration to install Git and apply the shared identity.
+The current `flake.nix` and `home.nix` target Linux; macOS needs its own Home
+Manager output and home directory settings. Apply locally with `make home`.
+Repository-local Git settings override these user-level defaults.
 
 ## Make targets
 

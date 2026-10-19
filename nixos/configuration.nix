@@ -29,12 +29,6 @@
   };
 
   services.openssh.enable = false;
-  programs.neovim = {
-    enable = true;
-    defaultEditor = true;
-    viAlias = true;
-    vimAlias = true;
-  };
 
   security.polkit.enable = true;
   security.rtkit.enable = true;
@@ -51,10 +45,6 @@
 
   environment.systemPackages = with pkgs; [
     nodejs
-    fzf
-    ripgrep
-    git
-    wl-clipboard
   ];
 
   fonts.packages = with pkgs; [
