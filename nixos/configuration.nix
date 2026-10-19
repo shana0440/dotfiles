@@ -48,6 +48,8 @@
   swapDevices = [ { device = "/swapfile"; size = 2048; } ];
 
   environment.systemPackages = with pkgs; [
+    git
+    curl
     nodejs
   ];
 
