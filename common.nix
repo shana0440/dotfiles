@@ -5,6 +5,7 @@
   imports = [
     ./git/git.nix
     ./neovim/neovim.nix
+    ./nodejs/nodejs.nix
     ./tmux/tmux.nix
     ./shell/shell.nix
     ./programs.nix
