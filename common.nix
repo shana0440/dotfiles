@@ -1,5 +1,5 @@
 # Home Manager settings shared by Linux, macOS, and WSL.
-{ ... }:
+{ pkgs, ... }:
 
 {
   imports = [
@@ -12,6 +12,11 @@
   ];
 
   home.username = "kwguo";
+
+  nix = {
+    package = pkgs.nix;
+    settings.experimental-features = [ "nix-command" "flakes" ];
+  };
 
   # Compatibility baseline; do not change just to update packages.
   home.stateVersion = "26.05";
