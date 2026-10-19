@@ -9,10 +9,24 @@
     };
   };
 
-  outputs = { nixpkgs, home-manager, ... }: {
-    homeConfigurations.kwguo = home-manager.lib.homeManagerConfiguration {
-      pkgs = nixpkgs.legacyPackages.x86_64-linux;
-      modules = [ ./home.nix ];
+  outputs = { nixpkgs, home-manager, ... }:
+    let
+      mkHome = system: module: home-manager.lib.homeManagerConfiguration {
+        pkgs = nixpkgs.legacyPackages.${system};
+        modules = [ module ];
+      };
+    in {
+      homeConfigurations = {
+        # Compatibility alias for the original NixOS VM.
+        kwguo = mkHome "x86_64-linux" ./home.nix;
+
+        "kwguo-x86_64-linux" = mkHome "x86_64-linux" ./home.nix;
+        "kwguo-aarch64-linux" = mkHome "aarch64-linux" ./home.nix;
+        "kwguo-x86_64-darwin" = mkHome "x86_64-darwin" ./macos.nix;
+        "kwguo-aarch64-darwin" = mkHome "aarch64-darwin" ./macos.nix;
+
+        "kwguo-x86_64-linux-wsl" = mkHome "x86_64-linux" ./wsl.nix;
+        "kwguo-aarch64-linux-wsl" = mkHome "aarch64-linux" ./wsl.nix;
+      };
     };
-  };
 }
