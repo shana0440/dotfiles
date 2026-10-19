@@ -2,9 +2,9 @@
 
 Standalone Home Manager for kwguo on Linux, macOS, and WSL, using release 26.05.
 
-- `nixos/applications.nix`: system application list, Firefox/Steam integration, and unfree-package policy
+- `applications.nix`: exports `nixos` (Firefox/Steam) and `homeManager` (Discord, Bitwarden, Telegram, Signal, Anki) modules
 - `common.nix`: shared user settings and modules
-- `home.nix`: desktop Linux profile (common + Kitty + Hyprland)
+- `home.nix`: desktop Linux profile (common + desktop apps + Kitty + Hyprland)
 - `macos.nix`: macOS profile (common + Kitty)
 - `wsl.nix`: WSL profile (common CLI tools only)
 - `hyprland/`: native Lua configuration, linked on desktop Linux only (not WSL)
@@ -65,8 +65,10 @@ architecture selects the flake profile. To bypass OS detection, invoke
 imports its platform entry point (`home.nix`, `macos.nix`, or `wsl.nix`), which
 imports `common.nix`. No environment-dependent imports occur during pure Nix
 evaluation. All profiles share Git, Neovim, tmux, Fish/Bash, direnv, and CLI tools.
-NixOS system modules
-under `nixos/` are separate and must not be applied on macOS or plain WSL.
+NixOS system modules under `nixos/` are separate and must not be applied on
+macOS or plain WSL. Root-level `applications.nix` exports two separate modules:
+NixOS imports its `nixos` attribute; desktop Linux Home Manager imports its
+`homeManager` attribute. The macOS and WSL app imports are unchanged.
 Both x86_64 and aarch64 are supported. Make selects the host architecture through
 `builtins.currentSystem`; explicit targets retain that automatic selection.
 Intel macOS uses the pinned 26.05 release, the last Nixpkgs release supporting
@@ -125,13 +127,18 @@ is not found afterwards, open a new login session or use
 
 ## Apply application changes
 
-Applications are now system-managed. Edit `nixos/applications.nix`, then run
-`make nixos`. Use `make home` for shared settings in `common.nix` and your
-platform-specific profile.
+Edit the `homeManager` module in `applications.nix` for Discord, Bitwarden Desktop, Telegram,
+Signal, and Anki, then run `make home` without sudo or a NixOS rebuild. This module
+is imported only by desktop Linux; macOS and WSL profiles are unchanged.
+Packages unavailable for the selected architecture (such as Discord on ARM Linux)
+are skipped with a Home Manager warning.
 
-When migrating from the previous Home Manager application list, run `make nixos`
-first to install the system packages, then `make home` to remove the old user-level
-packages. Neither step has been applied automatically.
+Firefox and Steam remain in its `nixos` module; changes to them still use
+`make nixos`. Shared CLI tools remain in `programs.nix`.
+
+To migrate, first run `make home` to install the apps in your user profile.
+Then run `make nixos` once
+to remove their system-level declarations. Neither step is applied automatically.
 
 ## Update pinned Home Manager dependencies
 
@@ -161,7 +168,7 @@ new machine. Do not change `system.stateVersion` just to update packages.
 
 ## Steam
 
-`nixos/applications.nix` enables Steam with `programs.steam.enable = true` and
+The `nixos` module in `applications.nix` enables Steam with `programs.steam.enable = true` and
 allows unfree packages. Apply with `make nixos` to configure Steam's system
 integration, including 32-bit graphics support. Games themselves are managed
 without root.

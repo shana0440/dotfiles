@@ -4,7 +4,7 @@
   # Generated for the installed system after the target disk is mounted.
   imports = [
     ./hardware-configuration.nix
-    ./applications.nix
+    (import ../applications.nix).nixos
     ./desktop.nix
     ./user.nix
   ];

@@ -4,6 +4,7 @@
 {
   imports = [
     ./common.nix
+    (import ./applications.nix).homeManager
     ./kitty/kitty.nix
     ./hyprland/hyprland.nix
   ];
