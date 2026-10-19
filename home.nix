@@ -3,6 +3,7 @@
 {
   imports = [
     ./git/git.nix
+    ./kitty/kitty.nix
     ./neovim/neovim.nix
     ./tmux/tmux.nix
     ./shell/shell.nix

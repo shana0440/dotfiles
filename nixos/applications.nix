@@ -9,7 +9,6 @@
   programs.steam.enable = true;
 
   environment.systemPackages = with pkgs; [
-    kitty
     discord
     bitwarden-desktop
     telegram-desktop
