@@ -1,8 +1,6 @@
 { ... }:
 
 {
-  imports = [ ./applications.nix ];
-
   home.username = "kwguo";
   home.homeDirectory = "/home/kwguo";
 

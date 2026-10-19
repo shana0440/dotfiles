@@ -2,9 +2,23 @@
 
 Standalone Home Manager for kwguo on x86_64-linux, using NixOS/Home Manager 26.05.
 
-- `applications.nix`: user application list and unfree-package policy
+- `nixos/applications.nix`: system application list, Firefox/Steam integration, and unfree-package policy
 - `home.nix`: user settings and module imports
-- `flake.nix` / `flake.lock`: configuration entry point and pinned dependencies
+- `flake.nix` / `flake.lock`: Home Manager entry point and pinned dependencies
+- `nixos/desktop.nix`: Hyprland, Quickshell, and login/session settings
+- `nixos/`: system configuration and this VM's hardware configuration
+
+## Make targets
+
+From `~/dotfiles`:
+
+```sh
+make nixos # Rebuild and activate NixOS (requires sudo).
+make home  # Apply standalone Home Manager (no sudo).
+```
+
+These require GNU Make (`gnumake` in Nixpkgs). If it is not installed, use
+`nix-shell -p gnumake --run 'make home'` (or `make nixos`).
 
 ## First installation (no sudo)
 
@@ -12,19 +26,20 @@ Standalone Home Manager for kwguo on x86_64-linux, using NixOS/Home Manager 26.0
 nix run 'https://github.com/nix-community/home-manager/archive/refs/heads/release-26.05.tar.gz' -- switch --flake ~/dotfiles#kwguo
 ```
 
-This installs the declared applications and the Home Manager command. If the command
+This installs the Home Manager command and applies user settings. If the command
 is not found afterwards, open a new login session or use
 `~/.nix-profile/bin/home-manager`.
 
 ## Apply application changes
 
-Edit `applications.nix`, then run:
+Applications are now system-managed. Edit `nixos/applications.nix`, then run
+`make nixos`. Use `make home` for user settings in `home.nix`.
 
-```sh
-home-manager switch --flake ~/dotfiles#kwguo
-```
+When migrating from the previous Home Manager application list, run `make nixos`
+first to install the system packages, then `make home` to remove the old user-level
+packages. Neither step has been applied automatically.
 
-## Update pinned dependencies and applications
+## Update pinned Home Manager dependencies
 
 ```sh
 cd ~/dotfiles
@@ -34,19 +49,25 @@ home-manager switch --flake .#kwguo
 
 Keep `home.stateVersion` unchanged when updating packages.
 
-## Steam (separate, system-level setup)
+## NixOS system configuration
 
-Steam is intentionally excluded from Home Manager. Add this inside the top-level
-configuration in `/etc/nixos/configuration.nix`:
+Edit `~/dotfiles/nixos/configuration.nix`, then rebuild explicitly from that file:
 
-```nix
-nixpkgs.config.allowUnfree = true;
-programs.steam.enable = true;
+```sh
+sudo nixos-rebuild switch -I nixos-config=/home/kwguo/dotfiles/nixos/configuration.nix
 ```
 
-Then run `sudo nixos-rebuild switch`. This enables Steam's system integration,
-including 32-bit graphics support; games themselves are managed without root.
+The original files in `/etc/nixos/` are unchanged and serve as a backup. A plain
+`sudo nixos-rebuild switch` still uses those original files, not this copy.
+The system configuration uses the system's nixpkgs channel, independently of the
+Home Manager flake lock.
 
-Firefox is currently also enabled in the system configuration. Leaving it there
-is harmless, but removing `programs.firefox.enable` during a future system rebuild
-will make Home Manager the sole manager of the Firefox package.
+`nixos/hardware-configuration.nix` is specific to this VM; regenerate it for a
+new machine. Do not change `system.stateVersion` just to update packages.
+
+## Steam
+
+`nixos/applications.nix` enables Steam with `programs.steam.enable = true` and
+allows unfree packages. Apply with `make nixos` to configure Steam's system
+integration, including 32-bit graphics support. Games themselves are managed
+without root.
