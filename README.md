@@ -4,7 +4,9 @@ Standalone Home Manager for kwguo on x86_64-linux, using NixOS/Home Manager 26.0
 
 - `nixos/applications.nix`: system application list, Firefox/Steam integration, and unfree-package policy
 - `home.nix`: user settings and module imports
-- `programs.nix`: portable command-line tools (GNU Make, fzf, and ripgrep)
+- `programs.nix`: portable command-line tools and direnv/nix-direnv
+- `shell/shell.nix`: shell entry point, importing `shell/fish.nix` and retaining Bash as a fallback
+- `shell/fish.nix`: Fish settings managed directly through Home Manager
 - `tmux/`: `tmux.nix` installs tmux and links the native `.tmux.conf` to `~/.tmux.conf`
 - `git/`: native Git configuration, ignore rules, commit template, and `git.nix`
 - `neovim/`: native Lua configuration, plugin lockfile, and `neovim.nix`
@@ -36,6 +38,19 @@ Imported from https://github.com/shana0440/dotfiles at commit
 Both modules are usable with Home Manager on NixOS and macOS. The current flake
 and home directory settings still target Linux. Repository-local Git settings
 continue to override user-level defaults.
+
+## Fish shell
+
+`shell/fish.nix` installs and configures Fish and fd entirely through Home Manager,
+including standard fzf and direnv integrations, Fish's default prompt and
+keybindings, no startup greeting, fd-based fzf search, and access to the existing
+Pi installation. No separate Fish configuration files or third-party Fish plugins
+are maintained.
+
+Home Manager installs/configures Fish, but NixOS owns the login shell. Run
+`make nixos` to apply `programs.fish.enable` and the account's `shell = pkgs.fish`,
+then log out and back in. Until then, run `fish` to try it in the current terminal.
+On macOS, changing the login shell is a separate host-specific step.
 
 ## Make targets
 

@@ -5,6 +5,7 @@
     ./git/git.nix
     ./neovim/neovim.nix
     ./tmux/tmux.nix
+    ./shell/shell.nix
 
     ./programs.nix
   ];

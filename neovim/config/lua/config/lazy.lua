@@ -95,7 +95,6 @@ require("lazy").setup({
           "html",
           "css",
           "php",
-          "blade",
           "rust",
           "svelte",
         },

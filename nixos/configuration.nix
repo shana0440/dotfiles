@@ -23,8 +23,11 @@
 
   nix.settings.experimental-features = [ "nix-command" "flakes" ];
 
+  programs.fish.enable = true;
+
   users.users.${config.user.name} = {
     isNormalUser = true;
+    shell = pkgs.fish;
     extraGroups = [ "wheel" "networkmanager" ];
     # Set the password interactively during installation.
   };
