@@ -1,5 +1,5 @@
 # Hyprland desktop, login manager, and shell.
-{ pkgs, ... }:
+{ config, pkgs, ... }:
 
 {
   services.xserver.enable = true; # X11 greeter; Hyprland uses Wayland.
@@ -7,7 +7,7 @@
     sddm.enable = true;
     autoLogin = {
       enable = true;
-      user = "kwguo";
+      user = config.user.name;
     };
     defaultSession = "hyprland";
   };

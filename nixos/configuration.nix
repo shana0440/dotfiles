@@ -1,4 +1,4 @@
-{ pkgs, ... }:
+{ config, pkgs, ... }:
 
 {
   # Generated for the installed system after the target disk is mounted.
@@ -6,6 +6,7 @@
     ./hardware-configuration.nix
     ./applications.nix
     ./desktop.nix
+    ./user.nix
   ];
 
   # This VM currently boots in legacy BIOS mode.
@@ -14,7 +15,7 @@
     device = "/dev/sda";
   };
 
-  networking.hostName = "kwguo";
+  networking.hostName = config.user.name;
   networking.networkmanager.enable = true;
   networking.firewall.enable = true;
   time.timeZone = "Asia/Taipei";
@@ -22,7 +23,7 @@
 
   nix.settings.experimental-features = [ "nix-command" "flakes" ];
 
-  users.users.kwguo = {
+  users.users.${config.user.name} = {
     isNormalUser = true;
     extraGroups = [ "wheel" "networkmanager" ];
     # Set the password interactively during installation.
