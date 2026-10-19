@@ -2,8 +2,10 @@
 
 {
   imports = [
-    ./git.nix
-    ./vim.nix
+    ./git/git.nix
+    ./neovim/neovim.nix
+    ./tmux/tmux.nix
+
     ./programs.nix
   ];
 

@@ -1,0 +1,32 @@
+
+# <type>(<scope>): <subject>
+#
+# Body
+#
+# Footer
+#
+# Type
+# Type must be one of the following:
+# - feat: add/edit feature
+# - fix: fix bug
+# - docs: documentation
+# - style: update the coding style
+# - refactor: not bug fixing or add/edit feature, just make code look better
+# - perf: improves performance
+# - test: add/edit test
+# - ci: add/edit CI configuration
+# - build: change that affect build system or external dependencies
+#
+# Scope
+# Scope should be the name of the module affected
+#
+# Subject
+# Describe what you change
+#
+# Body
+# Describe why you do this change, a comparison of the previous behavior with the new behavior.
+#
+# Footer
+# issue number, or anything we should know.
+
+# ref: https://github.com/angular/angular/blob/master/CONTRIBUTING.md#commit
