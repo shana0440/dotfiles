@@ -1,5 +1,6 @@
 import QtQuick
 import Quickshell
+import Quickshell.Wayland
 import "Bar" as BarComponents
 import "Theme" as Theme
 
@@ -21,6 +22,8 @@ PanelWindow {
     implicitHeight: 300
     exclusiveZone: 32
     color: Theme.Colors.transparent
+    // Keep the surface's keyboard mode stable when opening or closing a menu.
+    WlrLayershell.keyboardFocus: WlrKeyboardFocus.OnDemand
 
     // Only the islands accept input, including while the center is expanded.
     mask: Region {
@@ -43,6 +46,5 @@ PanelWindow {
     BarComponents.RightIsland {
         id: rightIsland
         anchors.right: parent.right
-        height: 32
     }
 }
