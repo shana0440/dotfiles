@@ -26,5 +26,5 @@
 
   # Link the whole directory so edits and newly added Lua files work immediately.
   xdg.configFile."nvim".source = config.lib.file.mkOutOfStoreSymlink
-    "${config.home.homeDirectory}/dotfiles/neovim/config";
+    "${config.dotfiles.directory}/neovim/config";
 }

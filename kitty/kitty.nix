@@ -5,5 +5,5 @@
   home.packages = [ pkgs.kitty ];
 
   xdg.configFile."kitty/kitty.conf".source = config.lib.file.mkOutOfStoreSymlink
-    "${config.home.homeDirectory}/dotfiles/kitty/kitty.conf";
+    "${config.dotfiles.directory}/kitty/kitty.conf";
 }

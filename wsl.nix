@@ -2,7 +2,15 @@
 { ... }:
 
 {
-  imports = [ ./common.nix ];
+  imports = [
+    ./config.nix
+    ./git/git.nix
+    ./neovim/neovim.nix
+    ./nodejs/nodejs.nix
+    ./tmux/tmux.nix
+    ./shell/shell.nix
+    ./programs.nix
+  ];
 
   home.homeDirectory = "/home/kwguo";
 }

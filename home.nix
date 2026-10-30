@@ -3,7 +3,13 @@
 
 {
   imports = [
-    ./common.nix
+    ./config.nix
+    ./git/git.nix
+    ./neovim/neovim.nix
+    ./nodejs/nodejs.nix
+    ./tmux/tmux.nix
+    ./shell/shell.nix
+    ./programs.nix
     (import ./applications.nix).homeManager
     ./kitty/kitty.nix
     ./hyprland/hyprland.nix

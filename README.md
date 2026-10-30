@@ -3,10 +3,10 @@
 Standalone Home Manager for kwguo on Linux, macOS, and WSL, using release 26.05.
 
 - `applications.nix`: exports `nixos` (Firefox/Steam) and `homeManager` (Discord, Bitwarden, Telegram, Signal, Anki) modules
-- `common.nix`: shared user settings and modules
-- `home.nix`: desktop Linux profile (common + desktop apps + Kitty + Hyprland)
-- `macos.nix`: macOS profile (common + Kitty)
-- `wsl.nix`: WSL profile (common CLI tools only)
+- `config.nix`: shared user settings and dotfiles options
+- `home.nix`: desktop Linux profile with explicit CLI and desktop module imports
+- `macos.nix`: macOS profile with explicit CLI and Kitty module imports
+- `wsl.nix`: WSL profile with explicit CLI module imports only
 - `hyprland/`: native Lua configuration, linked on desktop Linux only (not WSL)
 - `kitty/`: Kitty package and native configuration on Linux/macOS (not WSL)
 - `programs.nix`: portable command-line tools and direnv/nix-direnv
@@ -70,7 +70,7 @@ architecture selects the flake profile. To bypass OS detection, invoke
 
 `kwguo` remains an alias for the original x86_64 Linux configuration. Each profile
 imports its platform entry point (`home.nix`, `macos.nix`, or `wsl.nix`), which
-imports `common.nix`. No environment-dependent imports occur during pure Nix
+directly imports `config.nix` and the modules it needs. No environment-dependent imports occur during pure Nix
 evaluation. All profiles share Git, Neovim, tmux, Fish/Bash, direnv, and CLI tools.
 NixOS system modules under `nixos/` are separate and must not be applied on
 macOS or plain WSL. Root-level `applications.nix` exports two separate modules:

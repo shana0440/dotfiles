@@ -3,7 +3,13 @@
 
 {
   imports = [
-    ./common.nix
+    ./config.nix
+    ./git/git.nix
+    ./neovim/neovim.nix
+    ./nodejs/nodejs.nix
+    ./tmux/tmux.nix
+    ./shell/shell.nix
+    ./programs.nix
     ./kitty/kitty.nix
   ];
 

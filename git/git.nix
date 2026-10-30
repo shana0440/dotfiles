@@ -3,7 +3,7 @@
 
 let
   link = config.lib.file.mkOutOfStoreSymlink;
-  gitDir = "${config.home.homeDirectory}/dotfiles/git";
+  gitDir = "${config.dotfiles.directory}/git";
 in
 {
   home.packages = [ pkgs.git ];

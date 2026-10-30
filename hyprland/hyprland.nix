@@ -5,6 +5,6 @@
 {
   xdg.configFile."hypr/hyprland.lua" = lib.mkIf pkgs.stdenv.isLinux {
     source = config.lib.file.mkOutOfStoreSymlink
-      "${config.home.homeDirectory}/dotfiles/hyprland/hyprland.lua";
+      "${config.dotfiles.directory}/hyprland/hyprland.lua";
   };
 }
