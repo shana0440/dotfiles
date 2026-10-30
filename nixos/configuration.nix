@@ -9,13 +9,16 @@
     ./user.nix
   ];
 
-  # This VM currently boots in legacy BIOS mode.
-  boot.loader.grub = {
-    enable = true;
-    device = "/dev/sda";
-  };
+  # UEFI boot; mount the chosen EFI system partition at /boot before installing.
+  boot.loader.systemd-boot.enable = true;
+  # Use the UEFI shell to identify the Windows ESP before adding its menu entry.
+  boot.loader.systemd-boot.edk2-uefi-shell.enable = true;
+  boot.loader.efi.canTouchEfiVariables = true;
+  boot.loader.efi.efiSysMountPoint = "/boot";
 
-  networking.hostName = config.user.name;
+  hardware.cpu.intel.updateMicrocode = true;
+
+  networking.hostName = "kwguo-nixos";
   networking.networkmanager.enable = true;
   networking.firewall.enable = true;
   time.timeZone = "Asia/Taipei";
@@ -33,8 +36,8 @@
   };
 
   services.openssh = {
-    enable = true;
-    openFirewall = true;
+    enable = false;
+    openFirewall = false;
   };
 
   security.polkit.enable = true;
@@ -45,10 +48,11 @@
     pulse.enable = true;
   };
 
-  virtualisation.vmware.guest.enable = true;
-
-  # The VM has 4 GiB RAM; swap provides headroom during desktop use.
-  swapDevices = [ { device = "/swapfile"; size = 2048; } ];
+  # Compressed RAM swap; backing memory is allocated on demand.
+  zramSwap = {
+    enable = true;
+    memoryPercent = 25;
+  };
 
   environment.systemPackages = with pkgs; [
     git
