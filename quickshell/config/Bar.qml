@@ -1,5 +1,7 @@
 import QtQuick
 import Quickshell
+import "Bar" as BarComponents
+import "Theme" as Theme
 
 PanelWindow {
     anchors {
@@ -8,13 +10,27 @@ PanelWindow {
         right: true
     }
 
-    implicitHeight: 32
-    color: "#000000"
+    margins {
+        top: 20
+        left: 20
+        right: 20
+    }
 
-    Text {
-        anchors.centerIn: parent
-        text: "Hello, Quickshell!"
-        color: "#cdd6f4"
-        font.pixelSize: 14
+    implicitHeight: 32
+    color: Theme.Colors.transparent
+
+    BarComponents.Workspaces {
+        anchors.left: parent.left
+        height: parent.height
+    }
+
+    BarComponents.DateTime {
+        anchors.horizontalCenter: parent.horizontalCenter
+        height: parent.height
+    }
+
+    BarComponents.RightSection {
+        anchors.right: parent.right
+        height: parent.height
     }
 }
