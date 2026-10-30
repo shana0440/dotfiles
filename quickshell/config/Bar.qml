@@ -16,21 +16,33 @@ PanelWindow {
         right: 20
     }
 
-    implicitHeight: 32
+    // Keep the surface fixed so expanding the center never resizes the other islands.
+    // The input mask lets clicks pass through the unused transparent area.
+    implicitHeight: 300
+    exclusiveZone: 32
     color: Theme.Colors.transparent
 
-    BarComponents.Workspaces {
+    // Only the islands accept input, including while the center is expanded.
+    mask: Region {
+        item: leftIsland
+        Region { item: centerIsland }
+        Region { item: rightIsland }
+    }
+
+    BarComponents.LeftIsland {
+        id: leftIsland
         anchors.left: parent.left
-        height: parent.height
+        height: 32
     }
 
-    BarComponents.DateTime {
+    BarComponents.CenterIsland {
+        id: centerIsland
         anchors.horizontalCenter: parent.horizontalCenter
-        height: parent.height
     }
 
-    BarComponents.RightSection {
+    BarComponents.RightIsland {
+        id: rightIsland
         anchors.right: parent.right
-        height: parent.height
+        height: 32
     }
 }
