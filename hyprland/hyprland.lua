@@ -34,8 +34,7 @@ hl.monitor({
 ---------------------
 
 -- Set programs that you use
--- Work around VMware/Wayland GPU buffer errors when launching Kitty.
-local terminal    = "env LIBGL_ALWAYS_SOFTWARE=1 kitty"
+local terminal    = "kitty"
 local fileManager = "dolphin"
 local menu        = "hyprlauncher"
 
