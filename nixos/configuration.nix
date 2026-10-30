@@ -9,12 +9,34 @@
     ./user.nix
   ];
 
-  # UEFI boot; mount the chosen EFI system partition at /boot before installing.
-  boot.loader.systemd-boot.enable = true;
-  # Use the UEFI shell to identify the Windows ESP before adding its menu entry.
-  boot.loader.systemd-boot.edk2-uefi-shell.enable = true;
-  boot.loader.efi.canTouchEfiVariables = true;
-  boot.loader.efi.efiSysMountPoint = "/boot";
+  # Keep GRUB on the NixOS EFI partition and chainload the Windows EFI partition.
+  boot.loader = {
+    systemd-boot.enable = false;
+
+    efi = {
+      canTouchEfiVariables = true;
+      efiSysMountPoint = "/boot";
+    };
+
+    grub = {
+      enable = true;
+      efiSupport = true;
+      device = "nodev";
+      configurationLimit = 5;
+
+      extraEntries = ''
+        menuentry "Windows Boot Manager" {
+          insmod part_gpt
+          insmod fat
+          insmod chain
+          search --no-floppy --fs-uuid --set=root DADD-51ED
+          chainloader /EFI/Microsoft/Boot/bootmgfw.efi
+        }
+      '';
+    };
+
+    timeout = 5;
+  };
 
   hardware.cpu.intel.updateMicrocode = true;
 
