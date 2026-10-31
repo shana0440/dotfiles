@@ -12,7 +12,11 @@ Item {
         lock: "lock-keyhole",
         logout: "log-out",
         reboot: "rotate-cw",
-        poweroff: "power"
+        poweroff: "power",
+        wifi: "wifi",
+        wifiHigh: "wifi-high",
+        wifiLow: "wifi-low",
+        wifiOff: "wifi-off"
     })[action] ?? "power"
 
     implicitWidth: 20

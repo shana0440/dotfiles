@@ -5,6 +5,24 @@ import "Bar" as BarComponents
 import "Theme" as Theme
 
 PanelWindow {
+    id: root
+
+    readonly property bool menuOpen: centerIsland.expanded || rightIsland.expanded
+
+    function closeMenus() {
+        centerIsland.expanded = false
+        rightIsland.close()
+    }
+
+    onMenuOpenChanged: {
+        if (menuOpen) {
+            Qt.callLater(() => {
+                if (root.menuOpen)
+                    barContent.forceActiveFocus()
+            })
+        }
+    }
+
     anchors {
         top: true
         left: true
@@ -17,34 +35,81 @@ PanelWindow {
         right: 20
     }
 
-    // Keep the surface fixed so expanding the center never resizes the other islands.
-    // The input mask lets clicks pass through the unused transparent area.
-    implicitHeight: 300
+    // Keep room for expanded menus without resizing the underlying surface.
+    implicitHeight: 600
     exclusiveZone: 32
     color: Theme.Colors.transparent
-    // Keep the surface's keyboard mode stable when opening or closing a menu.
-    WlrLayershell.keyboardFocus: WlrKeyboardFocus.OnDemand
+    WlrLayershell.keyboardFocus: menuOpen ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
+    WlrLayershell.layer: WlrLayer.Overlay
 
-    // Only the islands accept input, including while the center is expanded.
     mask: Region {
         item: leftIsland
         Region { item: centerIsland }
         Region { item: rightIsland }
     }
 
-    BarComponents.LeftIsland {
-        id: leftIsland
-        anchors.left: parent.left
-        height: 32
+    // The bar stays above these transparent outside-click catchers.
+    Variants {
+        model: Quickshell.screens
+
+        PanelWindow {
+            required property var modelData
+            screen: modelData
+            visible: root.menuOpen
+            color: Theme.Colors.transparent
+            exclusionMode: ExclusionMode.Ignore
+            WlrLayershell.layer: WlrLayer.Top
+            WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
+
+            anchors {
+                top: true
+                bottom: true
+                left: true
+                right: true
+            }
+
+            MouseArea {
+                anchors.fill: parent
+                acceptedButtons: Qt.AllButtons
+                onPressed: root.closeMenus()
+            }
+        }
     }
 
-    BarComponents.CenterIsland {
-        id: centerIsland
-        anchors.horizontalCenter: parent.horizontalCenter
-    }
+    FocusScope {
+        id: barContent
+        anchors.fill: parent
+        focus: true
+        Keys.onEscapePressed: root.closeMenus()
 
-    BarComponents.RightIsland {
-        id: rightIsland
-        anchors.right: parent.right
+        TapHandler {
+            enabled: root.menuOpen
+            acceptedButtons: Qt.AllButtons
+            gesturePolicy: TapHandler.DragThreshold
+            onTapped: eventPoint => {
+                const centerPosition = centerIsland.mapFromItem(barContent, eventPoint.position.x, eventPoint.position.y)
+                const rightPosition = rightIsland.mapFromItem(barContent, eventPoint.position.x, eventPoint.position.y)
+                if (centerIsland.expanded && !centerIsland.contains(centerPosition))
+                    centerIsland.expanded = false
+                if (rightIsland.expanded && !rightIsland.contains(rightPosition))
+                    rightIsland.close()
+            }
+        }
+
+        BarComponents.LeftIsland {
+            id: leftIsland
+            anchors.left: parent.left
+            height: 32
+        }
+
+        BarComponents.CenterIsland {
+            id: centerIsland
+            anchors.horizontalCenter: parent.horizontalCenter
+        }
+
+        BarComponents.RightIsland {
+            id: rightIsland
+            anchors.right: parent.right
+        }
     }
 }

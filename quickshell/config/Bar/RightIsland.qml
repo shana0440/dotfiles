@@ -1,62 +1,62 @@
 import QtQuick
-import Quickshell
-import Quickshell.Hyprland
 import "../Theme" as Theme
 import "../Components" as Components
 
-Rectangle {
+Components.Island {
     id: root
 
-    property bool expanded: false
-    readonly property bool confirming: expanded && menu.confirming
+    property string mode: "default"
+    readonly property bool expanded: mode !== "default"
+    readonly property bool confirming: mode === "power" && menu.confirming
 
-    width: expanded ? menu.implicitWidth : 40
-    height: expanded ? menu.implicitHeight : 32
-    radius: 8
-    color: !expanded && powerMouse.containsMouse ? Theme.Colors.activeWorkspace : Theme.Colors.background
+    activeView: mode === "wifi" ? wifiMenu : mode === "power" ? menu : defaultContent
+    alignment: Qt.AlignRight
+    overflowView: defaultContent
 
     function close() {
-        expanded = false
+        mode = "default"
         menu.cancel()
     }
 
-    HyprlandFocusGrab {
-        active: root.expanded
-        windows: root.QsWindow.window ? [root.QsWindow.window] : []
-        onCleared: root.close()
-    }
+    views: [
+        Row {
+            id: defaultContent
+            spacing: 4
 
-    TapHandler {
-        parent: root.parent
-        enabled: root.expanded
-        acceptedButtons: Qt.AllButtons
-        gesturePolicy: TapHandler.DragThreshold
-        onTapped: eventPoint => {
-            const position = root.mapFromItem(parent, eventPoint.position.x, eventPoint.position.y)
-            if (!root.contains(position))
-                root.close()
+            Wifi {
+                id: wifiStatus
+                onClicked: root.mode = "wifi"
+            }
+
+            Rectangle {
+                width: 40
+                height: 32
+                radius: 8
+                color: powerMouse.containsMouse ? Theme.Colors.activeWorkspace : Theme.Colors.transparent
+
+                Components.Icon {
+                    anchors.centerIn: parent
+                    action: "poweroff"
+                }
+
+                MouseArea {
+                    id: powerMouse
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: root.mode = "power"
+                }
+            }
+        },
+        PowerMenu {
+            id: menu
+            onCloseRequested: root.close()
+        },
+        WifiMenu {
+            id: wifiMenu
+            active: root.mode === "wifi"
+            onCloseRequested: root.close()
+            onConnectionChanged: wifiStatus.refreshStatus()
         }
-    }
-
-    Components.Icon {
-        anchors.centerIn: parent
-        action: "poweroff"
-        visible: !root.expanded
-    }
-
-    MouseArea {
-        id: powerMouse
-        anchors.fill: parent
-        enabled: !root.expanded
-        hoverEnabled: true
-        cursorShape: Qt.PointingHandCursor
-        onClicked: root.expanded = true
-    }
-
-    PowerMenu {
-        id: menu
-        anchors.fill: parent
-        visible: root.expanded
-        onCloseRequested: root.close()
-    }
+    ]
 }
