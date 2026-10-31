@@ -41,7 +41,11 @@
   hardware.cpu.intel.updateMicrocode = true;
 
   networking.hostName = "kwguo-nixos";
-  networking.networkmanager.enable = true;
+  networking.networkmanager = {
+    enable = true;
+    dns = "none";
+  };
+  networking.nameservers = [ "1.1.1.1" "8.8.8.8" ];
   networking.firewall.enable = true;
   time.timeZone = "Asia/Taipei";
   i18n.defaultLocale = "en_US.UTF-8";
