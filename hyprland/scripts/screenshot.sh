@@ -12,7 +12,7 @@ case "${1:-}" in
     full)
         ;;
     region)
-        if ! geometry=$(slurp); then
+        if ! geometry=$(slurp </dev/null); then
             exit 0
         fi
         [[ -n "$geometry" ]] || exit 0

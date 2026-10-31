@@ -1,13 +1,16 @@
 import QtQuick
 import Quickshell.Widgets
 import "../Theme" as Theme
+import "../Components" as Components
 
 Item {
     id: root
 
     property string filePath: ""
-    readonly property url imageUrl: filePath
-        ? "file://" + filePath.split("/").map(encodeURIComponent).join("/") : ""
+    property string previewPath: filePath
+    property string fallbackIcon: "screenshot"
+    readonly property url imageUrl: previewPath
+        ? "file://" + previewPath.split("/").map(encodeURIComponent).join("/") : ""
 
     implicitWidth: 420
     implicitHeight: 72
@@ -26,12 +29,19 @@ Item {
             color: Theme.Colors.activeWorkspace
 
             Image {
+                id: preview
                 anchors.fill: parent
                 source: root.imageUrl
                 sourceSize.width: 128
                 sourceSize.height: 96
                 asynchronous: true
                 fillMode: Image.PreserveAspectFit
+            }
+
+            Components.Icon {
+                anchors.centerIn: parent
+                action: root.fallbackIcon
+                visible: preview.status !== Image.Ready
             }
         }
 

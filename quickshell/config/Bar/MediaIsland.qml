@@ -1,25 +1,12 @@
 import QtQuick
-import "../Theme" as Theme
 import "../Components" as Components
 import "../Services" as Services
 
-Rectangle {
+Components.MergeableCircle {
     id: root
 
-    property bool merged: false
     signal clicked()
-
-    width: 32
-    height: 32
-    radius: height / 2
-    color: Theme.Colors.background
-    opacity: merged ? 0 : 1
-    visible: (Services.Media.playing || merged) && opacity > 0
-    enabled: !merged
-
-    Behavior on opacity {
-        NumberAnimation { duration: 160; easing.type: Easing.OutCubic }
-    }
+    available: Services.Media.playing
 
     Components.PlayingIndicator {
         anchors.fill: parent

@@ -3,6 +3,7 @@ import Quickshell
 import Quickshell.Wayland
 import "Bar" as BarComponents
 import "Theme" as Theme
+import "Services" as Services
 
 PanelWindow {
     id: root
@@ -16,6 +17,32 @@ PanelWindow {
     function closeMenus() {
         centerIsland.expanded = false
         rightIsland.close()
+    }
+
+    function requestCapture(action, mode) {
+        captureDelay.stop()
+        closeMenus()
+        if (action === "stopRecording") {
+            Services.Capture.stopRecording()
+        } else {
+            captureDelay.action = action
+            captureDelay.mode = mode
+            captureDelay.restart()
+        }
+    }
+
+    // Release menu input grabs and finish the island animation before capture starts.
+    Timer {
+        id: captureDelay
+        property string action: ""
+        property string mode: ""
+        interval: centerIsland.resizeDuration + centerIsland.fadeDuration
+        onTriggered: {
+            if (action === "takeScreenshot")
+                Services.Capture.takeScreenshot(mode)
+            else if (action === "startRecording")
+                Services.Capture.startRecording(mode, root.screen.name)
+        }
     }
 
     onMenuOpenChanged: {
@@ -38,7 +65,7 @@ PanelWindow {
     exclusionMode: ExclusionMode.Ignore
     color: Theme.Colors.transparent
     WlrLayershell.keyboardFocus: menuOpen ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
-    WlrLayershell.layer: menuOpen || centerIsland.screenshotVisible ? WlrLayer.Overlay : WlrLayer.Top
+    WlrLayershell.layer: menuOpen || centerIsland.notificationVisible ? WlrLayer.Overlay : WlrLayer.Top
 
     // Layer-shell infers the reservation edge from three-edge anchoring.
     PanelWindow {
@@ -61,6 +88,7 @@ PanelWindow {
         item: root.menuOpen ? root.contentItem : leftIsland
         Region { item: centerIsland }
         Region { item: mediaIsland.visible ? mediaIsland : null }
+        Region { item: settingsIsland.visible ? settingsIsland : null }
         Region { item: rightIsland }
     }
 
@@ -113,14 +141,17 @@ PanelWindow {
             enabled: root.menuOpen
             acceptedButtons: Qt.AllButtons
             gesturePolicy: TapHandler.DragThreshold
+            function containsBarPoint(item, position) {
+                return item.visible && item.contains(item.mapFromItem(barContent, position.x, position.y))
+            }
+
             onTapped: eventPoint => {
-                const centerPosition = centerIsland.mapFromItem(barContent, eventPoint.position.x, eventPoint.position.y)
-                const mediaPosition = mediaIsland.mapFromItem(barContent, eventPoint.position.x, eventPoint.position.y)
-                const rightPosition = rightIsland.mapFromItem(barContent, eventPoint.position.x, eventPoint.position.y)
-                const onMediaIndicator = mediaIsland.visible && mediaIsland.contains(mediaPosition)
-                if (centerIsland.expanded && !centerIsland.contains(centerPosition) && !onMediaIndicator)
+                const position = eventPoint.position
+                const onCenterGroup = containsBarPoint(centerIsland, position)
+                    || containsBarPoint(mediaIsland, position) || containsBarPoint(settingsIsland, position)
+                if (centerIsland.expanded && !onCenterGroup)
                     centerIsland.expanded = false
-                if (rightIsland.expanded && !rightIsland.contains(rightPosition))
+                if (rightIsland.expanded && !containsBarPoint(rightIsland, position))
                     rightIsland.close()
             }
         }
@@ -134,18 +165,24 @@ PanelWindow {
         BarComponents.CenterIsland {
             id: centerIsland
             anchors.horizontalCenter: parent.horizontalCenter
+            onCaptureRequested: (action, mode) => root.requestCapture(action, mode)
+        }
+
+        BarComponents.SettingsIsland {
+            id: settingsIsland
+            anchors.left: centerIsland.right
+            anchors.leftMargin: merged ? -width : root.islandSpacing
+            merged: centerIsland.sideIslandsMerged
+            onClicked: centerIsland.open("capture")
+            onStopRecordingRequested: root.requestCapture("stopRecording", "")
         }
 
         BarComponents.MediaIsland {
             id: mediaIsland
             anchors.right: centerIsland.left
             anchors.rightMargin: merged ? -width : root.islandSpacing
-            merged: centerIsland.showingMedia
+            merged: centerIsland.sideIslandsMerged
             onClicked: centerIsland.open("media")
-
-            Behavior on anchors.rightMargin {
-                NumberAnimation { duration: 260; easing.type: Easing.OutCubic }
-            }
         }
 
         BarComponents.RightIsland {

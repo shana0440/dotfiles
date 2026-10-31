@@ -19,6 +19,7 @@ import time
 state = Path(os.environ["MOCK_STATE"])
 command = Path(sys.argv[0]).name
 if command == "slurp":
+    sys.stdin.buffer.read()
     if os.environ.get("SLURP_CANCEL") == "1":
         sys.exit(1)
     print(os.environ.get("SLURP_GEOMETRY", "10,20 300x200"))
@@ -95,6 +96,13 @@ class ScreenshotTests(unittest.TestCase):
             json.loads((self.root / "grim-args.json").read_text()),
             ["-g", "10,20 300x200", result.stdout.strip()],
         )
+
+    def test_region_does_not_wait_for_gui_stdin(self):
+        with subprocess.Popen(
+            [BASH, str(SCRIPT), "region"], env=self.env,
+            stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+        ) as process:
+            self.assertEqual(process.wait(timeout=3), 0)
 
     def test_cancel_preserves_clipboard_and_creates_no_files(self):
         result = self.capture("region", SLURP_CANCEL="1")

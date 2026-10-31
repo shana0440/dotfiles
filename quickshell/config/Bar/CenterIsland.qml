@@ -10,34 +10,40 @@ Components.Island {
     property bool expanded: false
     property string expandedView: "calendar"
     property bool volumeVisible: false
-    property string screenshotPath: ""
-    readonly property bool screenshotVisible: screenshotDismissTimer.running
+    readonly property bool notificationVisible: notificationDismissTimer.running
     readonly property bool showingMedia: expanded && expandedView === "media"
+    readonly property bool sideIslandsMerged: expanded && (expandedView === "capture" || expandedView === "media")
+    signal captureRequested(string action, string mode)
 
     activeView: {
-        if (screenshotVisible)
-            return screenshotNotification
-        if (expanded)
+        if (notificationVisible)
+            return captureNotification
+        if (expanded) {
+            if (expandedView === "capture")
+                return captureMenu
             return showingMedia ? mediaView : calendar
+        }
         if (volumeVisible)
             return volumeSlider
         return clockView
     }
 
     function open(view) {
-        screenshotDismissTimer.stop()
+        notificationDismissTimer.stop()
         expandedView = view
         expanded = true
     }
 
-    function showScreenshot(filePath) {
+    function showCaptureNotification(filePath, previewPath, fallbackIcon) {
         if (!filePath)
             return
         expanded = false
         volumeVisible = false
         volumeTimeout.stop()
-        screenshotPath = filePath
-        screenshotDismissTimer.restart()
+        captureNotification.filePath = filePath
+        captureNotification.previewPath = previewPath
+        captureNotification.fallbackIcon = fallbackIcon
+        notificationDismissTimer.restart()
     }
 
     function showVolume() {
@@ -48,11 +54,20 @@ Components.Island {
 
     IpcHandler {
         target: "screenshots"
-        function captured(filePath: string) { root.showScreenshot(filePath) }
+        function captured(filePath: string) {
+            root.showCaptureNotification(filePath, filePath, "screenshot")
+        }
+    }
+
+    IpcHandler {
+        target: "recordings"
+        function saved(filePath: string, thumbnailPath: string) {
+            root.showCaptureNotification(filePath, thumbnailPath, "record")
+        }
     }
 
     Timer {
-        id: screenshotDismissTimer
+        id: notificationDismissTimer
         interval: 2000
     }
 
@@ -113,9 +128,12 @@ Components.Island {
             active: root.showingMedia
             onCloseRequested: root.expanded = false
         },
-        ScreenshotNotification {
-            id: screenshotNotification
-            filePath: root.screenshotPath
+        CaptureMenu {
+            id: captureMenu
+            onCaptureRequested: (action, mode) => root.captureRequested(action, mode)
+        },
+        CaptureNotification {
+            id: captureNotification
         }
     ]
 }

@@ -22,7 +22,13 @@ Item {
         next: "skip-forward",
         play: "play",
         pause: "pause",
-        close: "x"
+        close: "x",
+        settings: "settings",
+        screenshot: "camera",
+        screenshotRegion: "scan",
+        record: "video",
+        recordRegion: "square-dashed",
+        stop: "square"
     })[action] ?? "power"
     readonly property string themedSvg: svgTemplate.text().replace(/currentColor/g, iconColor.toString())
 
