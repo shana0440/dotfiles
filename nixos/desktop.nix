@@ -1,5 +1,5 @@
-# Hyprland desktop, login manager, and shell.
-{ config, pkgs, ... }:
+# Hyprland desktop and login manager.
+{ config, ... }:
 
 {
   services.xserver.enable = true; # X11 greeter; Hyprland uses Wayland.
@@ -25,9 +25,4 @@
   # Includes PAM integration for unlocking the session.
   programs.hyprlock.enable = true;
 
-  # Installs Quickshell; its UI configuration and autostart are separate.
-  environment.systemPackages = with pkgs; [
-    quickshell
-    wl-clipboard
-  ];
 }
