@@ -1,5 +1,6 @@
 import QtQuick
 import Quickshell
+import Quickshell.Io
 import Quickshell.Wayland
 import "Bar" as BarComponents
 import "Theme" as Theme
@@ -17,6 +18,17 @@ PanelWindow {
     function closeMenus() {
         centerIsland.expanded = false
         rightIsland.close()
+    }
+
+    function openCaptureMenu() {
+        captureDelay.stop()
+        rightIsland.close()
+        centerIsland.open("capture")
+    }
+
+    IpcHandler {
+        target: "capture"
+        function openMenu() { root.openCaptureMenu() }
     }
 
     function requestCapture(action, mode) {
@@ -174,7 +186,7 @@ PanelWindow {
             anchors.left: centerIsland.right
             anchors.leftMargin: merged ? -width : root.islandSpacing
             merged: centerIsland.sideIslandsMerged
-            onClicked: centerIsland.open("capture")
+            onClicked: root.openCaptureMenu()
         }
 
         BarComponents.MediaIsland {

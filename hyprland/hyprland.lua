@@ -273,6 +273,7 @@ end
 
 hl.bind(mainMod .. " + SHIFT + 3", hl.dsp.exec_cmd("hypr-screenshot full"))
 hl.bind(mainMod .. " + SHIFT + 4", hl.dsp.exec_cmd("hypr-screenshot region"))
+hl.bind(mainMod .. " + SHIFT + S", hl.dsp.exec_cmd("quickshell ipc call capture openMenu"))
 
 -- Example binds, see https://wiki.hypr.land/Configuring/Basics/Binds/ for more
 hl.bind(mainMod .. " + Q", hl.dsp.exec_cmd(terminal))
