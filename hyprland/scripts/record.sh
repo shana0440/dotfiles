@@ -17,7 +17,16 @@ recording_mode() {
 mode="${1:-}"
 case "$mode" in
     status)
-        recording_mode
+        active_mode=$(recording_mode)
+        if [[ "${2:-}" == --json ]]; then
+            started_at_seconds=0
+            if [[ "$active_mode" != none && -n "${XDG_RUNTIME_DIR:-}" ]]; then
+                started_at_seconds=$(stat -c %Y "$XDG_RUNTIME_DIR/hypr-record-$active_mode.path" 2>/dev/null || printf '0')
+            fi
+            printf '{"mode":"%s","startedAtSeconds":%s}\n' "$active_mode" "$started_at_seconds"
+        else
+            printf '%s\n' "$active_mode"
+        fi
         exit 0
         ;;
     stop)

@@ -36,7 +36,8 @@ remove_incomplete_screenshot() {
 }
 trap remove_incomplete_screenshot EXIT
 
-grim "${capture_args[@]}" "$screenshot_path"
+# Favor capture latency over PNG file size; compression remains lossless.
+grim -l 1 "${capture_args[@]}" "$screenshot_path"
 screenshot_saved=true
 notify_screenshot_saved "$screenshot_path"
 wl-copy --type image/png < "$screenshot_path"

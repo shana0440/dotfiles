@@ -80,7 +80,7 @@ class ScreenshotTests(unittest.TestCase):
         self.assertEqual(path.suffix, ".png")
         self.assertEqual(path.read_bytes(), b"mock PNG")
         self.assertEqual(self.clipboard.read_bytes(), b"mock PNG")
-        self.assertEqual(json.loads((self.root / "grim-args.json").read_text()), [str(path)])
+        self.assertEqual(json.loads((self.root / "grim-args.json").read_text()), ["-l", "1", str(path)])
         self.assertEqual(
             json.loads((self.root / "notification-args.json").read_text()),
             [
@@ -94,7 +94,7 @@ class ScreenshotTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertEqual(
             json.loads((self.root / "grim-args.json").read_text()),
-            ["-g", "10,20 300x200", result.stdout.strip()],
+            ["-l", "1", "-g", "10,20 300x200", result.stdout.strip()],
         )
 
     def test_region_does_not_wait_for_gui_stdin(self):

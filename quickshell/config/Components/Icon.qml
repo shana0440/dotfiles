@@ -8,6 +8,7 @@ Item {
 
     property string action: "poweroff"
     property color iconColor: Theme.Colors.foreground
+    property bool filled: false
     readonly property string iconName: ({
         lock: "lock-keyhole",
         logout: "log-out",
@@ -30,7 +31,10 @@ Item {
         recordRegion: "square-dashed",
         stop: "square"
     })[action] ?? "power"
-    readonly property string themedSvg: svgTemplate.text().replace(/currentColor/g, iconColor.toString())
+    readonly property string themedSvg: {
+        const svg = svgTemplate.text().replace(/currentColor/g, iconColor.toString())
+        return filled ? svg.replace(/fill="none"/g, 'fill="' + iconColor.toString() + '"') : svg
+    }
 
     implicitWidth: 20
     implicitHeight: 20

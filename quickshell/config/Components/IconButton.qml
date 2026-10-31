@@ -7,6 +7,8 @@ Rectangle {
     property string icon: ""
     property string tooltip: ""
     property color iconColor: Theme.Colors.foreground
+    property int iconSize: 20
+    property bool iconFilled: false
     property bool highlighted: false
     signal clicked()
 
@@ -24,8 +26,11 @@ Rectangle {
 
     Icon {
         anchors.centerIn: parent
+        width: root.iconSize
+        height: root.iconSize
         action: root.icon
         iconColor: root.iconColor
+        filled: root.iconFilled
     }
 
     MouseArea {

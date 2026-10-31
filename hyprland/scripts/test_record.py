@@ -185,6 +185,27 @@ class RecordingTests(unittest.TestCase):
                 self.assertEqual(result.returncode, 0, result.stderr)
                 self.assertEqual(result.stdout.strip(), mode)
 
+    def test_json_status_reports_persisted_start_time(self):
+        started_at = 1760000000
+        for mode in ["full", "region"]:
+            with self.subTest(mode=mode):
+                session = self.runtime / f"hypr-record-{mode}.path"
+                session.write_bytes(b"video.mp4\0")
+                os.utime(session, (started_at, started_at))
+                result = self.run_command("status", "--json", ACTIVE_MODE=mode)
+                self.assertEqual(result.returncode, 0, result.stderr)
+                self.assertEqual(json.loads(result.stdout), {"mode": mode, "startedAtSeconds": started_at})
+
+    def test_json_status_handles_missing_session_while_finishing(self):
+        result = self.run_command("status", "--json", ACTIVE_MODE="full", UNIT_STATE="deactivating")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(json.loads(result.stdout), {"mode": "full", "startedAtSeconds": 0})
+
+    def test_json_status_without_recording_has_no_start_time(self):
+        result = self.run_command("status", "--json")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(json.loads(result.stdout), {"mode": "none", "startedAtSeconds": 0})
+
     def test_full_recording_requires_monitor(self):
         result = self.run_command("full")
         self.assertEqual(result.returncode, 2)

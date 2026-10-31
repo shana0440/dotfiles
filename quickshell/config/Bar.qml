@@ -65,7 +65,8 @@ PanelWindow {
     exclusionMode: ExclusionMode.Ignore
     color: Theme.Colors.transparent
     WlrLayershell.keyboardFocus: menuOpen ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
-    WlrLayershell.layer: menuOpen || centerIsland.notificationVisible ? WlrLayer.Overlay : WlrLayer.Top
+    WlrLayershell.layer: menuOpen || centerIsland.notificationVisible || Services.Capture.recording
+        ? WlrLayer.Overlay : WlrLayer.Top
 
     // Layer-shell infers the reservation edge from three-edge anchoring.
     PanelWindow {
@@ -174,7 +175,6 @@ PanelWindow {
             anchors.leftMargin: merged ? -width : root.islandSpacing
             merged: centerIsland.sideIslandsMerged
             onClicked: centerIsland.open("capture")
-            onStopRecordingRequested: root.requestCapture("stopRecording", "")
         }
 
         BarComponents.MediaIsland {

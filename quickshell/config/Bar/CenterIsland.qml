@@ -3,6 +3,7 @@ import Quickshell
 import Quickshell.Io
 import "../Theme" as Theme
 import "../Components" as Components
+import "../Services" as Services
 
 Components.Island {
     id: root
@@ -12,7 +13,8 @@ Components.Island {
     property bool volumeVisible: false
     readonly property bool notificationVisible: notificationDismissTimer.running
     readonly property bool showingMedia: expanded && expandedView === "media"
-    readonly property bool sideIslandsMerged: expanded && (expandedView === "capture" || expandedView === "media")
+    readonly property bool showingRecording: activeView === recordingView
+    readonly property bool sideIslandsMerged: expanded || notificationVisible || Services.Capture.recording
     signal captureRequested(string action, string mode)
 
     activeView: {
@@ -25,7 +27,14 @@ Components.Island {
         }
         if (volumeVisible)
             return volumeSlider
+        if (Services.Capture.recording)
+            return recordingView
         return clockView
+    }
+
+    radius: showingRecording ? recordingView.height / 2 : 8
+    Behavior on radius {
+        NumberAnimation { duration: root.resizeDuration; easing.type: Easing.OutCubic }
     }
 
     function open(view) {
@@ -127,6 +136,13 @@ Components.Island {
             id: mediaView
             active: root.showingMedia
             onCloseRequested: root.expanded = false
+        },
+        RecordingView {
+            id: recordingView
+            elapsedSeconds: Services.Capture.recordingElapsedSeconds
+            stopping: Services.Capture.recordingCommandRunning
+            onStopRequested: root.captureRequested("stopRecording", "")
+            onControlsRequested: root.open("capture")
         },
         CaptureMenu {
             id: captureMenu
