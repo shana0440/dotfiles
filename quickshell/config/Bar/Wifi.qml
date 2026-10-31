@@ -31,19 +31,19 @@ Rectangle {
     }
 
     function applyStatus(output) {
-        const lines = output.trim().split("\n")
-        available = lines[0] === "enabled" || lines[0] === "disabled"
-        radioEnabled = lines[0] === "enabled"
+        const [radioState, ...accessPoints] = output.trim().split("\n")
+        const activePrefix = "yes:"
+        available = radioState === "enabled" || radioState === "disabled"
+        radioEnabled = radioState === "enabled"
         connected = false
         ssid = ""
         strength = 0
-        for (const line of lines.slice(1)) {
-            if (!line.startsWith("yes:"))
+        for (const line of accessPoints) {
+            if (!line.startsWith(activePrefix))
                 continue
-            // An SSID may itself contain colons; the final field is the signal.
-            const end = line.lastIndexOf(":")
-            ssid = line.slice(4, end) || "Hidden network"
-            strength = Number(line.slice(end + 1)) || 0
+            const signalSeparator = line.lastIndexOf(":")
+            ssid = line.slice(activePrefix.length, signalSeparator) || "Hidden network"
+            strength = Number(line.slice(signalSeparator + 1)) || 0
             connected = true
             break
         }

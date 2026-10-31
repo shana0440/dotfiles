@@ -7,6 +7,9 @@ import "Theme" as Theme
 PanelWindow {
     id: root
 
+    readonly property int islandMargin: 20
+    readonly property int compactIslandHeight: 32
+    readonly property int reservedTopHeight: islandMargin + compactIslandHeight
     readonly property bool menuOpen: centerIsland.expanded || rightIsland.expanded
 
     function closeMenus() {
@@ -30,24 +33,22 @@ PanelWindow {
         right: true
     }
 
-    // Keep a fixed full-screen surface, with visual margins applied to the content.
-    // This lets an open menu catch clicks even at the screen edges and over fullscreen apps.
+    // A fixed native surface keeps window resizing from interrupting island animations.
     exclusionMode: ExclusionMode.Ignore
     color: Theme.Colors.transparent
     WlrLayershell.keyboardFocus: menuOpen ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
-    // Let fullscreen windows cover the normal bar; open menus use a full-screen overlay.
     WlrLayershell.layer: menuOpen ? WlrLayer.Overlay : WlrLayer.Top
 
-    // A separate input-transparent strip reserves the same 20px margin + 32px bar.
-    // A surface anchored to all four edges cannot reserve only the top edge.
+    // Layer-shell infers the reservation edge from three-edge anchoring.
     PanelWindow {
+        id: topReservation
         screen: root.screen
         visible: root.visible
         anchors.top: true
         anchors.left: true
         anchors.right: true
-        implicitHeight: 52
-        exclusiveZone: 52
+        implicitHeight: root.reservedTopHeight
+        exclusiveZone: root.reservedTopHeight
         color: Theme.Colors.transparent
         WlrLayershell.layer: WlrLayer.Top
         WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
@@ -61,8 +62,8 @@ PanelWindow {
         Region { item: rightIsland }
     }
 
-    // The main surface covers its own monitor; cover the other monitors above fullscreen too.
     Variants {
+        id: otherMonitorDismissalSurfaces
         model: Quickshell.screens.filter(screen => screen !== root.screen)
 
         PanelWindow {
@@ -89,8 +90,8 @@ PanelWindow {
         }
     }
 
-    // Behind the islands, but above apps whenever a menu is open.
     MouseArea {
+        id: outsideClickArea
         anchors.fill: parent
         enabled: root.menuOpen
         acceptedButtons: Qt.AllButtons
@@ -100,9 +101,9 @@ PanelWindow {
     FocusScope {
         id: barContent
         anchors.fill: parent
-        anchors.topMargin: 20
-        anchors.leftMargin: 20
-        anchors.rightMargin: 20
+        anchors.topMargin: root.islandMargin
+        anchors.leftMargin: root.islandMargin
+        anchors.rightMargin: root.islandMargin
         focus: true
         Keys.onEscapePressed: root.closeMenus()
 
@@ -123,7 +124,7 @@ PanelWindow {
         BarComponents.LeftIsland {
             id: leftIsland
             anchors.left: parent.left
-            height: 32
+            height: root.compactIslandHeight
         }
 
         BarComponents.CenterIsland {

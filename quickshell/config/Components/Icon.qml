@@ -24,12 +24,13 @@ Item {
         pause: "pause",
         close: "x"
     })[action] ?? "power"
+    readonly property string themedSvg: svgTemplate.text().replace(/currentColor/g, iconColor.toString())
 
     implicitWidth: 20
     implicitHeight: 20
 
     FileView {
-        id: svg
+        id: svgTemplate
         path: Quickshell.shellPath("Icons/lucide/" + root.iconName + ".svg")
         blockLoading: true
     }
@@ -39,8 +40,6 @@ Item {
         sourceSize.width: width * 2
         sourceSize.height: height * 2
         fillMode: Image.PreserveAspectFit
-        // SVG currentColor does not inherit QML colors; apply it before rendering.
-        source: "data:image/svg+xml;charset=utf-8," + encodeURIComponent(
-            svg.text().replace(/currentColor/g, root.iconColor.toString()))
+        source: "data:image/svg+xml;charset=utf-8," + encodeURIComponent(root.themedSvg)
     }
 }

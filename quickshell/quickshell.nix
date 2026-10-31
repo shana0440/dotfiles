@@ -1,4 +1,3 @@
-# Install Quickshell and link its native configuration.
 { config, pkgs, ... }:
 
 let

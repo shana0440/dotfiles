@@ -1,5 +1,3 @@
-"""Publish playback-state changes from PipeWire as newline-delimited JSON."""
-
 import codecs
 import json
 import signal
@@ -9,10 +7,14 @@ import time
 
 NODE_TYPE = "PipeWire:Interface:Node"
 OUTPUT_STREAM = "Stream/Output/Audio"
+JSON_READ_SIZE = 65536
+MAX_INCOMPLETE_JSON_SIZE = 16 * 1024 * 1024
+PIPEWIRE_RECONNECT_DELAY_SECONDS = 1
+PROCESS_EXIT_TIMEOUT_SECONDS = 2
 
 
-def documents(chunks):
-    """Decode pw-dump's consecutive JSON arrays, including partial UTF-8/JSON reads."""
+def iter_json_documents(chunks):
+    """pw-dump emits consecutive JSON arrays over a chunked UTF-8 pipe."""
     utf8 = codecs.getincrementaldecoder("utf-8")()
     decoder = json.JSONDecoder()
     buffer = ""
@@ -26,7 +28,7 @@ def documents(chunks):
                 break
             yield document
             buffer = buffer[end:]
-        if len(buffer) > 16 * 1024 * 1024:
+        if len(buffer) > MAX_INCOMPLETE_JSON_SIZE:
             raise ValueError("Incomplete PipeWire JSON exceeded 16 MiB")
     buffer += utf8.decode(b"", final=True)
     if buffer.strip():
@@ -54,7 +56,6 @@ class PlaybackState:
             if node_type != NODE_TYPE and node_id not in self.nodes:
                 continue
             node = self.nodes.setdefault(node_id, {})
-            # Monitor updates can contain only the changed fields.
             if "state" in info:
                 node["state"] = info["state"]
             props = info.get("props")
@@ -66,16 +67,16 @@ class PlaybackState:
         )
 
 
-def stop(_signal, _frame):
+def exit_on_signal(_signal, _frame):
     raise SystemExit(0)
 
 
 def main():
-    signal.signal(signal.SIGTERM, stop)
-    signal.signal(signal.SIGINT, stop)
+    signal.signal(signal.SIGTERM, exit_on_signal)
+    signal.signal(signal.SIGINT, exit_on_signal)
     last_playing = None
 
-    def publish(playing):
+    def publish_if_changed(playing):
         nonlocal last_playing
         if playing != last_playing:
             print(json.dumps({"playing": playing}), flush=True)
@@ -90,27 +91,26 @@ def main():
                 bufsize=0,
             )
             state = PlaybackState()
-            chunks = iter(lambda: process.stdout.read(65536), b"")
-            for events in documents(chunks):
-                publish(state.apply(events))
+            chunks = iter(lambda: process.stdout.read(JSON_READ_SIZE), b"")
+            for events in iter_json_documents(chunks):
+                publish_if_changed(state.apply(events))
             raise RuntimeError(f"pw-dump exited with status {process.wait()}")
         except BrokenPipeError:
             return
         except (OSError, ValueError, RuntimeError) as error:
-            publish(False)
+            publish_if_changed(False)
             print(f"pipewire-playback-monitor: {error}", file=sys.stderr, flush=True)
         finally:
             if process is not None:
                 if process.poll() is None:
                     process.terminate()
                     try:
-                        process.wait(timeout=2)
+                        process.wait(timeout=PROCESS_EXIT_TIMEOUT_SECONDS)
                     except subprocess.TimeoutExpired:
                         process.kill()
                         process.wait()
                 process.stdout.close()
-        # Retry only when the connection dies; playback itself is never polled.
-        time.sleep(1)
+        time.sleep(PIPEWIRE_RECONNECT_DELAY_SECONDS)
 
 
 if __name__ == "__main__":

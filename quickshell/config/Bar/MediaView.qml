@@ -25,8 +25,9 @@ Item {
         return minutes + ":" + String(value % 60).padStart(2, "0")
     }
 
-    // MPRIS position is lazy: request updates only while this view is open.
+    // MPRIS position needs explicit refreshes to advance the seek bar during playback.
     Timer {
+        id: positionRefresh
         interval: 250
         repeat: true
         running: root.active && (root.player?.isPlaying ?? false)
@@ -121,7 +122,6 @@ Item {
             spacing: 3
 
             Repeater {
-                // Fixed delegates: incoming frames update heights, not the item tree.
                 model: Services.Cava.barCount
 
                 Rectangle {

@@ -12,7 +12,7 @@ Item {
     signal connectionChanged()
     property string selectedSsid: ""
     property string message: ""
-    property string secret: ""
+    property string pendingPassword: ""
     readonly property bool busy: connectProcess.running || disconnectProcess.running
 
     implicitWidth: 340
@@ -21,7 +21,7 @@ Item {
 
     onActiveChanged: {
         password.text = ""
-        secret = ""
+        pendingPassword = ""
         selectedSsid = ""
         if (active)
             refresh()
@@ -90,7 +90,7 @@ Item {
     function connectSelected() {
         if (!selectedSsid || busy)
             return
-        secret = password.text
+        pendingPassword = password.text
         password.text = ""
         message = "Connecting to " + selectedSsid + "…"
         connectProcess.stdinEnabled = true
@@ -128,17 +128,17 @@ Item {
         id: connectProcess
         environment: ({ LC_ALL: "C" })
         stdinEnabled: true
-        // Send secrets through stdin, never through command-line arguments.
+        // Pass passwords through stdin to keep them out of process listings.
         onStarted: {
-            if (root.secret)
-                write(root.secret + "\n")
-            root.secret = ""
+            if (root.pendingPassword)
+                write(root.pendingPassword + "\n")
+            root.pendingPassword = ""
             stdinEnabled = false
         }
         stdout: StdioCollector {}
         stderr: StdioCollector {}
         onExited: code => {
-            root.secret = ""
+            root.pendingPassword = ""
             if (code === 0) {
                 root.selectedSsid = ""
                 root.message = "Connected."

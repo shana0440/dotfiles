@@ -10,36 +10,36 @@ Item {
     readonly property var sink: Pipewire.defaultAudioSink
     readonly property var audio: sink?.audio ?? null
     readonly property bool interacting: sliderMouse.pressed || muteMouse.pressed
-    property bool trackingReady: false
+    property bool feedbackEnabled: false
 
-    // Subscribe to volume updates even while the slider is hidden.
     PwObjectTracker {
+        id: volumeSubscription
         objects: root.sink ? [root.sink] : []
     }
 
-    // Ignore the initial device snapshot, including after changing output devices.
+    // PipeWire emits initial volume values when binding a device; suppress startup feedback.
     onAudioChanged: {
-        trackingReady = false
-        initialize.restart()
+        feedbackEnabled = false
+        deviceSettleTimer.restart()
     }
-    Component.onCompleted: initialize.restart()
+    Component.onCompleted: deviceSettleTimer.restart()
 
     Timer {
-        id: initialize
+        id: deviceSettleTimer
         interval: 300
-        onTriggered: root.trackingReady = true
+        onTriggered: root.feedbackEnabled = true
     }
 
     Connections {
         target: root.audio
 
         function onVolumesChanged() {
-            if (root.trackingReady)
+            if (root.feedbackEnabled)
                 root.adjusted()
         }
 
         function onMutedChanged() {
-            if (root.trackingReady)
+            if (root.feedbackEnabled)
                 root.adjusted()
         }
     }

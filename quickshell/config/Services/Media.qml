@@ -7,22 +7,22 @@ import Quickshell.Services.Mpris
 Singleton {
     id: root
 
-    property var preferredPlayer: null
+    property var lastSelectedPlayer: null
     readonly property var player: {
         const players = Mpris.players.values
         return players.find(player => player.isPlaying)
-            ?? (players.includes(preferredPlayer) ? preferredPlayer : players[0]) ?? null
+            ?? (players.includes(lastSelectedPlayer) ? lastSelectedPlayer : players[0]) ?? null
     }
 
-    // Keep the selected player after pausing instead of jumping to another app.
-    onPlayerChanged: Qt.callLater(() => root.preferredPlayer = root.player)
+    // Defer this assignment to avoid re-entering the player-selection binding.
+    onPlayerChanged: Qt.callLater(() => root.lastSelectedPlayer = root.player)
     property bool pipewirePlaying: false
     readonly property bool playing: pipewirePlaying
     readonly property string title: player?.trackTitle || (playing ? "Audio playing" : "No media")
     readonly property string artist: player?.trackArtist || player?.identity || (playing ? "System audio" : "Nothing is playing")
 
-    // The helper listens to PipeWire stream-state events and reconnects if needed.
     Process {
+        id: playbackMonitor
         command: ["pipewire-playback-monitor"]
         running: true
         stdout: SplitParser {

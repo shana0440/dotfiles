@@ -2,7 +2,7 @@ import QtQuick
 import Quickshell
 import "../Theme" as Theme
 
-// Render in the window's overlay space, outside an island's clipping area.
+// Use the window overlay to escape clipping in the owning island.
 Item {
     id: root
 
@@ -11,9 +11,10 @@ Item {
     property bool shown: false
     property int alignment: Qt.AlignRight
     property real gap: 8
+    readonly property Item windowOverlay: root.QsWindow.window?.contentItem ?? null
 
     Rectangle {
-        parent: root.QsWindow.window?.contentItem ?? root
+        parent: root.windowOverlay ?? root
         readonly property point position: root.target
             ? root.target.mapToItem(parent, 0, root.target.height) : Qt.point(0, 0)
         readonly property real horizontalOffset: root.alignment === Qt.AlignRight

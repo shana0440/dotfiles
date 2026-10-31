@@ -7,8 +7,9 @@ import "." as Services
 Singleton {
     id: root
 
-    // Keep this count aligned with Services/cava.conf.
+    // Keep these values aligned with bars and ascii_max_range in cava.conf.
     readonly property int barCount: 24
+    readonly property int asciiMaxRange: 100
     property real gain: 1.0
     property var bars: Array(barCount).fill(0)
 
@@ -18,24 +19,23 @@ Singleton {
             return
         bars = Array.from({ length: barCount }, (_, index) => {
             const value = Number(values[index])
-            return Number.isFinite(value) ? Math.max(0, Math.min(1, value / 100 * gain)) : 0
+            return Number.isFinite(value) ? Math.max(0, Math.min(1, value / asciiMaxRange * gain)) : 0
         })
     }
 
-    // Average adjacent frequency bands for a smaller version of the same spectrum.
     function groupedBars(count) {
         return Array.from({ length: count }, (_, index) => {
-            const start = Math.floor(index * barCount / count)
-            const end = Math.floor((index + 1) * barCount / count)
-            let sum = 0
-            for (let band = start; band < end; band++)
-                sum += bars[band]
-            return sum / Math.max(1, end - start)
+            const firstBand = Math.floor(index * barCount / count)
+            const endBand = Math.floor((index + 1) * barCount / count)
+            let totalAmplitude = 0
+            for (let band = firstBand; band < endBand; band++)
+                totalAmplitude += bars[band]
+            return totalAmplitude / Math.max(1, endBand - firstBand)
         })
     }
 
-    function sync() {
-        restartTimer.stop()
+    function syncPlayback() {
+        processRestartBackoff.stop()
         if (Services.Media.playing) {
             if (!cavaProcess.running)
                 cavaProcess.running = true
@@ -45,11 +45,11 @@ Singleton {
         }
     }
 
-    Component.onCompleted: sync()
+    Component.onCompleted: syncPlayback()
 
     Connections {
         target: Services.Media
-        function onPlayingChanged() { root.sync() }
+        function onPlayingChanged() { root.syncPlayback() }
     }
 
     Process {
@@ -61,14 +61,13 @@ Singleton {
         onExited: {
             root.bars = Array(root.barCount).fill(0)
             if (Services.Media.playing)
-                restartTimer.restart()
+                processRestartBackoff.restart()
         }
     }
 
-    // Supervise the process, not playback detection.
     Timer {
-        id: restartTimer
+        id: processRestartBackoff
         interval: 2000
-        onTriggered: root.sync()
+        onTriggered: root.syncPlayback()
     }
 }

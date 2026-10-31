@@ -1,7 +1,7 @@
 import json
 import unittest
 
-from playback_monitor import PlaybackState, documents
+from playback_monitor import PlaybackState, iter_json_documents
 
 
 def node(node_id, state="running", media_class="Stream/Output/Audio"):
@@ -18,7 +18,7 @@ class PlaybackStateTests(unittest.TestCase):
 
     def test_capture_and_devices_do_not_count(self):
         events = [
-            node(1, media_class="Stream/Input/Audio"),  # Includes CAVA's capture stream.
+            node(1, media_class="Stream/Input/Audio"),
             node(2, media_class="Audio/Sink"),
             node(3, media_class="Audio/Source"),
         ]
@@ -64,16 +64,16 @@ class PlaybackStateTests(unittest.TestCase):
 
 class DocumentTests(unittest.TestCase):
     def test_consecutive_documents(self):
-        self.assertEqual(list(documents([b"[]\n", b"[{}]\n"])), [[], [{}]])
+        self.assertEqual(list(iter_json_documents([b"[]\n", b"[{}]\n"])), [[], [{}]])
 
     def test_partial_json_and_utf8(self):
         value = [{"name": "音楽", "info": {"state": "running"}}]
         payload = json.dumps(value, ensure_ascii=False).encode("utf-8") + b"\n[]\n"
-        self.assertEqual(list(documents([bytes([byte]) for byte in payload])), [value, []])
+        self.assertEqual(list(iter_json_documents([bytes([byte]) for byte in payload])), [value, []])
 
     def test_truncated_document(self):
         with self.assertRaises(ValueError):
-            list(documents([b'[{"id": 1']))
+            list(iter_json_documents([b'[{"id": 1']))
 
 
 if __name__ == "__main__":

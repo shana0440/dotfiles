@@ -1,8 +1,7 @@
 import QtQuick
 import "../Theme" as Theme
 
-// Views provide their own natural width/height; activeView selects one of them.
-// All views stay instantiated so hiding a menu never stops its services/processes.
+// Keep views instantiated so subscriptions and pending requests survive view switches.
 Rectangle {
     id: root
 
@@ -27,14 +26,13 @@ Rectangle {
 
     Item {
         anchors.fill: parent
-        // A compact status view may have tooltips extending beyond the island.
         clip: root.activeView !== root.overflowView
 
         Repeater {
             model: root.views
 
             delegate: Item {
-                id: holder
+                id: viewContainer
                 required property var modelData
                 readonly property Item view: modelData
 
@@ -46,8 +44,7 @@ Rectangle {
                 visible: opacity > 0
                 enabled: root.activeView === view
 
-                // Reparent once, rather than loading/unloading views on each switch.
-                Component.onCompleted: view.parent = holder
+                Component.onCompleted: view.parent = viewContainer
 
                 Behavior on opacity {
                     NumberAnimation { duration: root.fadeDuration; easing.type: Easing.OutCubic }
