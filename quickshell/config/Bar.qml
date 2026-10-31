@@ -38,7 +38,7 @@ PanelWindow {
     exclusionMode: ExclusionMode.Ignore
     color: Theme.Colors.transparent
     WlrLayershell.keyboardFocus: menuOpen ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
-    WlrLayershell.layer: menuOpen ? WlrLayer.Overlay : WlrLayer.Top
+    WlrLayershell.layer: menuOpen || centerIsland.screenshotVisible ? WlrLayer.Overlay : WlrLayer.Top
 
     // Layer-shell infers the reservation edge from three-edge anchoring.
     PanelWindow {

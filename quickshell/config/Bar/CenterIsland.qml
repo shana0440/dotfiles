@@ -1,5 +1,6 @@
 import QtQuick
 import Quickshell
+import Quickshell.Io
 import "../Theme" as Theme
 import "../Components" as Components
 
@@ -9,20 +10,50 @@ Components.Island {
     property bool expanded: false
     property string expandedView: "calendar"
     property bool volumeVisible: false
+    property string screenshotPath: ""
+    readonly property bool screenshotVisible: screenshotDismissTimer.running
     readonly property bool showingMedia: expanded && expandedView === "media"
 
-    activeView: expanded ? (showingMedia ? mediaView : calendar)
-        : volumeVisible ? volumeSlider : clockView
+    activeView: {
+        if (screenshotVisible)
+            return screenshotNotification
+        if (expanded)
+            return showingMedia ? mediaView : calendar
+        if (volumeVisible)
+            return volumeSlider
+        return clockView
+    }
 
     function open(view) {
+        screenshotDismissTimer.stop()
         expandedView = view
         expanded = true
+    }
+
+    function showScreenshot(filePath) {
+        if (!filePath)
+            return
+        expanded = false
+        volumeVisible = false
+        volumeTimeout.stop()
+        screenshotPath = filePath
+        screenshotDismissTimer.restart()
     }
 
     function showVolume() {
         expanded = false
         volumeVisible = true
         volumeTimeout.restart()
+    }
+
+    IpcHandler {
+        target: "screenshots"
+        function captured(filePath: string) { root.showScreenshot(filePath) }
+    }
+
+    Timer {
+        id: screenshotDismissTimer
+        interval: 2000
     }
 
     Timer {
@@ -81,6 +112,10 @@ Components.Island {
             id: mediaView
             active: root.showingMedia
             onCloseRequested: root.expanded = false
+        },
+        ScreenshotNotification {
+            id: screenshotNotification
+            filePath: root.screenshotPath
         }
     ]
 }
