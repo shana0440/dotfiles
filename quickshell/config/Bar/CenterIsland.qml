@@ -2,19 +2,27 @@ import QtQuick
 import Quickshell
 import "../Theme" as Theme
 import "../Components" as Components
+import "../Services" as Services
 
 Components.Island {
     id: root
 
     property bool expanded: false
+    property string expandedView: "calendar"
     property bool volumeVisible: false
 
-    activeView: expanded ? calendar : volumeVisible ? volumeSlider : clockView
+    activeView: expanded ? (expandedView === "media" ? mediaView : calendar)
+        : volumeVisible ? volumeSlider : clockView
 
     function showVolume() {
         expanded = false
         volumeVisible = true
         volumeTimeout.restart()
+    }
+
+    function open(view) {
+        expandedView = view
+        expanded = true
     }
 
     Timer {
@@ -29,7 +37,7 @@ Components.Island {
     }
 
     onExpandedChanged: {
-        if (expanded)
+        if (expanded && expandedView === "calendar")
             calendar.displayedMonth = new Date(clock.date.getFullYear(), clock.date.getMonth(), 1)
     }
 
@@ -41,21 +49,41 @@ Components.Island {
     views: [
         Item {
             id: clockView
-            width: dateTime.implicitWidth + 24
+            width: clockRow.implicitWidth + 16
             height: 32
 
-            Text {
-                id: dateTime
+            Row {
+                id: clockRow
                 anchors.centerIn: parent
-                text: Qt.formatDateTime(clock.date, "MM/dd HH:mm ddd")
-                color: Theme.Colors.foreground
-                font.pixelSize: 14
-            }
+                spacing: 8
 
-            MouseArea {
-                anchors.fill: parent
-                cursorShape: Qt.PointingHandCursor
-                onClicked: root.expanded = true
+                Item {
+                    width: dateTime.implicitWidth + 8
+                    height: 32
+
+                    Text {
+                        id: dateTime
+                        anchors.centerIn: parent
+                        text: Qt.formatDateTime(clock.date, "MM/dd HH:mm ddd")
+                        color: Theme.Colors.foreground
+                        font.pixelSize: 14
+                    }
+
+                    MouseArea {
+                        anchors.fill: parent
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: root.open("calendar")
+                    }
+                }
+
+                Components.PlayingIndicator {
+                    anchors.verticalCenter: parent.verticalCenter
+                    visible: Services.Media.playing
+                    playing: Services.Media.playing
+                    levels: Services.Cava.groupedBars(5)
+                    tooltip: "Now playing: " + Services.Media.title
+                    onClicked: root.open("media")
+                }
             }
         },
         VolumeSlider {
@@ -67,6 +95,11 @@ Components.Island {
         Calendar {
             id: calendar
             today: clock.date
+            onCloseRequested: root.expanded = false
+        },
+        MediaView {
+            id: mediaView
+            active: root.expanded && root.expandedView === "media"
             onCloseRequested: root.expanded = false
         }
     ]

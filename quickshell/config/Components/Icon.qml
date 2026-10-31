@@ -16,7 +16,13 @@ Item {
         wifi: "wifi",
         wifiHigh: "wifi-high",
         wifiLow: "wifi-low",
-        wifiOff: "wifi-off"
+        wifiOff: "wifi-off",
+        audio: "audio-lines",
+        previous: "skip-back",
+        next: "skip-forward",
+        play: "play",
+        pause: "pause",
+        close: "x"
     })[action] ?? "power"
 
     implicitWidth: 20
