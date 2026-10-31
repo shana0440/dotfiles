@@ -89,21 +89,8 @@ Rectangle {
         onClicked: root.clicked()
     }
 
-    Rectangle {
-        anchors.right: parent.right
-        y: parent.height + 8
-        width: label.implicitWidth + 16
-        height: 26
-        radius: 6
-        color: Theme.Colors.background
-        visible: wifiMouse.containsMouse
-
-        Text {
-            id: label
-            anchors.centerIn: parent
-            text: root.statusText
-            color: Theme.Colors.foreground
-            font.pixelSize: 12
-        }
+    Components.Tooltip {
+        text: root.statusText
+        shown: wifiMouse.containsMouse
     }
 }

@@ -81,22 +81,10 @@ Item {
                     onClicked: root.choose(modelData.action)
                 }
 
-                Rectangle {
-                    anchors.horizontalCenter: parent.horizontalCenter
-                    y: parent.height + 10
-                    width: label.implicitWidth + 16
-                    height: 24
-                    radius: 6
-                    color: Theme.Colors.background
-                    visible: buttonMouse.containsMouse || actionButton.activeFocus
-
-                    Text {
-                        id: label
-                        anchors.centerIn: parent
-                        text: modelData.label
-                        color: Theme.Colors.foreground
-                        font.pixelSize: 12
-                    }
+                Components.Tooltip {
+                    text: modelData.label
+                    shown: buttonMouse.containsMouse || actionButton.activeFocus
+                    alignment: Qt.AlignHCenter
                 }
             }
         }

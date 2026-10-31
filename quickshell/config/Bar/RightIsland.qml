@@ -46,6 +46,11 @@ Components.Island {
                     cursorShape: Qt.PointingHandCursor
                     onClicked: root.mode = "power"
                 }
+
+                Components.Tooltip {
+                    text: "Power"
+                    shown: powerMouse.containsMouse
+                }
             }
         },
         PowerMenu {
