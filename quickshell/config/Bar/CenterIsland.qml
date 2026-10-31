@@ -64,7 +64,7 @@ Components.Island {
                     Text {
                         id: dateTime
                         anchors.centerIn: parent
-                        text: Qt.formatDateTime(clock.date, "MM/dd HH:mm ddd")
+                        text: Qt.formatDateTime(clock.date, "ddd MM/dd hh:mm A")
                         color: Theme.Colors.foreground
                         font.pixelSize: 14
                     }
