@@ -13,7 +13,9 @@
     (import ./applications.nix).homeManager
     ./kitty/kitty.nix
     ./fonts/fonts.nix
+    ./gtk/gtk.nix
     ./vicinae/vicinae.nix
+    ./thunar/thunar.nix
     ./hyprland/hyprland.nix
     ./quickshell/quickshell.nix
   ];
