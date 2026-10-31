@@ -9,6 +9,7 @@ PanelWindow {
 
     readonly property int islandMargin: 20
     readonly property int compactIslandHeight: 32
+    readonly property int islandSpacing: 8
     readonly property int reservedTopHeight: islandMargin + compactIslandHeight
     readonly property bool menuOpen: centerIsland.expanded || rightIsland.expanded
 
@@ -59,6 +60,7 @@ PanelWindow {
     mask: Region {
         item: root.menuOpen ? root.contentItem : leftIsland
         Region { item: centerIsland }
+        Region { item: mediaIsland.visible ? mediaIsland : null }
         Region { item: rightIsland }
     }
 
@@ -113,8 +115,10 @@ PanelWindow {
             gesturePolicy: TapHandler.DragThreshold
             onTapped: eventPoint => {
                 const centerPosition = centerIsland.mapFromItem(barContent, eventPoint.position.x, eventPoint.position.y)
+                const mediaPosition = mediaIsland.mapFromItem(barContent, eventPoint.position.x, eventPoint.position.y)
                 const rightPosition = rightIsland.mapFromItem(barContent, eventPoint.position.x, eventPoint.position.y)
-                if (centerIsland.expanded && !centerIsland.contains(centerPosition))
+                const onMediaIndicator = mediaIsland.visible && mediaIsland.contains(mediaPosition)
+                if (centerIsland.expanded && !centerIsland.contains(centerPosition) && !onMediaIndicator)
                     centerIsland.expanded = false
                 if (rightIsland.expanded && !rightIsland.contains(rightPosition))
                     rightIsland.close()
@@ -130,6 +134,18 @@ PanelWindow {
         BarComponents.CenterIsland {
             id: centerIsland
             anchors.horizontalCenter: parent.horizontalCenter
+        }
+
+        BarComponents.MediaIsland {
+            id: mediaIsland
+            anchors.right: centerIsland.left
+            anchors.rightMargin: merged ? -width : root.islandSpacing
+            merged: centerIsland.showingMedia
+            onClicked: centerIsland.open("media")
+
+            Behavior on anchors.rightMargin {
+                NumberAnimation { duration: 260; easing.type: Easing.OutCubic }
+            }
         }
 
         BarComponents.RightIsland {
