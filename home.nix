@@ -12,6 +12,7 @@
     ./programs.nix
     (import ./applications.nix).homeManager
     ./kitty/kitty.nix
+    ./fonts/fonts.nix
     ./hyprland/hyprland.nix
     ./quickshell/quickshell.nix
   ];
