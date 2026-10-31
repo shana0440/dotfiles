@@ -13,6 +13,7 @@
     (import ./applications.nix).homeManager
     ./kitty/kitty.nix
     ./fonts/fonts.nix
+    ./vicinae/vicinae.nix
     ./hyprland/hyprland.nix
     ./quickshell/quickshell.nix
   ];

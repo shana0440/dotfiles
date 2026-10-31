@@ -36,7 +36,7 @@ hl.monitor({
 -- Set programs that you use
 local terminal    = "kitty"
 local fileManager = "dolphin"
-local menu        = "hyprlauncher"
+local menu        = "vicinae toggle"
 
 
 -------------------
@@ -44,6 +44,10 @@ local menu        = "hyprlauncher"
 -------------------
 
 -- See https://wiki.hypr.land/Configuring/Basics/Autostart/
+
+hl.on("hyprland.start", function ()
+    hl.exec_cmd("vicinae server")
+end)
 
 -- Autostart necessary processes (like notifications daemons, status bars, etc.)
 -- Or execute your favorite apps at launch like this:
