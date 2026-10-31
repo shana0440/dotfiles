@@ -22,6 +22,8 @@
   };
 
   programs.hyprland.enable = true;
+  # Includes PAM integration for unlocking the session.
+  programs.hyprlock.enable = true;
 
   # Installs Quickshell; its UI configuration and autostart are separate.
   environment.systemPackages = with pkgs; [

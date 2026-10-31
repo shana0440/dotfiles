@@ -267,6 +267,9 @@ for _, key in ipairs({ "Z", "T", "R" }) do
     hl.bind(mainMod .. " + SHIFT + " .. key, hl.dsp.send_shortcut({ mods = "CTRL SHIFT", key = key }))
 end
 
+hl.bind(mainMod .. " + SHIFT + 3", hl.dsp.exec_cmd("hypr-screenshot full"))
+hl.bind(mainMod .. " + SHIFT + 4", hl.dsp.exec_cmd("hypr-screenshot region"))
+
 -- Example binds, see https://wiki.hypr.land/Configuring/Basics/Binds/ for more
 hl.bind(mainMod .. " + Q", hl.dsp.exec_cmd(terminal))
 local closeWindowBind = hl.bind(mainMod .. " + SHIFT + C", hl.dsp.window.close())
@@ -285,11 +288,9 @@ hl.bind(mainMod .. " + up",    hl.dsp.focus({ direction = "up" }))
 hl.bind(mainMod .. " + down",  hl.dsp.focus({ direction = "down" }))
 
 -- Switch workspaces with mainMod + [0-9]
--- Move active window to a workspace with mainMod + SHIFT + [0-9]
 for i = 1, 10 do
     local key = i % 10 -- 10 maps to key 0
-    hl.bind(mainMod .. " + " .. key,             hl.dsp.focus({ workspace = i}))
-    hl.bind(mainMod .. " + SHIFT + " .. key,     hl.dsp.window.move({ workspace = i }))
+    hl.bind(mainMod .. " + " .. key, hl.dsp.focus({ workspace = i }))
 end
 
 -- Example special workspace (scratchpad)

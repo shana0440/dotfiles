@@ -13,6 +13,7 @@
     (import ./applications.nix).homeManager
     ./kitty/kitty.nix
     ./hyprland/hyprland.nix
+    ./quickshell/quickshell.nix
   ];
 
   home.homeDirectory = "/home/kwguo";
