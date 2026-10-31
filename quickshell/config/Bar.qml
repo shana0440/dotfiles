@@ -40,7 +40,8 @@ PanelWindow {
     exclusiveZone: 32
     color: Theme.Colors.transparent
     WlrLayershell.keyboardFocus: menuOpen ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
-    WlrLayershell.layer: WlrLayer.Overlay
+    // Let fullscreen windows cover the normal bar; keep open menus above click-catchers.
+    WlrLayershell.layer: menuOpen ? WlrLayer.Overlay : WlrLayer.Top
 
     mask: Region {
         item: leftIsland
