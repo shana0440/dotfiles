@@ -37,6 +37,9 @@ elif command == "slurp":
     if os.environ.get("SLURP_CANCEL") == "1":
         sys.exit(1)
     print(os.environ.get("SLURP_GEOMETRY", "10,20 300x200"))
+elif command == "quickshell":
+    (state / "selector.json").write_text(json.dumps(arguments))
+    sys.exit(0 if os.environ.get("SELECTOR_AVAILABLE") == "1" else 1)
 elif command in ["wf-recorder", "hypr-recording-finished"]:
     sys.exit("Recording and completion hooks must be launched by systemd.")
 '''
@@ -53,7 +56,7 @@ class RecordingTests(unittest.TestCase):
         self.runtime.mkdir()
         self.commands = self.root / "bin"
         self.commands.mkdir()
-        for name in ["systemctl", "systemd-run", "slurp", "wf-recorder", "hypr-recording-finished"]:
+        for name in ["systemctl", "systemd-run", "slurp", "wf-recorder", "hypr-recording-finished", "quickshell"]:
             command = self.commands / name
             command.write_text(f"#!{sys.executable}\n{MOCK_COMMAND}")
             command.chmod(0o755)
@@ -92,7 +95,7 @@ class RecordingTests(unittest.TestCase):
             arguments,
         )
         self.assertEqual(
-            (self.runtime / "hypr-record-full.path").read_bytes(), os.fsencode(path) + b"\0",
+            (self.runtime / "hypr-record-full.path").read_bytes(), os.fsencode(path) + b"\0\0",
         )
         self.assertEqual(
             arguments[arguments.index("--") + 1:],
@@ -112,6 +115,30 @@ class RecordingTests(unittest.TestCase):
                 self.assertIn("--audio-backend=pulse", arguments)
                 self.assertIn("--audio=@DEFAULT_MONITOR@", arguments)
                 self.assertIn("--audio-codec=aac", arguments)
+
+    def test_region_prefers_quickshell_selector(self):
+        result = self.run_command("region", SELECTOR_AVAILABLE="1")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertFalse(self.directory.exists())
+        self.assertFalse((self.root / "start.json").exists())
+        arguments = json.loads((self.root / "selector.json").read_text())
+        self.assertEqual(arguments[-4:], ["call", "capture", "selectRegion", "recording"])
+
+    def test_supplied_region_is_persisted_for_overlay(self):
+        geometry = "-100,20 300x200"
+        result = self.run_command("region", "DP-1", geometry)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        path = Path(result.stdout.strip())
+        self.assertEqual((self.runtime / "hypr-record-region.path").read_bytes(),
+                         os.fsencode(path) + b"\0" + geometry.encode() + b"\0")
+        self.assertFalse((self.root / "selector.json").exists())
+        status = self.run_command("status", "--json", ACTIVE_MODE="region")
+        self.assertEqual(json.loads(status.stdout)["geometry"], geometry)
+
+    def test_invalid_region_is_rejected(self):
+        result = self.run_command("region", "DP-1", "invalid")
+        self.assertEqual(result.returncode, 2)
+        self.assertFalse(self.directory.exists())
 
     def test_region_geometry_remains_one_argument(self):
         result = self.run_command("region")
@@ -194,17 +221,17 @@ class RecordingTests(unittest.TestCase):
                 os.utime(session, (started_at, started_at))
                 result = self.run_command("status", "--json", ACTIVE_MODE=mode)
                 self.assertEqual(result.returncode, 0, result.stderr)
-                self.assertEqual(json.loads(result.stdout), {"mode": mode, "startedAtSeconds": started_at})
+                self.assertEqual(json.loads(result.stdout), {"mode": mode, "startedAtSeconds": started_at, "geometry": ""})
 
     def test_json_status_handles_missing_session_while_finishing(self):
         result = self.run_command("status", "--json", ACTIVE_MODE="full", UNIT_STATE="deactivating")
         self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertEqual(json.loads(result.stdout), {"mode": "full", "startedAtSeconds": 0})
+        self.assertEqual(json.loads(result.stdout), {"mode": "full", "startedAtSeconds": 0, "geometry": ""})
 
     def test_json_status_without_recording_has_no_start_time(self):
         result = self.run_command("status", "--json")
         self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertEqual(json.loads(result.stdout), {"mode": "none", "startedAtSeconds": 0})
+        self.assertEqual(json.loads(result.stdout), {"mode": "none", "startedAtSeconds": 0, "geometry": ""})
 
     def test_full_recording_requires_monitor(self):
         result = self.run_command("full")

@@ -6,6 +6,7 @@ Rectangle {
 
     property bool merged: false
     property bool available: true
+    property bool animateMerge: true
 
     width: 32
     height: 32
@@ -16,12 +17,15 @@ Rectangle {
     enabled: available && !merged
 
     Behavior on opacity {
+        enabled: root.animateMerge
         NumberAnimation { duration: 160; easing.type: Easing.OutCubic }
     }
     Behavior on anchors.rightMargin {
+        enabled: root.animateMerge
         NumberAnimation { duration: 260; easing.type: Easing.OutCubic }
     }
     Behavior on anchors.leftMargin {
+        enabled: root.animateMerge
         NumberAnimation { duration: 260; easing.type: Easing.OutCubic }
     }
 }

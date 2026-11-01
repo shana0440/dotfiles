@@ -13,7 +13,7 @@ let
   };
   recording = pkgs.writeShellApplication {
     name = "hypr-record";
-    runtimeInputs = with pkgs; [ coreutils slurp systemd util-linux wf-recorder recordingFinished ];
+    runtimeInputs = with pkgs; [ coreutils slurp systemd util-linux wf-recorder quickshell recordingFinished ];
     text = builtins.readFile ./scripts/record.sh;
   };
   playbackMonitor = pkgs.writeShellApplication {

@@ -33,7 +33,13 @@ elif command == "wl-copy":
         sys.exit(1)
     (state / "clipboard").write_bytes(sys.stdin.buffer.read())
 elif command == "quickshell":
-    (state / "notification-args.json").write_text(json.dumps(sys.argv[1:]))
+    if "selectRegion" in sys.argv:
+        (state / "selector-args.json").write_text(json.dumps(sys.argv[1:]))
+        sys.exit(0 if os.environ.get("SELECTOR_AVAILABLE") == "1" else 1)
+    with (state / "screenshot-events.jsonl").open("a") as events:
+        events.write(json.dumps(sys.argv[1:]) + "\\n")
+    if sys.argv[-2] == "captured":
+        (state / "notification-args.json").write_text(json.dumps(sys.argv[1:]))
     time.sleep(float(os.environ.get("NOTIFICATION_DELAY", "0")))
     if os.environ.get("NOTIFICATION_FAIL") == "1":
         sys.exit(1)
@@ -63,9 +69,9 @@ class ScreenshotTests(unittest.TestCase):
         self.clipboard.write_bytes(b"original clipboard")
         self.directory = self.home / "Pictures/Screenshots"
 
-    def capture(self, mode, **environment):
+    def capture(self, mode, *arguments, **environment):
         return subprocess.run(
-            [BASH, str(SCRIPT), mode],
+            [BASH, str(SCRIPT), mode, *arguments],
             env={**self.env, **environment},
             capture_output=True,
             text=True,
@@ -89,6 +95,48 @@ class ScreenshotTests(unittest.TestCase):
             ],
         )
 
+    def screenshot_events(self):
+        return [json.loads(line) for line in (self.root / "screenshot-events.jsonl").read_text().splitlines()]
+
+    def test_progress_covers_capture_until_saved(self):
+        result = self.capture("full")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        events = self.screenshot_events()
+        self.assertEqual([event[-2] for event in events], ["started", "captured", "finished"])
+        self.assertEqual([event[-1] for event in events], [result.stdout.strip()] * 3)
+
+    def test_failed_capture_finishes_progress(self):
+        result = self.capture("full", GRIM_FAIL="1")
+        self.assertNotEqual(result.returncode, 0)
+        events = self.screenshot_events()
+        self.assertEqual([event[-2] for event in events], ["started", "finished"])
+        self.assertEqual(events[0][-1], events[1][-1])
+
+    def test_clipboard_failure_finishes_progress(self):
+        result = self.capture("full", CLIPBOARD_FAIL="1")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertEqual([event[-2] for event in self.screenshot_events()], ["started", "captured", "finished"])
+
+    def test_region_prefers_quickshell_selector(self):
+        result = self.capture("region", SELECTOR_AVAILABLE="1")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertFalse(self.directory.exists())
+        self.assertFalse((self.root / "grim-args.json").exists())
+        self.assertFalse((self.root / "screenshot-events.jsonl").exists())
+        arguments = json.loads((self.root / "selector-args.json").read_text())
+        self.assertEqual(arguments[-4:], ["call", "capture", "selectRegion", "screenshot"])
+
+    def test_supplied_region_bypasses_selector(self):
+        result = self.capture("region", "-100,20 300x200")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertFalse((self.root / "selector-args.json").exists())
+        self.assertEqual(json.loads((self.root / "grim-args.json").read_text())[2:4], ["-g", "-100,20 300x200"])
+
+    def test_invalid_region_is_rejected(self):
+        result = self.capture("region", "10,20 0x10")
+        self.assertEqual(result.returncode, 2)
+        self.assertFalse(self.directory.exists())
+
     def test_region_geometry_is_one_argument(self):
         result = self.capture("region")
         self.assertEqual(result.returncode, 0, result.stderr)
@@ -110,6 +158,7 @@ class ScreenshotTests(unittest.TestCase):
         self.assertFalse(self.directory.exists())
         self.assertFalse((self.root / "grim-args.json").exists())
         self.assertFalse((self.root / "notification-args.json").exists())
+        self.assertFalse((self.root / "screenshot-events.jsonl").exists())
         self.assertEqual(self.clipboard.read_bytes(), b"original clipboard")
 
     def test_empty_selection_cancels(self):

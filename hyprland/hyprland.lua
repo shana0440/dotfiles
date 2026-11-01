@@ -271,8 +271,8 @@ for _, key in ipairs({ "Z", "T", "R" }) do
     hl.bind(mainMod .. " + SHIFT + " .. key, hl.dsp.send_shortcut({ mods = "CTRL SHIFT", key = key }))
 end
 
-hl.bind(mainMod .. " + SHIFT + 3", hl.dsp.exec_cmd("hypr-screenshot full"))
-hl.bind(mainMod .. " + SHIFT + 4", hl.dsp.exec_cmd("hypr-screenshot region"))
+hl.bind(mainMod .. " + SHIFT + 3", hl.dsp.exec_cmd("quickshell ipc call capture takeScreenshot full || hypr-screenshot full"))
+hl.bind(mainMod .. " + SHIFT + 4", hl.dsp.exec_cmd("quickshell ipc call capture takeScreenshot region || hypr-screenshot region"))
 hl.bind(mainMod .. " + SHIFT + S", hl.dsp.exec_cmd("quickshell ipc call capture openMenu"))
 
 -- Example binds, see https://wiki.hypr.land/Configuring/Basics/Binds/ for more
