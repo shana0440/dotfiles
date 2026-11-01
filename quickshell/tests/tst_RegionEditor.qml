@@ -65,6 +65,15 @@ TestCase {
         compare(scene.editor.region.height, 150)
     }
 
+    function test_drag_past_screen_edge_preserves_start() {
+        const scene = createTemporaryObject(sceneComponent, this)
+        mouseDrag(scene.editor, 100, 100, 900, 400)
+        compare(scene.editor.region.x, 100)
+        compare(scene.editor.region.y, 100)
+        compare(scene.editor.region.width, 700)
+        compare(scene.editor.region.height, 400)
+    }
+
     function test_screenshot_captures_on_release_without_toolbar() {
         const scene = createTemporaryObject(sceneComponent, this)
         confirmed.target = scene.editor

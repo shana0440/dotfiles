@@ -15,6 +15,19 @@ test("dragging in either direction creates the same rectangle", () => {
   assert.deepEqual(plain(geometry.fromPoints(end, start, 800, 600)), expected);
 });
 
+test("dragging beyond each screen edge clips without moving the anchor", () => {
+  const cases = [
+    [{ x: 100, y: 100 }, { x: 1000, y: 500 }, { x: 100, y: 100, width: 700, height: 400 }],
+    [{ x: 100, y: 100 }, { x: 500, y: 900 }, { x: 100, y: 100, width: 400, height: 500 }],
+    [{ x: 700, y: 500 }, { x: -200, y: 100 }, { x: 0, y: 100, width: 700, height: 400 }],
+    [{ x: 700, y: 500 }, { x: 100, y: -200 }, { x: 100, y: 0, width: 600, height: 500 }],
+    [{ x: 100, y: 100 }, { x: 1000, y: 900 }, { x: 100, y: 100, width: 700, height: 500 }],
+    [{ x: 700, y: 500 }, { x: -200, y: -100 }, { x: 0, y: 0, width: 700, height: 500 }],
+  ];
+  for (const [start, end, expected] of cases)
+    assert.deepEqual(plain(geometry.fromPoints(start, end, 800, 600)), expected);
+});
+
 test("moving stays within the selected monitor", () => {
   const region = { x: 100, y: 50, width: 300, height: 200 };
   assert.deepEqual(plain(geometry.move(region, -1000, -1000, 800, 600)),

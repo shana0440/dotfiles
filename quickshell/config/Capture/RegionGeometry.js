@@ -18,12 +18,12 @@ function fit(rect, width, height) {
 }
 
 function fromPoints(start, end, width, height) {
-    return fit({
+    return fit(intersection({
         x: Math.min(start.x, end.x),
         y: Math.min(start.y, end.y),
         width: Math.abs(end.x - start.x),
         height: Math.abs(end.y - start.y)
-    }, width, height);
+    }, width, height), width, height);
 }
 
 function move(rect, dx, dy, width, height) {
