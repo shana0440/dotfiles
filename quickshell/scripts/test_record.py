@@ -21,6 +21,9 @@ command = Path(sys.argv[0]).name
 arguments = sys.argv[1:]
 if command == "systemctl":
     if "is-active" in arguments:
+        if "QUERY_FAIL" in os.environ:
+            print("Failed to connect to user service manager", file=sys.stderr)
+            sys.exit(int(os.environ["QUERY_FAIL"]))
         mode = os.environ.get("ACTIVE_MODE", "none")
         unit_state = os.environ.get("UNIT_STATE", "active")
         print(unit_state if mode == "full" else "inactive")
@@ -204,6 +207,32 @@ class RecordingTests(unittest.TestCase):
         result = self.run_command("stop")
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertFalse((self.root / "stop.json").exists())
+
+    def test_recording_query_failures_propagate_without_side_effects(self):
+        for code in [1, 4]:
+            for arguments in [("status",), ("status", "--json"), ("stop",),
+                              ("full", "HDMI-A-2"), ("region",)]:
+                with self.subTest(code=code, arguments=arguments):
+                    result = self.run_command(*arguments, QUERY_FAIL=str(code))
+                    self.assertEqual(result.returncode, code)
+                    self.assertEqual(result.stdout, "")
+                    self.assertIn("Failed to connect to user service manager", result.stderr)
+                    self.assertFalse((self.root / "stop.json").exists())
+                    self.assertFalse((self.root / "start.json").exists())
+                    self.assertFalse((self.root / "selector.json").exists())
+                    self.assertFalse(self.directory.exists())
+
+    def test_inactive_unit_states_are_not_query_failures(self):
+        for state in ["inactive", "failed", "unknown"]:
+            for arguments in [("status",), ("status", "--json"), ("stop",)]:
+                with self.subTest(state=state, arguments=arguments):
+                    result = self.run_command(*arguments, ACTIVE_MODE="full", UNIT_STATE=state)
+                    self.assertEqual(result.returncode, 0, result.stderr)
+                    if arguments == ("status",):
+                        self.assertEqual(result.stdout, "none\n")
+                    elif arguments == ("status", "--json"):
+                        self.assertEqual(json.loads(result.stdout)["mode"], "none")
+                    self.assertFalse((self.root / "stop.json").exists())
 
     def test_status_reports_active_mode(self):
         for mode in ["none", "full", "region"]:

@@ -2,9 +2,15 @@ set -euo pipefail
 umask 077
 
 recording_mode() {
-    local states
-    mapfile -t states < <(systemctl --user is-active \
-        hypr-record-full.service hypr-record-region.service 2>/dev/null || true)
+    local output query_status=0 states
+    output=$(systemctl --user is-active \
+        hypr-record-full.service hypr-record-region.service) || query_status=$?
+    # is-active returns 3 when none of the requested units are active.
+    case "$query_status" in
+        0|3) ;;
+        *) return "$query_status" ;;
+    esac
+    mapfile -t states <<< "$output"
     case "${states[0]:-}" in
         active|activating|deactivating) printf 'full\n'; return ;;
     esac
@@ -67,7 +73,8 @@ esac
 : "${XDG_RUNTIME_DIR:?A Wayland session is required}" "${WAYLAND_DISPLAY:?A Wayland session is required}"
 exec {lock_fd}>"$XDG_RUNTIME_DIR/hypr-record.lock"
 flock -n "$lock_fd" || exit 1
-[[ "$(recording_mode)" == none ]] || exit 1
+active_mode=$(recording_mode)
+[[ "$active_mode" == none ]] || exit 1
 
 geometry=""
 if [[ "$mode" == region ]]; then
