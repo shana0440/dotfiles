@@ -5,9 +5,10 @@ recording_mode() {
     local output query_status=0 states
     output=$(systemctl --user is-active \
         hypr-record-full.service hypr-record-region.service) || query_status=$?
-    # is-active returns 3 when none of the requested units are active.
+    # Collected transient units may no longer exist: is-active returns 4 then,
+    # or 3 when the units exist but none are active.
     case "$query_status" in
-        0|3) ;;
+        0|3|4) ;;
         *) return "$query_status" ;;
     esac
     mapfile -t states <<< "$output"
