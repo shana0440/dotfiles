@@ -11,7 +11,7 @@
   ];
 
   # Enable on this machine after provisioning its SOPS key and encrypted secrets.
-  services.nas.enable = false;
+  services.nas.enable = true;
 
   # Keep GRUB on the NixOS EFI partition and chainload the Windows EFI partition.
   boot.loader = {
