@@ -292,12 +292,34 @@ hl.bind(mainMod .. " + right", hl.dsp.focus({ direction = "right" }))
 hl.bind(mainMod .. " + up",    hl.dsp.focus({ direction = "up" }))
 hl.bind(mainMod .. " + down",  hl.dsp.focus({ direction = "down" }))
 
--- Switch workspaces with Super+number; add Shift to move the focused window.
+-- Switch workspaces with Alt+number; add Shift to move the focused window.
 for i = 1, 10 do
     local key = i % 10 -- 10 maps to key 0
-    hl.bind(mainMod .. " + " .. key, hl.dsp.focus({ workspace = i }))
-    hl.bind(mainMod .. " + SHIFT + " .. key, hl.dsp.window.move({ workspace = i }))
+    hl.bind("ALT + " .. key, hl.dsp.focus({ workspace = i }))
+    hl.bind("ALT + SHIFT + " .. key, hl.dsp.window.move({ workspace = i }))
 end
+
+-- Navigate existing numbered workspaces without wrapping at either end.
+local function focusAdjacentWorkspace(direction)
+    local current = hl.get_active_workspace()
+    if not current then
+        return
+    end
+    local target
+    local distance = math.huge
+    for _, workspace in ipairs(hl.get_workspaces()) do
+        local offset = (workspace.id - current.id) * direction
+        if workspace.id > 0 and offset > 0 and offset < distance then
+            target = workspace.id
+            distance = offset
+        end
+    end
+    if target then
+        hl.dispatch(hl.dsp.focus({ workspace = target }))
+    end
+end
+hl.bind("CTRL + left", function() focusAdjacentWorkspace(-1) end)
+hl.bind("CTRL + right", function() focusAdjacentWorkspace(1) end)
 
 -- Select an input method directly without cycling or changing workspaces.
 for key, inputMethod in ipairs({ "keyboard-us", "mozc", "chewing" }) do

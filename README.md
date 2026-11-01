@@ -103,6 +103,15 @@ for Lua edits.
 Home Manager links it to `~/.config/hypr/hyprland.lua` on desktop Linux only (not WSL);
 Hyprland installation and the login session stay in `nixos/desktop.nix`.
 
+### Workspace shortcuts
+
+- `Alt+1` through `Alt+9`, and `Alt+0`: switch to workspaces 1–10.
+- Add `Shift` to move the focused window to that workspace.
+- `Ctrl+Left` / `Ctrl+Right`: previous / next existing numbered workspace,
+  stopping at the first or last workspace without wrapping. These global
+  shortcuts replace applications' Ctrl+arrow word navigation.
+- `Super+Left/Right/Up/Down` still moves window focus directionally.
+
 ### Chinese and Japanese input
 
 Desktop Linux installs Fcitx5 with Chewing (Traditional Chinese Zhuyin), Mozc
