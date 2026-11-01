@@ -18,6 +18,8 @@ capture the desktop or start a recorder.
 The lifecycle tests run real Quickshell components offscreen with shared
 runtime/DBus isolation and fake helpers. The Wi-Fi test verifies that a successful
 connection is followed by a fresh network list without accessing NetworkManager.
+The screenshot queue tests check that accepted requests run in order and that
+capture failures or missing executables do not block later requests.
 The capture test checks screenshot feedback
 before helper IPC, success/failure cleanup, and an uninterrupted recording
 outline across deliberately stale status responses. It loads the full production

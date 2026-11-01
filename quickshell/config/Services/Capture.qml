@@ -9,9 +9,11 @@ Singleton {
 
     property var activeScreenshotPaths: []
     property bool screenshotPending: false
+    property var screenshotQueue: []
+    property var currentScreenshot: null
     property bool screenshotCommandSaved: false
-    readonly property bool takingScreenshot: screenshotPending
-        || (screenshotCommand.running && !screenshotCommandSaved) || activeScreenshotPaths.length > 0
+    readonly property bool takingScreenshot: screenshotPending || screenshotQueue.length > 0
+        || (currentScreenshot !== null && !screenshotCommandSaved) || activeScreenshotPaths.length > 0
     signal screenshotSaved(string filePath)
 
     property string recordingMode: ""
@@ -61,13 +63,18 @@ Singleton {
     }
 
     function runScreenshot(command) {
-        if (screenshotCommand.running) {
-            screenshotPending = false
+        screenshotQueue = screenshotQueue.concat([command])
+        screenshotPending = false
+        startNextScreenshot()
+    }
+
+    function startNextScreenshot() {
+        if (currentScreenshot !== null || screenshotQueue.length === 0)
             return
-        }
-        screenshotPending = true
         screenshotCommandSaved = false
-        screenshotCommand.exec(command)
+        currentScreenshot = screenshotQueue[0]
+        screenshotQueue = screenshotQueue.slice(1)
+        screenshotCommand.exec(currentScreenshot)
     }
 
     function startRecording(mode, outputName) {
@@ -186,7 +193,13 @@ Singleton {
 
     Process {
         id: screenshotCommand
-        onStarted: root.screenshotPending = false
+        onRunningChanged: {
+            // Failed-to-start processes emit this signal without emitting exited.
+            if (!running && root.currentScreenshot !== null) {
+                root.currentScreenshot = null
+                Qt.callLater(root.startNextScreenshot)
+            }
+        }
         stdout: SplitParser {
             onRead: data => {
                 if (data.length > 0)
@@ -194,7 +207,6 @@ Singleton {
             }
         }
         onExited: (exitCode, exitStatus) => {
-            root.screenshotPending = false
             if (exitCode !== 0)
                 console.warn("Screenshot command failed:", exitCode)
         }
