@@ -103,6 +103,23 @@ for Lua edits.
 Home Manager links it to `~/.config/hypr/hyprland.lua` on desktop Linux only (not WSL);
 Hyprland installation and the login session stay in `nixos/desktop.nix`.
 
+### Chinese and Japanese input
+
+Desktop Linux installs Fcitx5 with Chewing (Traditional Chinese Zhuyin), Mozc
+(Japanese), and `fcitx5-configtool`. Apply with `make home-linux`, then log out
+and back in so applications inherit the input-method environment. Hyprland starts
+`fcitx5-daemon.service` explicitly; no NixOS rebuild is required.
+
+- `Ctrl+Space`: toggle English and the selected input engine (initially Chewing).
+- `Ctrl+Shift+Space`: cycle the configured English, Chewing, and Mozc inputs.
+- Chewing uses the standard Taiwanese Zhuyin keyboard layout. In Mozc, type
+  romaji (for example, `nihongo`), use Space to convert, and Enter to commit.
+- Run `fcitx5-configtool` for engine preferences. The engine list and these
+  shortcuts are managed in `hyprland/hyprland.nix`; addon preferences and learned
+  dictionaries remain writable.
+
+macOS and WSL profiles are unchanged.
+
 ## Make targets
 
 From `~/dotfiles`:
