@@ -266,11 +266,16 @@ hl.device({
 local mainMod = "SUPER" -- Sets "Windows" key as main modifier
 
 -- Global macOS-style shortcuts: send Ctrl equivalents to the focused window.
+-- Explicit XKB keycodes avoid keysym lookup failures while Shift is held.
+local shortcutKeycodes = {
+    C = 54, V = 55, X = 53, A = 38, Z = 52, F = 41,
+    S = 39, O = 32, L = 46, T = 28, W = 25, R = 27,
+}
 for _, key in ipairs({ "C", "V", "X", "A", "Z", "F", "S", "O", "L", "T", "W", "R" }) do
-    hl.bind(mainMod .. " + " .. key, hl.dsp.send_shortcut({ mods = "CTRL", key = key }))
+    hl.bind(mainMod .. " + " .. key, hl.dsp.send_shortcut({ mods = "CTRL", key = "code:" .. shortcutKeycodes[key] }))
 end
 for _, key in ipairs({ "Z", "T", "R" }) do
-    hl.bind(mainMod .. " + SHIFT + " .. key, hl.dsp.send_shortcut({ mods = "CTRL SHIFT", key = key }))
+    hl.bind(mainMod .. " + SHIFT + " .. key, hl.dsp.send_shortcut({ mods = "CTRL SHIFT", key = "code:" .. shortcutKeycodes[key] }))
 end
 
 hl.bind(mainMod .. " + SHIFT + S", hl.dsp.exec_cmd("quickshell ipc call capture openMenu"))
@@ -292,12 +297,34 @@ hl.bind(mainMod .. " + right", hl.dsp.focus({ direction = "right" }))
 hl.bind(mainMod .. " + up",    hl.dsp.focus({ direction = "up" }))
 hl.bind(mainMod .. " + down",  hl.dsp.focus({ direction = "down" }))
 
--- Switch workspaces with Super+number; add Shift to move the focused window.
+-- Switch workspaces with Alt+number; add Shift to move the focused window.
 for i = 1, 10 do
     local key = i % 10 -- 10 maps to key 0
-    hl.bind(mainMod .. " + " .. key, hl.dsp.focus({ workspace = i }))
-    hl.bind(mainMod .. " + SHIFT + " .. key, hl.dsp.window.move({ workspace = i }))
+    hl.bind("ALT + " .. key, hl.dsp.focus({ workspace = i }))
+    hl.bind("ALT + SHIFT + " .. key, hl.dsp.window.move({ workspace = i }))
 end
+
+-- Navigate existing numbered workspaces without wrapping at either end.
+local function focusAdjacentWorkspace(direction)
+    local current = hl.get_active_workspace()
+    if not current then
+        return
+    end
+    local target
+    local distance = math.huge
+    for _, workspace in ipairs(hl.get_workspaces()) do
+        local offset = (workspace.id - current.id) * direction
+        if workspace.id > 0 and offset > 0 and offset < distance then
+            target = workspace.id
+            distance = offset
+        end
+    end
+    if target then
+        hl.dispatch(hl.dsp.focus({ workspace = target }))
+    end
+end
+hl.bind("CTRL + left", function() focusAdjacentWorkspace(-1) end)
+hl.bind("CTRL + right", function() focusAdjacentWorkspace(1) end)
 
 -- Select an input method directly without cycling or changing workspaces.
 for key, inputMethod in ipairs({ "keyboard-us", "mozc", "chewing" }) do
