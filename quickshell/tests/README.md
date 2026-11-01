@@ -1,4 +1,4 @@
-# Capture tests
+# Quickshell tests
 
 ```sh
 python3 -m unittest discover -s quickshell/scripts -q
@@ -9,9 +9,10 @@ bash quickshell/tests/run-qml-tests.sh
 
 The QML tests require Qt 6's `qmltestrunner` (`qt6.qtdeclarative`). Set
 `QML_TEST_RUNNER` to its full path if it is not on `PATH`.
-They exercise the production region editor, size label, settings island, and
-spinner at 100% and 150% scaling. Only Quickshell service state and the settings
-button's SVG/tooltip loader are stubbed. All tests run offscreen and do not
+They exercise the production region editor, size label, settings island, spinner,
+and workspace buttons at 100% and 150% scaling. Quickshell service state, the
+Hyprland dispatcher boundary, and the settings button's SVG/tooltip loader are
+stubbed. All tests run offscreen and do not
 capture the desktop or start a recorder.
 
 The lifecycle test additionally runs the real Quickshell service offscreen with
