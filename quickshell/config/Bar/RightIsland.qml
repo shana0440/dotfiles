@@ -6,10 +6,13 @@ Components.Island {
     id: root
 
     property string mode: "default"
+    property alias inputItem: inputIndicator.inputItem
     readonly property bool expanded: mode !== "default"
+    // IME actions must run while the editor keeps its input context focused.
+    readonly property bool keyboardFocusRequired: expanded && mode !== "input"
     readonly property bool confirming: mode === "power" && menu.confirming
 
-    activeView: mode === "wifi" ? wifiMenu : mode === "power" ? menu : defaultContent
+    activeView: mode === "input" ? inputMenu : mode === "wifi" ? wifiMenu : mode === "power" ? menu : defaultContent
     alignment: Qt.AlignRight
     overflowView: defaultContent
 
@@ -22,6 +25,11 @@ Components.Island {
         Row {
             id: defaultContent
             spacing: 4
+
+            InputMethodIndicator {
+                id: inputIndicator
+                onClicked: root.mode = "input"
+            }
 
             Wifi {
                 id: wifiStatus
@@ -62,6 +70,13 @@ Components.Island {
             active: root.mode === "wifi"
             onCloseRequested: root.close()
             onConnectionChanged: wifiStatus.refreshStatus()
+        },
+        InputMethodMenu {
+            id: inputMenu
+            active: root.mode === "input"
+            inputItem: inputIndicator.inputItem
+            currentDescription: inputIndicator.description
+            onCloseRequested: root.close()
         }
     ]
 }

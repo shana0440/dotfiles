@@ -25,8 +25,7 @@ PipeWire connection exits.
 A running stream may contain silence or be muted: this reports stream state,
 not whether a human can hear sound.
 
-Run tests with:
-
-```sh
-PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s quickshell/pipewire -v
-```
+Validate playback changes on the already-running Quickshell desktop: start,
+pause, and stop real audio, and capture a screen recording showing the playback
+indicator and visualizer responding. Inspect the recording before claiming the
+behavior works. See `quickshell/AGENTS.md` for the live-validation policy.
