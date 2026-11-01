@@ -238,6 +238,7 @@ Item {
             Text {
                 width: parent.width
                 text: root.message
+                textFormat: Text.PlainText
                 visible: text.length > 0
                 wrapMode: Text.Wrap
                 color: Theme.Colors.foreground
@@ -281,6 +282,7 @@ Item {
                         Text {
                             width: parent.width
                             text: ssid
+                            textFormat: Text.PlainText
                             elide: Text.ElideRight
                             color: Theme.Colors.foreground
                             font.pixelSize: 13
@@ -288,6 +290,7 @@ Item {
                         Text {
                             width: parent.width
                             text: active ? "Connected" : (!security || security === "--" ? "Open" : security)
+                            textFormat: Text.PlainText
                             elide: Text.ElideRight
                             color: Theme.Colors.foreground
                             opacity: 0.6
@@ -336,6 +339,7 @@ Item {
                 Text {
                     width: parent.width
                     text: root.selectedSsid
+                    textFormat: Text.PlainText
                     elide: Text.ElideRight
                     color: Theme.Colors.foreground
                     font.pixelSize: 13

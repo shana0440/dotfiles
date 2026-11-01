@@ -80,6 +80,7 @@ Item {
                 Text {
                     width: parent.width
                     text: Services.Media.title
+                    textFormat: Text.PlainText
                     color: Theme.Colors.foreground
                     font.pixelSize: 14
                     font.bold: true
@@ -90,6 +91,7 @@ Item {
                 Text {
                     width: parent.width
                     text: Services.Media.artist
+                    textFormat: Text.PlainText
                     color: Theme.Colors.foreground
                     opacity: 0.75
                     font.pixelSize: 12
@@ -98,6 +100,7 @@ Item {
                 Text {
                     width: parent.width
                     text: root.player?.trackAlbum ?? ""
+                    textFormat: Text.PlainText
                     visible: text.length > 0
                     color: Theme.Colors.foreground
                     opacity: 0.5

@@ -170,20 +170,16 @@ Singleton {
     }
 
     function applyRecordingStatus(data) {
-        try {
-            const status = JSON.parse(data)
-            const mode = status.mode === "full" || status.mode === "region" ? status.mode : ""
-            const startedAtMs = Math.max(0, Number(status.startedAtSeconds) || 0) * 1000
-            const geometry = Geometry.parse(status.geometry ?? "") ? status.geometry : ""
-            if (mode !== recordingMode || geometry.length > 0)
-                recordingGeometry = mode === "region" ? geometry : ""
-            // The completion hook removes session metadata while the service is still stopping.
-            if (mode !== recordingMode || startedAtMs > 0)
-                recordingStartedAtMs = mode ? startedAtMs : 0
-            recordingMode = mode
-        } catch (error) {
-            console.warn("Invalid recording status:", error)
-        }
+        const status = JSON.parse(data)
+        const mode = status.mode === "full" || status.mode === "region" ? status.mode : ""
+        const startedAtMs = Math.max(0, Number(status.startedAtSeconds) || 0) * 1000
+        const geometry = Geometry.parse(status.geometry ?? "") ? status.geometry : ""
+        if (mode !== recordingMode || geometry.length > 0)
+            recordingGeometry = mode === "region" ? geometry : ""
+        // The completion hook removes session metadata while the service is still stopping.
+        if (mode !== recordingMode || startedAtMs > 0)
+            recordingStartedAtMs = mode ? startedAtMs : 0
+        recordingMode = mode
     }
 
     SystemClock {
@@ -214,6 +210,15 @@ Singleton {
 
     Process {
         id: recordingCommand
+        property bool startedSuccessfully: false
+        onStarted: startedSuccessfully = true
+        onRunningChanged: {
+            if (running)
+                startedSuccessfully = false
+            else if (!startedSuccessfully)
+                // Failed startup emits runningChanged, but not exited.
+                root.startingRecordingGeometry = ""
+        }
         onExited: (exitCode, exitStatus) => {
             if (exitCode !== 0) {
                 root.startingRecordingGeometry = ""

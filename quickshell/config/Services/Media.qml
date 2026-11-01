@@ -27,11 +27,7 @@ Singleton {
         running: true
         stdout: SplitParser {
             onRead: data => {
-                try {
-                    root.pipewirePlaying = JSON.parse(data).playing === true
-                } catch (error) {
-                    console.warn("Invalid PipeWire playback event:", error)
-                }
+                root.pipewirePlaying = JSON.parse(data).playing === true
             }
         }
         onExited: root.pipewirePlaying = false

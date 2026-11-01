@@ -26,3 +26,9 @@ outline across deliberately stale status responses. It loads the full production
 configuration tree, repeats the workflow after atomic service-file replacements
 and soft reloads, and verifies that the capture service and screenshot IPC remain
 available in every generation.
+
+The service failure test verifies that an unexecutable recording helper clears the
+pending outline and permits another region selection, malformed recording status
+propagates a `SyntaxError`, and malformed playback events surface a decoding error.
+External-text binding checks guard plain-text rendering of network names, messages,
+media metadata, and tooltips.

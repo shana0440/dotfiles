@@ -36,6 +36,7 @@ Item {
             anchors.centerIn: parent
             width: parent.width - 16
             text: root.text
+            textFormat: Text.PlainText
             elide: Text.ElideRight
             horizontalAlignment: Text.AlignHCenter
             color: Theme.Colors.foreground
