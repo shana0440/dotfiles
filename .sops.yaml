@@ -1,0 +1,11 @@
+# Public recipient only. Never put private keys in this repository.
+keys:
+  - &primary age1ulswtnjwn7ft3psxw40r8fx9qtgrt830zs8xsg72hkgg3cwl34ysmpagwj
+
+# Inventory for make encrypt/decrypt; plaintext paths omit .enc.
+files:
+  - nixos/nas/secrets.enc.yaml
+
+creation_rules:
+  - path_regex: \.enc\.(yaml|yml|json)$
+    age: *primary

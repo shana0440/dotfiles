@@ -1,0 +1,7 @@
+# Plaintext secrets and temporary files. Commit secrets.enc.yaml instead.
+secrets.yaml
+secrets.yaml.*
+secrets.json
+secrets.json.*
+*.plaintext
+*.plaintext.*
