@@ -1,5 +1,7 @@
 import QtQuick
 import Quickshell
+import Quickshell.Io
+import Quickshell.Hyprland
 import "../Theme" as Theme
 import "../Components" as Components
 
@@ -26,6 +28,41 @@ Item {
     implicitHeight: content.implicitHeight + 24
     focus: active
     Keys.onEscapePressed: closeRequested()
+
+    // The editor must retain its input context for Fcitx's native actions.
+    // Intercept Escape in Hyprland only while this non-focusable menu is open.
+    function syncEscapeBinding() {
+        if (escapeBinding.running)
+            return
+        escapeBinding.requestedActive = root.active
+        escapeBinding.command = ["hyprctl", "eval",
+            "if not qsInputMenuEscape then "
+            + "qsInputMenuEscape = hl.bind('Escape', hl.dsp.exec_cmd('quickshell ipc call inputMenu close')) end; "
+            + "qsInputMenuEscape:set_enabled(" + (root.active ? "true" : "false") + ")"]
+        escapeBinding.running = true
+    }
+
+    onActiveChanged: syncEscapeBinding()
+    Component.onCompleted: syncEscapeBinding()
+    Component.onDestruction: Quickshell.execDetached(["hyprctl", "eval",
+        "if qsInputMenuEscape then qsInputMenuEscape:set_enabled(false) end"])
+
+    Process {
+        id: escapeBinding
+        property bool requestedActive: false
+        onExited: {
+            if (requestedActive !== root.active)
+                root.syncEscapeBinding()
+        }
+    }
+
+    Connections {
+        target: Hyprland
+        function onRawEvent(event) {
+            if (event.name === "configreloaded")
+                root.syncEscapeBinding()
+        }
+    }
 
     QsMenuOpener {
         id: inputMenu

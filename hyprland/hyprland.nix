@@ -8,6 +8,7 @@
       addons = with pkgs; [ fcitx5-chewing fcitx5-mozc ];
       settings = {
         globalOptions = {
+          Behavior.ShareInputState = "All";
           Hotkey = {
             TriggerKeys = "";
             EnumerateSkipFirst = false;

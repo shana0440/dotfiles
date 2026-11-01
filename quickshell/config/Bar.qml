@@ -48,6 +48,14 @@ PanelWindow {
         }
     }
 
+    IpcHandler {
+        target: "inputMenu"
+        function close() {
+            if (rightIsland.mode === "input")
+                rightIsland.close()
+        }
+    }
+
     function requestCapture(action, mode) {
         captureDelay.stop()
         Services.Capture.cancelRegionSelection()
