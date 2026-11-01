@@ -4,7 +4,7 @@ notify_screenshot_event() {
     local shell_config="${XDG_CONFIG_HOME:-$HOME/.config}/quickshell"
     # Saving and clipboard delivery must work while Quickshell is unavailable.
     timeout 1s quickshell --path "$shell_config" \
-        ipc call screenshots "$1" "$2" >/dev/null 2>&1 || true
+        ipc call screenshots "$@" >/dev/null 2>&1 || true
 }
 
 capture_args=()
@@ -47,7 +47,7 @@ finish_screenshot() {
     fi
 }
 trap finish_screenshot EXIT
-notify_screenshot_event started "$screenshot_path"
+notify_screenshot_event startedByProcess "$screenshot_path" "$$"
 
 # Favor capture latency over PNG file size; compression remains lossless.
 grim -l 1 "${capture_args[@]}" "$screenshot_path"

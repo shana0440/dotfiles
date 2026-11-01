@@ -14,6 +14,7 @@ PanelWindow {
     readonly property int islandSpacing: 8
     readonly property int reservedTopHeight: islandMargin + compactIslandHeight
     readonly property bool menuOpen: centerIsland.expanded || rightIsland.expanded
+    readonly property bool menuNeedsKeyboardFocus: centerIsland.expanded || rightIsland.keyboardFocusRequired
 
     function closeMenus() {
         centerIsland.expanded = false
@@ -79,7 +80,7 @@ PanelWindow {
     onMenuOpenChanged: {
         if (menuOpen) {
             Qt.callLater(() => {
-                if (root.menuOpen)
+                if (root.menuOpen && root.menuNeedsKeyboardFocus)
                     barContent.forceActiveFocus()
             })
         }
@@ -95,7 +96,7 @@ PanelWindow {
     // A fixed native surface keeps window resizing from interrupting island animations.
     exclusionMode: ExclusionMode.Ignore
     color: Theme.Colors.transparent
-    WlrLayershell.keyboardFocus: menuOpen ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
+    WlrLayershell.keyboardFocus: menuNeedsKeyboardFocus ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
     WlrLayershell.layer: menuOpen || centerIsland.notificationVisible || Services.Capture.recording || Services.Capture.takingScreenshot
         ? WlrLayer.Overlay : WlrLayer.Top
 

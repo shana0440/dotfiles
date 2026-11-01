@@ -7,13 +7,13 @@ import "../Capture/RegionGeometry.js" as Geometry
 Singleton {
     id: root
 
-    property var activeScreenshotPaths: []
+    property var activeScreenshots: []
     property bool screenshotPending: false
     property var screenshotQueue: []
     property var currentScreenshot: null
     property bool screenshotCommandSaved: false
     readonly property bool takingScreenshot: screenshotPending || screenshotQueue.length > 0
-        || (currentScreenshot !== null && !screenshotCommandSaved) || activeScreenshotPaths.length > 0
+        || (currentScreenshot !== null && !screenshotCommandSaved) || activeScreenshots.length > 0
     signal screenshotSaved(string filePath)
 
     property string recordingMode: ""
@@ -32,18 +32,50 @@ Singleton {
     readonly property int recordingElapsedSeconds: recording && recordingStartedAtMs > 0
         ? Math.max(0, Math.floor((recordingClock.date.getTime() - recordingStartedAtMs) / 1000)) : 0
 
-    function screenshotStarted(filePath) {
-        if (filePath && !activeScreenshotPaths.includes(filePath))
-            activeScreenshotPaths = activeScreenshotPaths.concat([filePath])
+    function screenshotStarted(filePath, processId) {
+        if (!filePath || !Number.isInteger(processId) || processId < 0)
+            return
+        activeScreenshots = activeScreenshots.filter(capture => capture.path !== filePath).concat([{
+            path: filePath, processId: processId, expiresAt: Date.now() + 30000
+        }])
     }
 
     function screenshotFinished(filePath) {
-        activeScreenshotPaths = activeScreenshotPaths.filter(path => path !== filePath)
+        activeScreenshots = activeScreenshots.filter(capture => capture.path !== filePath)
+    }
+
+    // PID-less notifications from older installed helpers have a bounded lease.
+    // New helpers are tracked for their actual lifetime, including long captures.
+    Timer {
+        interval: 1000
+        running: root.activeScreenshots.length > 0
+        repeat: true
+        onTriggered: {
+            root.activeScreenshots = root.activeScreenshots.filter(capture =>
+                capture.processId > 0 || capture.expiresAt > Date.now())
+            const processIds = root.activeScreenshots.filter(capture => capture.processId > 0)
+                .map(capture => String(capture.processId))
+            if (processIds.length > 0 && !screenshotLiveness.running)
+                screenshotLiveness.exec(["sh", "-c",
+                    'for pid do kill -0 "$pid" 2>/dev/null || printf "%s\\n" "$pid"; done',
+                    "screenshot-liveness"].concat(processIds))
+        }
+    }
+
+    Process {
+        id: screenshotLiveness
+        stdout: SplitParser {
+            onRead: data => {
+                const processId = Number(data)
+                root.activeScreenshots = root.activeScreenshots.filter(capture => capture.processId !== processId)
+            }
+        }
     }
 
     IpcHandler {
         target: "screenshots"
-        function started(filePath: string) { root.screenshotStarted(filePath) }
+        function started(filePath: string) { root.screenshotStarted(filePath, 0) }
+        function startedByProcess(filePath: string, processId: int) { root.screenshotStarted(filePath, processId) }
         function finished(filePath: string) { root.screenshotFinished(filePath) }
         function captured(filePath: string) {
             root.screenshotFinished(filePath)

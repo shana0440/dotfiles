@@ -47,6 +47,8 @@ local menu        = "vicinae toggle"
 
 hl.on("hyprland.start", function ()
     hl.exec_cmd("vicinae server")
+    -- This session does not start graphical-session.target; start the IME explicitly.
+    hl.exec_cmd("systemctl --user import-environment WAYLAND_DISPLAY DISPLAY XDG_CURRENT_DESKTOP && systemctl --user restart fcitx5-daemon.service")
 end)
 
 -- Autostart necessary processes (like notifications daemons, status bars, etc.)
@@ -296,6 +298,13 @@ for i = 1, 10 do
     hl.bind(mainMod .. " + " .. key, hl.dsp.focus({ workspace = i }))
     hl.bind(mainMod .. " + SHIFT + " .. key, hl.dsp.window.move({ workspace = i }))
 end
+
+-- Select an input method directly without cycling or changing workspaces.
+for key, inputMethod in ipairs({ "keyboard-us", "mozc", "chewing" }) do
+    hl.bind(mainMod .. " + CTRL + " .. key, hl.dsp.exec_cmd("fcitx5-remote -s " .. inputMethod))
+end
+
+hl.bind(mainMod .. " + CTRL + SPACE", hl.dsp.exec_cmd("hypr-toggle-kana"))
 
 -- Example special workspace (scratchpad)
 -- Leave Super+S available for the global Save shortcut.

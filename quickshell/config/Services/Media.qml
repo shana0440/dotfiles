@@ -30,6 +30,18 @@ Singleton {
                 root.pipewirePlaying = JSON.parse(data).playing === true
             }
         }
-        onExited: root.pipewirePlaying = false
+        // Also retry failed starts, which do not emit exited.
+        onRunningChanged: {
+            if (!running) {
+                root.pipewirePlaying = false
+                playbackMonitorRetry.restart()
+            }
+        }
+    }
+
+    Timer {
+        id: playbackMonitorRetry
+        interval: 2000
+        onTriggered: playbackMonitor.running = true
     }
 }
