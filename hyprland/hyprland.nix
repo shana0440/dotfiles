@@ -8,19 +8,22 @@
       addons = with pkgs; [ fcitx5-chewing fcitx5-mozc ];
       settings = {
         globalOptions = {
-          "Hotkey/TriggerKeys"."0" = "Control+space";
-          "Hotkey/EnumerateForwardKeys"."0" = "Control+Shift+space";
+          Hotkey = {
+            TriggerKeys = "";
+            EnumerateSkipFirst = false;
+          };
+          "Hotkey/EnumerateForwardKeys"."0" = "Control+space";
         };
         inputMethod = {
           GroupOrder."0" = "Default";
           "Groups/0" = {
             Name = "Default";
             "Default Layout" = "us";
-            DefaultIM = "chewing";
+            DefaultIM = "mozc";
           };
           "Groups/0/Items/0".Name = "keyboard-us";
-          "Groups/0/Items/1".Name = "chewing";
-          "Groups/0/Items/2".Name = "mozc";
+          "Groups/0/Items/1".Name = "mozc";
+          "Groups/0/Items/2".Name = "chewing";
         };
       };
     };
