@@ -127,6 +127,9 @@ and back in so applications inherit the input-method environment. Hyprland start
   native tray actions; keep Quickshell running and focus an editable text field.
 - `Ctrl+Space`: cycle English → Mozc → Chewing → English.
 - `Ctrl+Shift+Space` is unbound.
+- Input-method state is shared globally across apps (`Behavior.ShareInputState=All`),
+  rather than remembered separately for each app or text field.
+- Escape closes the bar's input-method menu without taking focus from your editor.
 - Chewing uses the standard Taiwanese Zhuyin keyboard layout. In Mozc, type
   romaji (for example, `nihongo`), use Space to convert, and Enter to commit.
 - Run `fcitx5-configtool` for engine preferences. The engine list and these
