@@ -12,9 +12,12 @@
   };
 
   home.packages = with pkgs; [
+    age # age-keygen: create keys for SOPS-encrypted secrets
     curl # curl: transfer data using URLs
     fd # fd: fast file and directory search
     gnumake # make: run build and configuration targets
     ripgrep # rg: fast recursive text search
+    sops # sops: encrypt and edit secrets
+    yq-go # yq: read the secret-file inventory from .sops.yaml
   ];
 }

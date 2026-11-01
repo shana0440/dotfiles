@@ -1,4 +1,4 @@
-.PHONY: nixos home home-linux home-mac home-wsl
+.PHONY: nixos home home-linux home-mac home-wsl encrypt decrypt re-encrypt
 
 # Resolve paths relative to this Makefile, regardless of the working directory.
 DOTFILES := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
@@ -37,3 +37,19 @@ home-mac:
 
 home-wsl:
 	home-manager $(NIX_FLAGS) switch --flake "$(DOTFILES)#$(or $(HOME_CONFIG),kwguo-$(NIX_ARCH)-linux-wsl)"
+
+# Process every encrypted path registered in .sops.yaml.
+encrypt decrypt re-encrypt:
+	@set -eu; umask 077; cd "$(DOTFILES)"; \
+	files=$$(yq -er '.files[]' .sops.yaml); \
+	printf '%s\n' "$$files" | while IFS= read -r file; do \
+		encrypted="$(DOTFILES)/$$file"; \
+		if [ "$@" = re-encrypt ]; then sops --config .sops.yaml updatekeys --yes "$$encrypted"; continue; fi; \
+		base="$${encrypted%.*}"; plaintext="$${base%.enc}.$${encrypted##*.}"; \
+		if [ "$$plaintext" = "$$encrypted" ]; then echo "Expected an .enc filename: $$file" >&2; exit 1; fi; \
+		if [ -f "$$plaintext" ]; then chmod 600 "$$plaintext"; fi; \
+		case "$@" in \
+			encrypt) sops --config .sops.yaml --filename-override "$$encrypted" --encrypt --output "$$encrypted" "$$plaintext" ;; \
+			decrypt) sops --decrypt --output "$$plaintext" "$$encrypted" ;; \
+		esac; \
+	done

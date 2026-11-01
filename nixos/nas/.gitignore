@@ -1,0 +1,6 @@
+/credentials
+/credentials.*
+/secrets.plaintext.yaml
+/secrets.plaintext.yaml.*
+/keys.txt
+/*.agekey

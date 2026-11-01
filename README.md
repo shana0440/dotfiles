@@ -138,6 +138,48 @@ and back in so applications inherit the input-method environment. Hyprland start
 
 macOS and WSL profiles are unchanged.
 
+## Secrets (SOPS)
+
+Home Manager installs `sops`, `age`, and `yq`. `.sops.yaml` contains public age
+recipients, encryption rules, and a `files` list used by the Make targets:
+
+```yaml
+files:
+  - nixos/nas/secrets.enc.yaml
+```
+
+To add a secret, register its encrypted path in that list. The plaintext filename
+omits `.enc`: `secrets.enc.yaml` pairs with `secrets.yaml`. Supported encrypted
+extensions are `.enc.yaml`, `.enc.yml`, and `.enc.json`.
+
+Copy the relevant example to its plaintext file with private permissions, then
+enter your values. For example (replace these paths with your secret's paths):
+
+```sh
+install -m 600 path/to/secrets.example.yaml path/to/secrets.yaml
+vim path/to/secrets.yaml
+```
+
+From the dotfiles directory:
+
+```sh
+make encrypt # Encrypt every registered plaintext file into its .enc counterpart.
+make decrypt # Restore every registered plaintext file from its encrypted counterpart.
+make re-encrypt # Update recipients of every registered encrypted file from .sops.yaml.
+```
+
+For later edits, run `make decrypt`, edit the plaintext, then run `make encrypt`.
+Both targets replace their output files; **decrypting overwrites unencrypted
+edits**. Remove plaintext files when finished. The `files` list is our inventory;
+SOPS itself uses `creation_rules` to select recipients. After changing those
+recipients, run `make re-encrypt`: it uses `sops updatekeys --yes`, requires a key
+that can currently decrypt the files, and does not create plaintext files.
+This updates recipient access; it does not rotate the underlying data keys.
+
+Commit only encrypted files and `.sops.yaml`, never plaintext secrets or private
+keys. Files named `secrets.yaml` and `secrets.json` are Git-ignored throughout the
+repo. Add any other plaintext names to `.gitignore` before using them.
+
 ## Make targets
 
 From `~/dotfiles`:
@@ -148,6 +190,9 @@ make home       # Detect the environment and invoke the matching target.
 make home-linux # Apply home.nix.
 make home-mac   # Apply macos.nix.
 make home-wsl   # Apply wsl.nix.
+make encrypt    # Encrypt all files registered in .sops.yaml.
+make decrypt    # Decrypt all files registered in .sops.yaml.
+make re-encrypt # Update recipient keys for all registered encrypted files.
 ```
 
 These require GNU Make (`gnumake` in Nixpkgs). If it is not installed, use
