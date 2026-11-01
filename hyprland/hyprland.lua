@@ -299,6 +299,13 @@ for i = 1, 10 do
     hl.bind(mainMod .. " + SHIFT + " .. key, hl.dsp.window.move({ workspace = i }))
 end
 
+-- Select an input method directly without cycling or changing workspaces.
+for key, inputMethod in ipairs({ "keyboard-us", "mozc", "chewing" }) do
+    hl.bind(mainMod .. " + CTRL + " .. key, hl.dsp.exec_cmd("fcitx5-remote -s " .. inputMethod))
+end
+
+hl.bind(mainMod .. " + CTRL + SPACE", hl.dsp.exec_cmd("hypr-toggle-kana"))
+
 -- Example special workspace (scratchpad)
 -- Leave Super+S available for the global Save shortcut.
 hl.bind(mainMod .. " + ALT + S",         hl.dsp.workspace.toggle_special("magic"))

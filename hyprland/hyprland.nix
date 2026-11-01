@@ -29,6 +29,16 @@
     };
   };
 
+  home.packages = [
+    (pkgs.writeShellApplication {
+      name = "hypr-toggle-kana";
+      runtimeInputs = [ pkgs.systemd ];
+      text = ''
+        exec ${pkgs.python3}/bin/python3 ${./toggle_kana.py}
+      '';
+    })
+  ];
+
   # Keep addon preferences writable alongside the managed profile and hotkeys.
   xdg.configFile.fcitx5.recursive = true;
 

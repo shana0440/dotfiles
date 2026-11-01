@@ -110,6 +110,12 @@ Desktop Linux installs Fcitx5 with Chewing (Traditional Chinese Zhuyin), Mozc
 and back in so applications inherit the input-method environment. Hyprland starts
 `fcitx5-daemon.service` explicitly; no NixOS rebuild is required.
 
+- `Super+Ctrl+1`: select English directly.
+- `Super+Ctrl+2`: select Japanese (Mozc) directly.
+- `Super+Ctrl+3`: select Traditional Chinese (Chewing) directly.
+- `Super+Ctrl+Space`: toggle あ (Hiragana) ↔ ア (Katakana) while typing in Mozc.
+  English and Chewing are unchanged. The `hypr-toggle-kana` helper uses Fcitx's
+  native tray actions; keep Quickshell running and focus an editable text field.
 - `Ctrl+Space`: cycle English → Mozc → Chewing → English.
 - `Ctrl+Shift+Space` is unbound.
 - Chewing uses the standard Taiwanese Zhuyin keyboard layout. In Mozc, type
