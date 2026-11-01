@@ -23,7 +23,19 @@ case "$mode" in
             if [[ "$active_mode" != none && -n "${XDG_RUNTIME_DIR:-}" ]]; then
                 started_at_seconds=$(stat -c %Y "$XDG_RUNTIME_DIR/hypr-record-$active_mode.path" 2>/dev/null || printf '0')
             fi
-            printf '{"mode":"%s","startedAtSeconds":%s}\n' "$active_mode" "$started_at_seconds"
+            recording_geometry=""
+            session_file="${XDG_RUNTIME_DIR:-}/hypr-record-$active_mode.path"
+            if [[ "$active_mode" == region && -n "${XDG_RUNTIME_DIR:-}" && -f "$session_file" ]]; then
+                {
+                    IFS= read -r -d '' _ || true
+                    IFS= read -r -d '' recording_geometry || true
+                } < "$session_file" 2>/dev/null || recording_geometry=""
+                if [[ ! "$recording_geometry" =~ ^-?[0-9]+,-?[0-9]+\ [1-9][0-9]*x[1-9][0-9]*$ ]]; then
+                    recording_geometry=""
+                fi
+            fi
+            printf '{"mode":"%s","startedAtSeconds":%s,"geometry":"%s"}\n' \
+                "$active_mode" "$started_at_seconds" "$recording_geometry"
         else
             printf '%s\n' "$active_mode"
         fi
@@ -47,7 +59,7 @@ case "$mode" in
         recorder_args=()
         ;;
     *)
-        printf 'Usage: hypr-record {full OUTPUT|region|stop|status}\n' >&2
+        printf 'Usage: hypr-record {full OUTPUT|region [OUTPUT GEOMETRY]|stop|status}\n' >&2
         exit 2
         ;;
 esac
@@ -57,12 +69,24 @@ exec {lock_fd}>"$XDG_RUNTIME_DIR/hypr-record.lock"
 flock -n "$lock_fd" || exit 1
 [[ "$(recording_mode)" == none ]] || exit 1
 
+geometry=""
 if [[ "$mode" == region ]]; then
-    # slurp reads piped stdin as rectangle suggestions; GUI launches supply none.
-    if ! geometry=$(slurp </dev/null); then
-        exit 0
+    geometry="${3:-}"
+    if [[ -z "$geometry" ]]; then
+        if timeout 1s quickshell --path "${XDG_CONFIG_HOME:-$HOME/.config}/quickshell" \
+            ipc call capture selectRegion recording >/dev/null 2>&1; then
+            exit 0
+        fi
+        # slurp reads piped stdin as rectangle suggestions; GUI launches supply none.
+        if ! geometry=$(slurp </dev/null); then
+            exit 0
+        fi
+        [[ -n "$geometry" ]] || exit 0
     fi
-    [[ -n "$geometry" ]] || exit 0
+    if [[ ! "$geometry" =~ ^-?[0-9]+,-?[0-9]+\ [1-9][0-9]*x[1-9][0-9]*$ ]]; then
+        printf 'Invalid recording geometry.\n' >&2
+        exit 2
+    fi
     recorder_args=(-g "$geometry")
 fi
 
@@ -70,7 +94,7 @@ recording_directory="${XDG_VIDEOS_DIR:-$HOME/Videos}/Recordings"
 mkdir -p -- "$recording_directory"
 recording_path=$(mktemp --suffix=.mp4 "$recording_directory/Recording-$(date +%Y-%m-%d_%H-%M-%S)-XXXXXX")
 session_file="$XDG_RUNTIME_DIR/hypr-record-$mode.path"
-printf '%s\0' "$recording_path" > "$session_file"
+printf '%s\0%s\0' "$recording_path" "$geometry" > "$session_file"
 
 # The recorder outlives shell reloads; SIGINT lets it finalize the MP4 when stopped.
 # Select the playback monitor explicitly so the microphone stays excluded.

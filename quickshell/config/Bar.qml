@@ -1,5 +1,6 @@
 import QtQuick
 import Quickshell
+import Quickshell.Io
 import Quickshell.Wayland
 import "Bar" as BarComponents
 import "Theme" as Theme
@@ -19,8 +20,38 @@ PanelWindow {
         rightIsland.close()
     }
 
+    function openCaptureMenu() {
+        Services.Capture.cancelRegionSelection()
+        captureDelay.stop()
+        rightIsland.close()
+        centerIsland.open("capture")
+    }
+
+    IpcHandler {
+        target: "capture"
+        function openMenu() { root.openCaptureMenu() }
+        function cancelSelection() { Services.Capture.cancelRegionSelection() }
+        function takeScreenshot(mode: string) {
+            if (root.menuOpen) {
+                root.requestCapture("takeScreenshot", mode)
+            } else {
+                captureDelay.stop()
+                Services.Capture.cancelRegionSelection()
+                Services.Capture.takeScreenshot(mode, root.screen.name)
+            }
+        }
+        function selectRegion(kind: string) {
+            captureDelay.stop()
+            root.closeMenus()
+            Services.Capture.beginRegionSelection(kind, root.screen.name)
+        }
+    }
+
     function requestCapture(action, mode) {
         captureDelay.stop()
+        Services.Capture.cancelRegionSelection()
+        if (action === "takeScreenshot" && mode === "full")
+            Services.Capture.prepareScreenshot()
         closeMenus()
         if (action === "stopRecording") {
             Services.Capture.stopRecording()
@@ -39,7 +70,7 @@ PanelWindow {
         interval: centerIsland.resizeDuration + centerIsland.fadeDuration
         onTriggered: {
             if (action === "takeScreenshot")
-                Services.Capture.takeScreenshot(mode)
+                Services.Capture.takeScreenshot(mode, root.screen.name)
             else if (action === "startRecording")
                 Services.Capture.startRecording(mode, root.screen.name)
         }
@@ -65,7 +96,7 @@ PanelWindow {
     exclusionMode: ExclusionMode.Ignore
     color: Theme.Colors.transparent
     WlrLayershell.keyboardFocus: menuOpen ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
-    WlrLayershell.layer: menuOpen || centerIsland.notificationVisible || Services.Capture.recording
+    WlrLayershell.layer: menuOpen || centerIsland.notificationVisible || Services.Capture.recording || Services.Capture.takingScreenshot
         ? WlrLayer.Overlay : WlrLayer.Top
 
     // Layer-shell infers the reservation edge from three-edge anchoring.
@@ -173,8 +204,8 @@ PanelWindow {
             id: settingsIsland
             anchors.left: centerIsland.right
             anchors.leftMargin: merged ? -width : root.islandSpacing
-            merged: centerIsland.sideIslandsMerged
-            onClicked: centerIsland.open("capture")
+            merged: centerIsland.sideIslandsMerged && !Services.Capture.takingScreenshot
+            onClicked: root.openCaptureMenu()
         }
 
         BarComponents.MediaIsland {

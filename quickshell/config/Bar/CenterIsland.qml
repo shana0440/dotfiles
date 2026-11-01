@@ -61,9 +61,9 @@ Components.Island {
         volumeTimeout.restart()
     }
 
-    IpcHandler {
-        target: "screenshots"
-        function captured(filePath: string) {
+    Connections {
+        target: Services.Capture
+        function onScreenshotSaved(filePath) {
             root.showCaptureNotification(filePath, filePath, "screenshot")
         }
     }
