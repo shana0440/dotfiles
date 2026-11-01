@@ -143,7 +143,7 @@ Item {
                 root.selectedSsid = ""
                 root.message = "Connected."
                 root.connectionChanged()
-                root.refresh()
+                Qt.callLater(() => root.refresh())
             } else {
                 root.message = "Connection failed. Check the password or use advanced settings."
             }
