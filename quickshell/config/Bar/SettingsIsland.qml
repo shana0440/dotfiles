@@ -5,25 +5,41 @@ import "../Services" as Services
 Components.MergeableCircle {
     id: root
 
+    readonly property bool loading: Services.Capture.takingScreenshot === true
     signal clicked()
-    animateMerge: !Services.Capture.takingScreenshot
+    animateMerge: !loading
 
-    Components.IconButton {
-        objectName: "captureControlsButton"
-        visible: !Services.Capture.takingScreenshot
+    Loader {
+        objectName: "captureIndicator"
         anchors.fill: parent
-        radius: height / 2
-        icon: "settings"
-        tooltip: "Capture controls"
-        enabled: !Services.Capture.recordingCommandRunning && !Services.Capture.takingScreenshot
-        onClicked: root.clicked()
+        sourceComponent: root.loading ? spinnerContent : settingsContent
     }
 
-    Components.LoadingSpinner {
-        objectName: "screenshotSpinner"
-        anchors.centerIn: parent
-        width: 20
-        height: 20
-        visible: Services.Capture.takingScreenshot
+    Component {
+        id: settingsContent
+
+        Components.IconButton {
+            objectName: "captureControlsButton"
+            radius: height / 2
+            icon: "settings"
+            tooltip: "Capture controls"
+            enabled: !Services.Capture.recordingCommandRunning
+            onClicked: root.clicked()
+        }
+    }
+
+    Component {
+        id: spinnerContent
+
+        Item {
+            objectName: "screenshotLoadingContent"
+
+            Components.LoadingSpinner {
+                objectName: "screenshotSpinner"
+                anchors.centerIn: parent
+                width: 20
+                height: 20
+            }
+        }
     }
 }

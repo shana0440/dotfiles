@@ -17,4 +17,7 @@ capture the desktop or start a recorder.
 The lifecycle test additionally runs the real Quickshell service offscreen with
 isolated runtime/DBus settings and fake helpers. It checks screenshot feedback
 before helper IPC, success/failure cleanup, and an uninterrupted recording
-outline across deliberately stale status responses.
+outline across deliberately stale status responses. It loads the full production
+configuration tree, repeats the workflow after atomic service-file replacements
+and soft reloads, and verifies that the capture service and screenshot IPC remain
+available in every generation.

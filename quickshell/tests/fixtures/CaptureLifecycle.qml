@@ -1,5 +1,6 @@
 import QtQuick
 import Quickshell
+import Quickshell.Io
 import "Services" as Services
 
 ShellRoot {
@@ -9,6 +10,23 @@ ShellRoot {
     readonly property bool regionVisible: Services.Capture.selectingRegion
         || Services.Capture.startingRecordingGeometry.length > 0
         || (Services.Capture.recordingMode === "region" && Services.Capture.recordingGeometry.length > 0)
+
+    Connections {
+        target: Quickshell
+        function onReloadCompleted() { Quickshell.inhibitReloadPopup() }
+        function onReloadFailed() { Quickshell.inhibitReloadPopup() }
+    }
+
+    IpcHandler {
+        target: "captureTest"
+        function reloadShell() { Qt.callLater(() => Quickshell.reload(false)) }
+        function ready(): bool {
+            return typeof Services.Capture.takeScreenshot === "function"
+                && typeof Services.Capture.startRecording === "function"
+                && typeof Services.Capture.screenshotSaved === "function"
+                && typeof Services.Capture.takingScreenshot === "boolean"
+        }
+    }
 
     function check(condition, message) {
         if (!condition) {
@@ -31,6 +49,7 @@ ShellRoot {
     }
 
     Component.onCompleted: {
+        Quickshell.watchFiles = false
         Services.Capture.prepareScreenshot()
         check(Services.Capture.takingScreenshot, "no feedback while preparing capture")
         Services.Capture.takeScreenshot("full", "")
