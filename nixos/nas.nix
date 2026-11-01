@@ -44,7 +44,7 @@ in
 
     sops = {
       useSystemdActivation = true;
-      age.keyFile = lib.mkDefault "/var/lib/sops-nix/key.txt";
+      age.keyFile = lib.mkDefault "${config.users.users.${user}.home}/.config/sops/age/keys.txt";
       secrets = {
         "nas/device" = secret "device";
         "nas/credentials" = secret "credentials";

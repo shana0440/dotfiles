@@ -180,6 +180,11 @@ Commit only encrypted files and `.sops.yaml`, never plaintext secrets or private
 keys. Files named `secrets.yaml` and `secrets.json` are Git-ignored throughout the
 repo. Add any other plaintext names to `.gitignore` before using them.
 
+On Linux, SOPS finds the age private key at `~/.config/sops/age/keys.txt` (under
+`XDG_CONFIG_HOME` if set). Set `SOPS_AGE_KEY_FILE` for the Make targets to use a
+different key. The NixOS NAS module reads this standard key from the user's home
+directory directly, so no separate root-owned copy is needed.
+
 ## Make targets
 
 From `~/dotfiles`:
