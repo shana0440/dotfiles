@@ -266,11 +266,16 @@ hl.device({
 local mainMod = "SUPER" -- Sets "Windows" key as main modifier
 
 -- Global macOS-style shortcuts: send Ctrl equivalents to the focused window.
+-- Explicit XKB keycodes avoid keysym lookup failures while Shift is held.
+local shortcutKeycodes = {
+    C = 54, V = 55, X = 53, A = 38, Z = 52, F = 41,
+    S = 39, O = 32, L = 46, T = 28, W = 25, R = 27,
+}
 for _, key in ipairs({ "C", "V", "X", "A", "Z", "F", "S", "O", "L", "T", "W", "R" }) do
-    hl.bind(mainMod .. " + " .. key, hl.dsp.send_shortcut({ mods = "CTRL", key = key }))
+    hl.bind(mainMod .. " + " .. key, hl.dsp.send_shortcut({ mods = "CTRL", key = "code:" .. shortcutKeycodes[key] }))
 end
 for _, key in ipairs({ "Z", "T", "R" }) do
-    hl.bind(mainMod .. " + SHIFT + " .. key, hl.dsp.send_shortcut({ mods = "CTRL SHIFT", key = key }))
+    hl.bind(mainMod .. " + SHIFT + " .. key, hl.dsp.send_shortcut({ mods = "CTRL SHIFT", key = "code:" .. shortcutKeycodes[key] }))
 end
 
 hl.bind(mainMod .. " + SHIFT + S", hl.dsp.exec_cmd("quickshell ipc call capture openMenu"))
