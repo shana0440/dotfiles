@@ -18,6 +18,7 @@
     ./thunar/thunar.nix
     ./hyprland/hyprland.nix
     ./quickshell/quickshell.nix
+    ./agent-workspace/agent-workspace.nix
   ];
 
   home.homeDirectory = "/home/kwguo";
