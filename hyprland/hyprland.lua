@@ -47,6 +47,7 @@ local menu        = "vicinae toggle"
 
 hl.on("hyprland.start", function ()
     hl.exec_cmd("vicinae server")
+    hl.exec_cmd("quickshell")
     -- This session does not start graphical-session.target; start the IME explicitly.
     hl.exec_cmd("systemctl --user import-environment WAYLAND_DISPLAY DISPLAY XDG_CURRENT_DESKTOP && systemctl --user restart fcitx5-daemon.service")
 end)
