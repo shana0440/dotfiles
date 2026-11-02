@@ -1,9 +1,10 @@
 { config, pkgs, ... }:
 
 let
-  # This Intel host uses Android 13. Set false to stop advertising ARM support.
+  # This host uses Android 13. Set false to stop advertising ARM support.
   armTranslation = true;
-  nativeBridge = pkgs.callPackage ./waydroid/houdini.nix { };
+  # Trial libndk instead of Houdini, which stalls during Fate/GO startup.
+  nativeBridge = pkgs.callPackage ./waydroid/ndk-translation.nix { };
   waydroid = if armTranslation then pkgs.waydroid-nftables.overrideAttrs (old: {
     patches = (old.patches or [ ]) ++ [ ./waydroid/native-bridge.patch ];
     postPatch = (old.postPatch or "") + ''
@@ -21,9 +22,12 @@ let
       "ro.product.cpu.abilist" = if armTranslation then "x86_64,x86,arm64-v8a,armeabi-v7a,armeabi" else "x86_64,x86";
       "ro.product.cpu.abilist32" = if armTranslation then "x86,armeabi-v7a,armeabi" else "x86";
       "ro.product.cpu.abilist64" = if armTranslation then "x86_64,arm64-v8a" else "x86_64";
-      "ro.dalvik.vm.native.bridge" = if armTranslation then "libhoudini.so" else "0";
+      "ro.dalvik.vm.native.bridge" = if armTranslation then "libndk_translation.so" else "0";
       "ro.enable.native.bridge.exec" = if armTranslation then "1" else "0";
       "ro.enable.native.bridge.exec64" = if armTranslation then "1" else "0";
+      "ro.vendor.enable.native.bridge.exec" = if armTranslation then "1" else "0";
+      "ro.vendor.enable.native.bridge.exec64" = if armTranslation then "1" else "0";
+      "ro.ndk_translation.version" = if armTranslation then nativeBridge.version else "";
       "ro.dalvik.vm.isa.arm" = if armTranslation then "x86" else "";
       "ro.dalvik.vm.isa.arm64" = if armTranslation then "x86_64" else "";
     };

@@ -342,20 +342,29 @@ On a fresh installation only, initialize the Android images once with
 Google apps. The rendering properties are seeded before initialization. Images
 and games need additional space under `/var/lib/waydroid` and your home directory.
 
-ARM/ARM64 support uses a hash-pinned Houdini 13.0.1 payload for this Intel,
-x86_64 host. These are proprietary ChromeOS binaries from a third-party mirror,
-not an official Waydroid component. Nix keeps them in a read-only overlay layer;
-it does not rewrite the GAPPS image or run an internet-downloaded installer as
-root. The package rejects images other than Android 13 (SDK 33) and fails
-startup if the overlay cannot be mounted. Source and checksum are pinned in
-`nixos/waydroid/houdini.nix`.
+ARM/ARM64 support currently trials a hash-pinned Android 13 libndk translation
+payload instead of Houdini, following Fate/GO startup stalls matching the
+[reported 2026 Houdini regression](https://github.com/waydroid/waydroid/issues/2177).
+These are proprietary ChromeOS binaries from a third-party mirror, not an official
+Waydroid component. **The bundled ARM-to-AMD license notice restricts use and
+redistribution to AMD CPUs; review it before using this trial on the Intel host.**
+The notice is preserved under the package's `share/doc/waydroid-ndk-translation/`.
+Nix keeps the payload in a read-only overlay layer; it does not rewrite the GAPPS
+image or run an internet-downloaded installer as root. Startup rejects images
+other than Android 13 (SDK 33) and fails if the overlay cannot be mounted.
+Source and checksum are pinned in `nixos/waydroid/ndk-translation.nix`.
 
-After rebuilding, run `waydroid session stop` and open Waydroid again to load
-the new bridge. Check `waydroid prop get ro.product.cpu.abilist` for `arm64-v8a`, and
-`waydroid prop get ro.dalvik.vm.native.bridge` for `libhoudini.so`. To disable
-translation, set `armTranslation = false` in `nixos/waydroid.nix`, rebuild, and
-restart Waydroid; this also restores x86-only ABI properties. Do not reinitialize
-Android or delete app data when changing this setting.
+Stop the session with `waydroid session stop` **before** running `make nixos`,
+then open Waydroid again to load the new bridge. Check
+`waydroid prop get ro.product.cpu.abilist` for `arm64-v8a`, and
+`waydroid prop get ro.dalvik.vm.native.bridge` for `libndk_translation.so`.
+Installation/build success does not establish game compatibility: verify that
+Fate/GO gets past the splash screen and responds to input. If the trial fails,
+stop the session, run `sudo nixos-rebuild switch --rollback`, and reopen Waydroid.
+This reverts the whole previous NixOS generation, not only Waydroid. To disable
+translation instead, set `armTranslation = false` in `nixos/waydroid.nix`, rebuild,
+and restart Waydroid; this also restores x86-only ABI properties. Do not
+reinitialize Android or delete app data when changing this setting.
 
 Desktop Linux Home Manager installs a separate XAPK handler via `waydroid/`.
 Apply it with `make home-linux`, then double-click an `.xapk` in Thunar and choose
