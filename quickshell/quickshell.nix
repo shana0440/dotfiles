@@ -22,6 +22,12 @@ let
       exec ${pkgs.python3}/bin/python3 ${./scripts/system_status.py}
     '';
   };
+  launcherBadgeMonitor = pkgs.writeShellApplication {
+    name = "launcher-badge-monitor";
+    text = ''
+      exec ${pkgs.python3.withPackages (ps: [ ps.dbus-next ])}/bin/python3 -u ${./scripts/launcher_badges.py}
+    '';
+  };
   playbackMonitor = pkgs.writeShellApplication {
     name = "pipewire-playback-monitor";
     runtimeInputs = [ pkgs.pipewire ];
@@ -31,7 +37,7 @@ let
   };
 in
 {
-  home.packages = [ pkgs.quickshell pkgs.pipewire playbackMonitor systemStatus ]
+  home.packages = [ pkgs.quickshell pkgs.pipewire playbackMonitor systemStatus launcherBadgeMonitor ]
     ++ lib.optionals pkgs.stdenv.isLinux [
       pkgs.cava
       pkgs.grim

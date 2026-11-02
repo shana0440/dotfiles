@@ -134,6 +134,27 @@ limited. The focused window has a purple underline. Missing icons fall back to
 an application initial, and the island disappears when no windows are open.
 Its width is capped before the center group so the islands do not overlap.
 
+A purple dot at the icon's top-right means a visible unread count or an attention
+request published through `com.canonical.Unity.LauncherEntry.Update` on the session
+D-Bus. The `launcher-badge-monitor` helper respects `count`, `count-visible`, and
+`urgent`, matches desktop-file IDs to windows, and preserves partial updates.
+Focusing a window does not clear its dot: the publisher must update its state.
+Dots are removed when their publisher exits or the monitor disconnects. All
+windows belonging to the same desktop entry share the badge.
+
+This does not need a notification service or application-specific integrations.
+Apps that do not publish the protocol have no dot; actual Telegram/Discord support
+must be verified with the installed builds. The protocol broadcasts updates, not
+an initial snapshot, so after a shell restart an existing badge may not appear
+until the app next publishes it. Apply `make home-linux` to install the helper.
+
+Run badge state and private-D-Bus integration tests with:
+
+```sh
+nix-shell -p 'python3.withPackages (ps: [ ps.dbus-next ])' dbus --run \\
+  'python3 -m unittest discover -s quickshell/scripts -p "test_launcher_badges*.py"'
+```
+
 ### Workspace shortcuts
 
 - `Alt+1` through `Alt+9`, and `Alt+0`: switch to workspaces 1–10.

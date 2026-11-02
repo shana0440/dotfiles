@@ -3,6 +3,7 @@ import QtQuick.Controls
 import Quickshell
 import Quickshell.Wayland
 import "../Theme" as Theme
+import "../Services" as Services
 
 Rectangle {
     id: root
@@ -93,6 +94,20 @@ Rectangle {
                         radius: 1
                         color: Theme.Colors.accent
                         visible: button.modelData.activated
+                    }
+
+                    Rectangle {
+                        anchors.top: parent.top
+                        anchors.right: parent.right
+                        anchors.margins: 1
+                        width: 7
+                        height: 7
+                        radius: width / 2
+                        color: Theme.Colors.accent
+                        border.color: Theme.Colors.background
+                        border.width: 1
+                        visible: Services.LauncherBadges.hasUnread(
+                            button.modelData.appId, button.entry?.id || "")
                     }
 
                     MouseArea {
