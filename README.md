@@ -314,45 +314,36 @@ new machine. Do not change `system.stateVersion` just to update packages.
 
 ## Waydroid (Android)
 
-Desktop NixOS enables Waydroid through `nixos/desktop.nix`. Apply it with
-`make nixos` (requires sudo), then initialize the Android images:
+`nixos/waydroid.nix` manages the container, NVIDIA software-rendering properties,
+and nftables-based container networking. Apply it once:
 
 ```sh
-sudo waydroid init
+make nixos
 ```
 
-The default image has no Google Play Store. If you want Google apps, choose
-`sudo waydroid init -s GAPPS` **instead** at initial setup; Play certification and
-game compatibility are not guaranteed. Images and games require additional disk
-space under `/var/lib/waydroid` and your home directory.
-
-This machine's NVIDIA-only graphics need the upstream software-rendering
-fallback. After initialization, stop any running Waydroid session/container,
-then edit `/var/lib/waydroid/waydroid.cfg` with `sudoedit`. Add these keys to its
-existing `[properties]` section (do not replace the rest of the file):
-
-```ini
-ro.hardware.gralloc=default
-ro.hardware.egl=swiftshader
-```
-
-Apply the properties and start the container:
+If Android images are already initialized, **do not initialize again**. Simply
+open Waydroid from the application launcher, or run:
 
 ```sh
-sudo waydroid upgrade -o
-sudo systemctl restart waydroid-container
-waydroid session start
+waydroid show-full-ui
 ```
 
-Run `waydroid show-full-ui` in another terminal in your Hyprland session.
-Use `waydroid session stop` when finished. A reboot may be needed after the
-initial NixOS activation for kernel changes; use `waydroid status` and
-`journalctl -u waydroid-container -b` for diagnostics.
+This starts the user session automatically; no second terminal or sudo is needed.
+Use `waydroid session stop` when finished. The container service merges the
+rendering settings before startup and applies them offline to existing images,
+preserving the selected image (including GAPPS) and application data. Do not edit
+`waydroid.cfg` by hand for these settings.
+
+On a fresh installation only, initialize the Android images once with
+`sudo waydroid init -s GAPPS` for Google Play, or `sudo waydroid init` without
+Google apps. The rendering properties are seeded before initialization. Images
+and games need additional space under `/var/lib/waydroid` and your home directory.
 
 Software rendering is not suitable for demanding games. ARM-only games may
-require additional translation support; anti-cheat and Play Integrity can block
-games even when Android runs successfully. The NixOS module also enables LXC
-and trusts the container's `waydroid0` interface in the host firewall.
+require additional translation support; anti-cheat and Play certification can
+block games. The NixOS module enables LXC and trusts the container's `waydroid0`
+interface in the host firewall; it does not change the host firewall backend.
+Use `waydroid status` and `journalctl -u waydroid-container -b` for diagnostics.
 See the [upstream GPU fallback instructions](https://docs.waydro.id/faq/get-waydroid-to-work-through-a-vm).
 
 ## Steam

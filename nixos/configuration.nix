@@ -6,6 +6,7 @@
     ./hardware-configuration.nix
     (import ../applications.nix).nixos
     ./desktop.nix
+    ./waydroid.nix
     ./user.nix
     ./nas.nix
   ];
