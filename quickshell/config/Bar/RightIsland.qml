@@ -12,7 +12,7 @@ Components.Island {
     readonly property bool keyboardFocusRequired: expanded && mode !== "input"
     readonly property bool confirming: mode === "power" && menu.confirming
 
-    activeView: mode === "input" ? inputMenu : mode === "wifi" ? wifiMenu : mode === "power" ? menu : defaultContent
+    activeView: mode === "input" ? inputMenu : mode === "wifi" ? wifiMenu : mode === "power" ? menu : mode === "system" ? systemStatus : defaultContent
     alignment: Qt.AlignRight
     overflowView: defaultContent
 
@@ -29,6 +29,14 @@ Components.Island {
             InputMethodIndicator {
                 id: inputIndicator
                 onClicked: root.mode = "input"
+            }
+
+            Components.IconButton {
+                width: 40
+                height: 32
+                icon: "systemStatus"
+                tooltip: "System status"
+                onClicked: root.mode = "system"
             }
 
             Wifi {
@@ -60,6 +68,11 @@ Components.Island {
                     shown: powerMouse.containsMouse
                 }
             }
+        },
+        SystemStatus {
+            id: systemStatus
+            active: root.mode === "system"
+            onCloseRequested: root.close()
         },
         PowerMenu {
             id: menu

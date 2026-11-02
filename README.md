@@ -104,6 +104,16 @@ for Lua edits.
 Home Manager links it to `~/.config/hypr/hyprland.lua` on desktop Linux only (not WSL);
 Hyprland installation and the login session stay in `nixos/desktop.nix`.
 
+### System status
+
+Click the activity icon in Quickshell's right island to expand live host metrics:
+CPU usage, available-memory-based usage, CPU temperature (or a named fallback
+sensor), swap, root/home filesystem usage, load averages (1/5/15 minutes), and
+uptime. Home is shown separately only when it uses another filesystem. Readings
+refresh every two seconds while open; Escape, the close button, or an outside
+click restores the compact island. Missing temperature sensors show as unavailable.
+The `system-status-snapshot` helper is installed by `make home-linux`.
+
 ### Workspace shortcuts
 
 - `Alt+1` through `Alt+9`, and `Alt+0`: switch to workspaces 1–10.
