@@ -1,0 +1,19 @@
+diff --git a/src/backend/Headless.cpp b/src/backend/Headless.cpp
+--- a/src/backend/Headless.cpp
++++ b/src/backend/Headless.cpp
+@@ -151,6 +151,14 @@ std::vector<SDRMFormat> Aquamarine::CHeadlessBackend::getRenderFormats() {
+         return impl->getRenderableFormats();
+     }
+-
++
++    // Nested sessions have a Wayland allocator, not a DRM backend. Use its
++    // advertised modifiers instead of guessing implicit/linear support, which
++    // is insufficient for NVIDIA's GBM allocator.
++    for (const auto& impl : backend->getImplementations()) {
++        if (impl->type() == AQ_BACKEND_WAYLAND && !impl->getRenderFormats().empty())
++            return impl->getRenderFormats();
++    }
++
+     // formats probably supported by EGL
+     return {SDRMFormat{.drmFormat = DRM_FORMAT_XRGB8888, .modifiers = {DRM_FORMAT_INVALID}},
+             SDRMFormat{.drmFormat = DRM_FORMAT_XBGR8888, .modifiers = {DRM_FORMAT_INVALID}},
