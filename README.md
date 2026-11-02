@@ -315,7 +315,7 @@ new machine. Do not change `system.stateVersion` just to update packages.
 ## Waydroid (Android)
 
 `nixos/waydroid.nix` manages the container, NVIDIA software-rendering properties,
-and nftables-based container networking. Apply it once:
+ARM translation, and nftables-based container networking. Apply changes with:
 
 ```sh
 make nixos
@@ -341,9 +341,27 @@ On a fresh installation only, initialize the Android images once with
 Google apps. The rendering properties are seeded before initialization. Images
 and games need additional space under `/var/lib/waydroid` and your home directory.
 
-Software rendering is not suitable for demanding games. ARM-only games may
-require additional translation support; anti-cheat and Play certification can
-block games. The NixOS module enables LXC and trusts the container's `waydroid0`
+ARM/ARM64 support uses a hash-pinned Houdini 13.0.1 payload for this Intel,
+x86_64 host. These are proprietary ChromeOS binaries from a third-party mirror,
+not an official Waydroid component. Nix keeps them in a read-only overlay layer;
+it does not rewrite the GAPPS image or run an internet-downloaded installer as
+root. The package rejects images other than Android 13 (SDK 33) and fails
+startup if the overlay cannot be mounted. Source and checksum are pinned in
+`nixos/waydroid/houdini.nix`.
+
+After rebuilding, run `waydroid session stop` and open Waydroid again to load
+the new bridge. Check `waydroid prop get ro.product.cpu.abilist` for `arm64-v8a`, and
+`waydroid prop get ro.dalvik.vm.native.bridge` for `libhoudini.so`. To disable
+translation, set `armTranslation = false` in `nixos/waydroid.nix`, rebuild, and
+restart Waydroid; this also restores x86-only ABI properties. Do not reinitialize
+Android or delete app data when changing this setting.
+
+An `.xapk` is a split-APK bundle, not a single APK. The existing double-click
+handler installs only `.apk` files; XAPK bundles still need a split installer.
+ARM support does not change that file-format requirement.
+
+Software rendering and translation may be slow. Game compatibility is not
+guaranteed; anti-cheat and Play certification can still block games. The NixOS module enables LXC and trusts the container's `waydroid0`
 interface in the host firewall; it does not change the host firewall backend.
 Use `waydroid status` and `journalctl -u waydroid-container -b` for diagnostics.
 See the [upstream GPU fallback instructions](https://docs.waydro.id/faq/get-waydroid-to-work-through-a-vm).
