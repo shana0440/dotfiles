@@ -16,6 +16,9 @@ in
     package = pkgs.waydroid-nftables;
   };
 
+  xdg.mime.defaultApplications."application/vnd.android.package-archive" =
+    "waydroid.app.install.desktop";
+
   systemd.services.waydroid-container = {
     serviceConfig.StateDirectory = "waydroid";
     # Run while the container is stopped, before its D-Bus service accepts requests.

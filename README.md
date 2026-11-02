@@ -329,6 +329,8 @@ waydroid show-full-ui
 ```
 
 This starts the user session automatically; no second terminal or sudo is needed.
+While Waydroid is running, double-click an `.apk` in Thunar to install it via
+**Install in Waydroid**; the APK file association is managed by NixOS.
 Use `waydroid session stop` when finished. The container service merges the
 rendering settings before startup and applies them offline to existing images,
 preserving the selected image (including GAPPS) and application data. Do not edit
