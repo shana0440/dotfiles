@@ -25,6 +25,7 @@ Item {
         pause: "pause",
         close: "x",
         settings: "settings",
+        systemStatus: "activity",
         screenshot: "camera",
         screenshotRegion: "scan",
         record: "video",

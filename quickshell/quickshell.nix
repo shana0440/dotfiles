@@ -16,6 +16,12 @@ let
     runtimeInputs = with pkgs; [ coreutils slurp systemd util-linux wf-recorder quickshell recordingFinished ];
     text = builtins.readFile ./scripts/record.sh;
   };
+  systemStatus = pkgs.writeShellApplication {
+    name = "system-status-snapshot";
+    text = ''
+      exec ${pkgs.python3}/bin/python3 ${./scripts/system_status.py}
+    '';
+  };
   playbackMonitor = pkgs.writeShellApplication {
     name = "pipewire-playback-monitor";
     runtimeInputs = [ pkgs.pipewire ];
@@ -25,7 +31,7 @@ let
   };
 in
 {
-  home.packages = [ pkgs.quickshell pkgs.pipewire playbackMonitor ]
+  home.packages = [ pkgs.quickshell pkgs.pipewire playbackMonitor systemStatus ]
     ++ lib.optionals pkgs.stdenv.isLinux [
       pkgs.cava
       pkgs.grim
