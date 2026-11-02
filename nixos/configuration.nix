@@ -65,6 +65,8 @@
     # Set the password interactively during installation.
   };
 
+  services.tailscale.enable = true;
+
   services.openssh = {
     enable = false;
     openFirewall = false;
