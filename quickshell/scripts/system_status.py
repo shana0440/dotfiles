@@ -92,14 +92,11 @@ def nvidia_gpus():
     executable = shutil.which("nvidia-smi")
     if not executable:
         return []
-    try:
-        result = subprocess.run(
-            [executable, "--query-gpu=uuid,name,utilization.gpu,memory.used,memory.total,temperature.gpu",
-             "--format=csv,noheader,nounits"],
-            capture_output=True, text=True, check=True, timeout=1.5,
-        )
-    except (OSError, subprocess.SubprocessError):
-        return []
+    result = subprocess.run(
+        [executable, "--query-gpu=uuid,name,utilization.gpu,memory.used,memory.total,temperature.gpu",
+         "--format=csv,noheader,nounits"],
+        capture_output=True, text=True, check=True, timeout=1.5,
+    )
     gpus = []
     for row in csv.reader(io.StringIO(result.stdout), skipinitialspace=True):
         if len(row) != 6:
