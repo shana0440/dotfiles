@@ -6,6 +6,7 @@ Components.Island {
     id: root
 
     property string mode: "default"
+    property real availableHeight: 720
     property alias inputItem: inputIndicator.inputItem
     readonly property bool expanded: mode !== "default"
     // IME actions must run while the editor keeps its input context focused.
@@ -71,6 +72,7 @@ Components.Island {
         },
         SystemStatus {
             id: systemStatus
+            maximumHeight: root.availableHeight
             active: root.mode === "system"
             onCloseRequested: root.close()
         },

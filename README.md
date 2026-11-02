@@ -108,11 +108,21 @@ Hyprland installation and the login session stay in `nixos/desktop.nix`.
 
 Click the activity icon in Quickshell's right island to expand live host metrics:
 CPU usage, available-memory-based usage, CPU temperature (or a named fallback
-sensor), swap, root/home filesystem usage, load averages (1/5/15 minutes), and
-uptime. Home is shown separately only when it uses another filesystem. Readings
-refresh every two seconds while open; Escape, the close button, or an outside
-click restores the compact island. Missing temperature sensors show as unavailable.
-The `system-status-snapshot` helper is installed by `make home-linux`.
+sensor), swap, GPU utilization/VRAM/temperature, network download/upload rates,
+physical-disk read/write rates, root/home filesystem usage, load averages
+(1/5/15 minutes), and uptime. Home is shown separately only when it uses another
+filesystem. Network interfaces (including VPNs) are shown individually, not
+summed; disk counters exclude partitions and virtual layers to avoid double
+counting. Rates use monotonic elapsed time and show a dash until two samples
+are available, including after a device appears or its counters reset.
+
+GPU telemetry uses the host's `nvidia-smi` when available, with DRM sysfs readings
+for other devices (including AMD). Unsupported GPU fields and missing temperature
+sensors show as unavailable. No driver package is installed by the status helper.
+Readings refresh every two seconds while open. On smaller screens, scroll the
+panel; its close button stays fixed. Escape, the close button, or an outside
+click restores the compact island. The `system-status-snapshot` helper is installed
+by `make home-linux`.
 
 ### Workspace shortcuts
 

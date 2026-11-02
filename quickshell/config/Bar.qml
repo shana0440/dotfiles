@@ -228,6 +228,7 @@ PanelWindow {
         BarComponents.RightIsland {
             id: rightIsland
             anchors.right: parent.right
+            availableHeight: Math.max(200, root.height - root.islandMargin * 2)
         }
     }
 }
