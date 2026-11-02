@@ -312,6 +312,49 @@ Home Manager flake lock.
 `nixos/hardware-configuration.nix` is specific to this VM; regenerate it for a
 new machine. Do not change `system.stateVersion` just to update packages.
 
+## Waydroid (Android)
+
+Desktop NixOS enables Waydroid through `nixos/desktop.nix`. Apply it with
+`make nixos` (requires sudo), then initialize the Android images:
+
+```sh
+sudo waydroid init
+```
+
+The default image has no Google Play Store. If you want Google apps, choose
+`sudo waydroid init -s GAPPS` **instead** at initial setup; Play certification and
+game compatibility are not guaranteed. Images and games require additional disk
+space under `/var/lib/waydroid` and your home directory.
+
+This machine's NVIDIA-only graphics need the upstream software-rendering
+fallback. After initialization, stop any running Waydroid session/container,
+then edit `/var/lib/waydroid/waydroid.cfg` with `sudoedit`. Add these keys to its
+existing `[properties]` section (do not replace the rest of the file):
+
+```ini
+ro.hardware.gralloc=default
+ro.hardware.egl=swiftshader
+```
+
+Apply the properties and start the container:
+
+```sh
+sudo waydroid upgrade -o
+sudo systemctl restart waydroid-container
+waydroid session start
+```
+
+Run `waydroid show-full-ui` in another terminal in your Hyprland session.
+Use `waydroid session stop` when finished. A reboot may be needed after the
+initial NixOS activation for kernel changes; use `waydroid status` and
+`journalctl -u waydroid-container -b` for diagnostics.
+
+Software rendering is not suitable for demanding games. ARM-only games may
+require additional translation support; anti-cheat and Play Integrity can block
+games even when Android runs successfully. The NixOS module also enables LXC
+and trusts the container's `waydroid0` interface in the host firewall.
+See the [upstream GPU fallback instructions](https://docs.waydro.id/faq/get-waydroid-to-work-through-a-vm).
+
 ## Steam
 
 The `nixos` module in `applications.nix` enables Steam with `programs.steam.enable = true` and

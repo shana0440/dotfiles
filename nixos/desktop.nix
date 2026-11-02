@@ -21,6 +21,9 @@
     package = config.boot.kernelPackages.nvidiaPackages.stable;
   };
 
+  # Android container runtime; initialize its images separately after activation.
+  virtualisation.waydroid.enable = true;
+
   programs.hyprland.enable = true;
   # Includes PAM integration for unlocking the session.
   programs.hyprlock.enable = true;
