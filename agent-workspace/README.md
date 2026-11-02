@@ -1,6 +1,7 @@
 # Agent workspace (desktop Linux)
 
-Home Manager installs `agent-workspace-linux` 0.6.3 through `home.nix`:
+Home Manager installs `agent-workspace-linux` 0.6.3 and
+`agent-workspace-quickshell` through `home.nix`:
 
 ```sh
 make home-linux
@@ -13,16 +14,17 @@ Nixpkgs runtime for the binary. This does not upgrade host libraries. Its wrappe
 provides the X11 and native-backend commands on PATH. No workspace or MCP server
 starts automatically; macOS and WSL profiles are unchanged.
 
-## Start a private X11 desktop
+## Private Hyprland with Quickshell
 
 ```sh
 agent-workspace-linux workspace start --ack-hidden-workspace \
-  --id demo --session x11 --width 1280 --height 800 --purpose "Desktop testing"
-agent-workspace-linux workspace launch --id demo --name terminal -- xterm
+  --id demo --session hyprland --width 1280 --height 800 --purpose "Quickshell testing"
+agent-workspace-linux workspace launch --id demo --name shell -- agent-workspace-quickshell
+agent-workspace-linux workspace launch --id demo --name terminal -- kitty
 agent-workspace-linux viewer --id demo
 ```
 
-Control it without sending input to your host desktop:
+Control it without sending input to the host desktop:
 
 ```sh
 agent-workspace-linux workspace type --id demo 'printf "hello from the workspace\n"'
@@ -31,46 +33,78 @@ agent-workspace-linux workspace screenshot --id demo --output /tmp/workspace.png
 agent-workspace-linux workspace stop --id demo
 ```
 
-Input text and keys are positional arguments, not `--text` or `--key` options.
-The viewer appears on the display from which it is launched. Workspace apps use
-private display sockets, but still run as your user with access to your files and
-network: this is **not a security sandbox**. Viewer Pause did not block direct
-CLI input in validation; do not rely on it as a CLI kill switch.
+Text and keys are positional arguments, not `--text` or `--key` options. Click the
+terminal to restore focus after dismissing a menu if typing does not reach it.
+Prefer native Wayland applications: text injection into XWayland xterm produced
+incorrect characters in the private Hyprland session during validation.
 
-## Validation on this machine
+### Workspace-only compatibility
 
-Verified the installed package on x86_64 Linux with real desktops:
+- **Rendering:** Aquamarine's headless fallback guessed implicit/linear buffer
+  support instead of using the parent Wayland compositor's supported modifiers.
+  NVIDIA allocation failed and the output stayed at 0×0. The local patch reuses
+  parent formats. `replaceDependency` substitutes the patched library only into
+  the workspace Hyprland closure; the running host compositor is unchanged.
+- **IPC:** the launcher derives the signature from the workspace's published IPC
+  socket, never from the host environment. A private short-lived runtime symlink
+  avoids Qt's Unix socket path limit. It is removed when the launcher exits.
+- **Configuration:** the launcher uses a Nix-built snapshot of this checkout's
+  real Quickshell config, with a workspace-only patch supporting both legacy and
+  Lua workspace dispatches. The upstream runtime generates a legacy Hyprland
+  config. The host's live QML files are not changed. Run `make home-linux` after
+  editing QML to rebuild the workspace snapshot.
+- **Config lookup:** the launcher gives Quickshell a private `XDG_CONFIG_HOME`,
+  keeping its IPC clients and screenshot notifications separate from the host.
+  It refuses to run outside a workspace with a private Hyprland IPC socket.
 
-- X11 workspace creation, app launch, keyboard input, and screenshot capture.
-- JavaScript execution and editing/saving a file in Neovim.
-- Viewer rendering on a second private X11 desktop, without opening a host window.
-- Closing the app and stopping both workspaces; their daemon/display processes exited.
+## Private X11 desktop
 
-Recording (33 seconds, 1280×920, 15 fps):
+X11 is also available for apps that do not require Wayland layer-shell:
 
-`~/Videos/AgentWorkspaces/agent-workspace-nix-validation-20261102-082610.mp4`
+```sh
+agent-workspace-linux workspace start --ack-hidden-workspace \
+  --id x11-demo --session x11 --width 1280 --height 800 --purpose "Desktop testing"
+agent-workspace-linux workspace launch --id x11-demo --name terminal -- xterm
+agent-workspace-linux viewer --id x11-demo
+agent-workspace-linux workspace stop --id x11-demo
+```
 
-The recording shows the private viewer from stopped state through workspace
-startup, terminal use, code execution, editor save, and shutdown. It also labels
-the native-backend limitations. This recording is local evidence, not a file
-tracked in Git. Native ARM support is packaged but has not been runtime-tested.
+## Validation and recordings
 
-## Quickshell limitations
+Verified on this NVIDIA-only x86_64 Linux machine using real desktop interactions:
 
-**The current Quickshell configuration is not working in the workspace yet.**
+- Private Hyprland startup and 1280×800 rendering.
+- Quickshell bar rendering, workspace buttons switching away from and back to a
+  native terminal, capture-menu opening, and Escape dismissal.
+- Native Kitty keyboard input and JavaScript execution.
+- Screenshot creation and its notification through the real capture menu.
+- X11 app launch, code execution, Neovim editing/saving, and viewer rendering on
+  another private X11 display.
+- Workspace shutdown, process cleanup, and removal of temporary runtime aliases.
 
-- **X11:** Quickshell launches, but the real config fails to create its Wayland
-  layer-shell properties and does not render the bar correctly. X11 success is
-  not proof of Quickshell support.
-- **Hyprland:** private compositor startup reaches headless-output setup, then
-  times out. Its logs show NVIDIA GBM allocation failures; the output remains
-  0×0. This machine exposes only an NVIDIA render node. The upstream backend
-  targets Hyprland 0.53; the host uses 0.55.4 and our shell uses Lua dispatches,
-  so IPC compatibility also needs validation after resolving rendering.
-- **KWin:** the private compositor starts, but the required fake-input v6
-  protocol is not advertised to the agent. The workspace refuses to become ready.
-  The authorization/packaging cause is not resolved; security checks were not disabled.
+Local recordings, not Git-tracked:
 
-The host Quickshell was not restarted or modified during testing. Only the
-explicitly launched private Quickshell instance was stopped. No NAS access or
-worktree automation was configured.
+| Recording | Location |
+| --- | --- |
+| Hyprland + Quickshell, 36 seconds, 1280×800 at 15 fps | `~/Videos/AgentWorkspaces/hyprland-quickshell-20261102-085503.mp4` |
+| Initial X11 validation, 33 seconds, 1280×920 at 15 fps | `~/Videos/AgentWorkspaces/agent-workspace-nix-validation-20261102-082610.mp4` |
+
+Frames decoded from both recordings were inspected. The earlier X11 recording
+labels the native rendering failure that the Aquamarine patch subsequently fixed.
+Native ARM support is packaged but has not been runtime-tested.
+
+## Remaining limitations
+
+- Audio/PipeWire, Wi-Fi, Fcitx/IME, and systemd-based recording-service integration
+  have not been wired into the private bus. Missing PipeWire/portal warnings are
+  expected. The Quickshell validation does not claim these integrations work.
+- Standalone KWin still refuses startup because fake-input v6 is not advertised
+  to the agent. Its authorization/packaging cause is unresolved. No compositor
+  permission checks were disabled to obtain the Hyprland results.
+- Viewer Pause did not block direct CLI input in validation; do not rely on it as
+  a CLI kill switch.
+- Apps still run as your user and can access your files/network: this is **not a
+  security sandbox**. The viewer opens on the display from which it is launched.
+
+The host Quickshell was not restarted or modified. No NAS access or worktree
+automation was configured.
