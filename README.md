@@ -124,6 +124,16 @@ panel; its close button stays fixed. Escape, the close button, or an outside
 click restores the compact island. The `system-status-snapshot` helper is installed
 by `make home-linux`.
 
+### Workspace and apps islands
+
+The left group is split into `WorkspaceIsland.qml` and `AppsIsland.qml`:
+`| workspaces | running apps |`. The apps island shows one icon per open window
+across all workspaces. Click an icon to focus its window (and switch workspace),
+hover for its title, and scroll horizontally or with the wheel when space is
+limited. The focused window has a purple underline. Missing icons fall back to
+an application initial, and the island disappears when no windows are open.
+Its width is capped before the center group so the islands do not overlap.
+
 ### Workspace shortcuts
 
 - `Alt+1` through `Alt+9`, and `Alt+0`: switch to workspaces 1–10.

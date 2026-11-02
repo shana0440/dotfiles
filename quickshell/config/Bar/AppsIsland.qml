@@ -1,0 +1,138 @@
+import QtQuick
+import QtQuick.Controls
+import Quickshell
+import Quickshell.Wayland
+import "../Theme" as Theme
+
+Rectangle {
+    id: root
+
+    property real availableWidth: 0
+    readonly property int buttonSize: 28
+    readonly property int buttonSpacing: 4
+    readonly property int padding: 8
+
+    visible: windows.count > 0 && availableWidth >= buttonSize + padding * 2
+    width: visible ? Math.min(appRow.width + padding * 2, availableWidth) : 0
+    radius: 8
+    color: Theme.Colors.background
+
+    Flickable {
+        id: appList
+        anchors.fill: parent
+        anchors.leftMargin: root.padding
+        anchors.rightMargin: root.padding
+        anchors.topMargin: 4
+        anchors.bottomMargin: 4
+        contentWidth: appRow.width
+        contentHeight: height
+        flickableDirection: Flickable.HorizontalFlick
+        boundsBehavior: Flickable.StopAtBounds
+        clip: true
+
+        function revealActive(button) {
+            if (!button.modelData.activated)
+                return
+            contentX = Math.max(0, Math.min(button.x,
+                Math.max(contentX, button.x + button.width - width)))
+        }
+
+        onContentWidthChanged: contentX = Math.max(0, Math.min(contentX, contentWidth - width))
+        onWidthChanged: contentX = Math.max(0, Math.min(contentX, contentWidth - width))
+
+        Row {
+            id: appRow
+            height: parent.height
+            spacing: root.buttonSpacing
+
+            Repeater {
+                id: windows
+                model: ToplevelManager.toplevels
+
+                Rectangle {
+                    id: button
+                    required property var modelData
+                    readonly property var entry: DesktopEntries.heuristicLookup(modelData.appId)
+                    readonly property string label: modelData.title || entry?.name || modelData.appId || "Application"
+
+                    Component.onCompleted: Qt.callLater(() => appList.revealActive(button))
+                    Connections {
+                        target: button.modelData
+                        function onActivatedChanged() { appList.revealActive(button) }
+                    }
+
+                    width: root.buttonSize
+                    height: appList.height
+                    radius: 4
+                    color: modelData.activated || mouse.containsMouse
+                        ? Theme.Colors.activeWorkspace : Theme.Colors.transparent
+
+                    Image {
+                        id: appIcon
+                        anchors.centerIn: parent
+                        width: 20
+                        height: 20
+                        source: Quickshell.iconPath(button.entry?.icon || "application-x-executable", true)
+                        sourceSize.width: width
+                        sourceSize.height: height
+                    }
+
+                    Text {
+                        anchors.centerIn: parent
+                        visible: appIcon.status !== Image.Ready
+                        text: (button.entry?.name || button.modelData.appId || "?").charAt(0).toUpperCase()
+                        color: Theme.Colors.foreground
+                        font.pixelSize: 14
+                    }
+
+                    Rectangle {
+                        anchors.bottom: parent.bottom
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        width: 10
+                        height: 2
+                        radius: 1
+                        color: Theme.Colors.accent
+                        visible: button.modelData.activated
+                    }
+
+                    MouseArea {
+                        id: mouse
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: button.modelData.activate()
+                    }
+
+                    ToolTip {
+                        id: tooltip
+                        visible: mouse.containsMouse
+                        delay: 500
+                        text: button.label
+                        contentItem: Text {
+                            text: tooltip.text
+                            color: Theme.Colors.foreground
+                            font.pixelSize: 12
+                        }
+                        background: Rectangle {
+                            color: Theme.Colors.background
+                            border.color: Theme.Colors.activeWorkspace
+                            radius: 6
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // Keep the wheel target outside the scrolling content so it never scrolls away.
+    MouseArea {
+        anchors.fill: parent
+        acceptedButtons: Qt.NoButton
+        onWheel: event => {
+            const delta = event.angleDelta.y || event.angleDelta.x
+            appList.contentX = Math.max(0, Math.min(appList.contentWidth - appList.width,
+                appList.contentX - delta / 120 * (root.buttonSize + root.buttonSpacing)))
+            event.accepted = true
+        }
+    }
+}

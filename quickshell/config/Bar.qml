@@ -126,7 +126,8 @@ PanelWindow {
     }
 
     mask: Region {
-        item: root.menuOpen ? root.contentItem : leftIsland
+        item: root.menuOpen ? root.contentItem : workspaceIsland
+        Region { item: appsIsland.visible ? appsIsland : null }
         Region { item: centerIsland }
         Region { item: mediaIsland.visible ? mediaIsland : null }
         Region { item: settingsIsland.visible ? settingsIsland : null }
@@ -197,10 +198,19 @@ PanelWindow {
             }
         }
 
-        BarComponents.LeftIsland {
-            id: leftIsland
+        BarComponents.WorkspaceIsland {
+            id: workspaceIsland
             anchors.left: parent.left
             height: root.compactIslandHeight
+        }
+
+        BarComponents.AppsIsland {
+            id: appsIsland
+            anchors.left: workspaceIsland.right
+            anchors.leftMargin: root.islandSpacing
+            height: root.compactIslandHeight
+            availableWidth: Math.max(0, (mediaIsland.visible ? mediaIsland.x : centerIsland.x)
+                - x - root.islandSpacing)
         }
 
         BarComponents.CenterIsland {
