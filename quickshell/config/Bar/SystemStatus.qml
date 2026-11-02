@@ -82,14 +82,18 @@ Item {
         repeat: true
         triggeredOnStart: true
         onTriggered: {
-            if (!sample.running)
+            if (!sample.running) {
+                sample.startedSuccessfully = false
                 sample.running = true
+            }
         }
     }
 
     Process {
         id: sample
+        property bool startedSuccessfully: false
         command: ["system-status-snapshot"]
+        onStarted: startedSuccessfully = true
         stdout: StdioCollector {
             id: output
         }
@@ -108,15 +112,21 @@ Item {
                     root.diskRates = root.rates(next.disks || [], previous ? previous.disks || [] : [], seconds, "read", "write")
                     root.snapshot = next
                 } catch (error) {
+                    // Invalidate the UI at the subprocess boundary, then report the bad snapshot.
                     root.failed = true
+                    root.clearReadings()
+                    throw new Error("Invalid system-status snapshot: " + error)
                 }
             }
             if (root.failed)
                 root.clearReadings()
         }
         onRunningChanged: {
-            if (!running && !output.text && root.active)
+            // FailedToStart emits runningChanged but not exited; old stdout is irrelevant.
+            if (!running && !startedSuccessfully && root.active) {
                 root.failed = true
+                root.clearReadings()
+            }
         }
     }
 
