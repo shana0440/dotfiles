@@ -12,11 +12,11 @@ let
   secretsFile =
     if builtins.pathExists cfg.secretsFile then cfg.secretsFile
     else throw "NAS is enabled but its encrypted secrets file is missing. See nixos/nas/README.md.";
-  cleanupMount = ''
+  cleanupMount = stopFlags: ''
     for unit in mnt-nas.automount mnt-nas.mount; do
       load_state=$(systemctl show --property=LoadState --value "$unit")
       if [ "$load_state" != not-found ]; then
-        systemctl stop "$unit"
+        systemctl stop ${stopFlags} "$unit"
       fi
     done
   '';
@@ -64,11 +64,15 @@ in
       serviceConfig = {
         Type = "oneshot";
         RemainAfterExit = true;
+        TimeoutStopSec = "15s";
         UMask = "0077";
       };
-      # Remove stale units before retrying; ExecStopPost also runs after failed starts.
-      preStart = cleanupMount;
-      postStop = cleanupMount;
+      # Wait for stale units before starting a replacement mount.
+      preStart = cleanupMount "";
+      # ExecStopPost also runs after failed starts. Only queue stop jobs here:
+      # waiting for mount jobs during shutdown can block on systemd ordering.
+      # systemd still waits for the queued unmount jobs before finishing shutdown.
+      postStop = cleanupMount "--no-block";
       script = ''
         device=$(< ${lib.escapeShellArg config.sops.secrets."nas/device".path})
         case "$device" in
