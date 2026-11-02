@@ -18,19 +18,9 @@ let
     };
   };
   release = releases.${pkgs.stdenv.hostPlatform.system};
-  workspaceAquamarine = pkgs.aquamarine.overrideAttrs (old: {
-    patches = (old.patches or [ ]) ++ [ ./aquamarine-headless-formats.patch ];
-  });
-  workspaceHyprland = pkgs.replaceDependency {
-    drv = pkgs.hyprland;
-    oldDependency = pkgs.aquamarine;
-    newDependency = workspaceAquamarine;
-  };
   commands = with pkgs; [
     coreutils dbus imagemagick openbox xorg-server xauth xclip xdotool
     xdpyinfo xprop xwininfo xterm
-    kdePackages.kwin kdePackages.kservice kdePackages.libkscreen
-    bubblewrap grim wtype wl-clipboard workspaceHyprland xwayland
   ];
 in
 runtimePkgs.stdenv.mkDerivation rec {
