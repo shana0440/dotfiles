@@ -16,6 +16,7 @@
     ./gtk/gtk.nix
     ./vicinae/vicinae.nix
     ./thunar/thunar.nix
+    ./waydroid/waydroid.nix
     ./hyprland/hyprland.nix
     ./quickshell/quickshell.nix
     ./agent-workspace/agent-workspace.nix

@@ -10,6 +10,7 @@ Standalone Home Manager for kwguo on Linux, macOS, and WSL, using release 26.05.
 - `hyprland/`: native Lua configuration, linked on desktop Linux only (not WSL)
 - `kitty/`: Kitty package and native configuration on Linux/macOS (not WSL)
 - `programs.nix`: portable command-line tools and direnv/nix-direnv
+- `waydroid/`: Home Manager-managed XAPK double-click installer and tests (desktop Linux); the Android runtime stays in `nixos/waydroid.nix`
 - [`agent-workspace/`](agent-workspace/README.md): clean, on-demand X11 agent desktops, without a personal desktop shell (desktop Linux only)
 - `shell/shell.nix`: shell entry point, importing `shell/fish.nix` and retaining Bash as a fallback
 - `shell/fish.nix`: Fish settings managed directly through Home Manager
@@ -356,9 +357,24 @@ translation, set `armTranslation = false` in `nixos/waydroid.nix`, rebuild, and
 restart Waydroid; this also restores x86-only ABI properties. Do not reinitialize
 Android or delete app data when changing this setting.
 
-An `.xapk` is a split-APK bundle, not a single APK. The existing double-click
-handler installs only `.apk` files; XAPK bundles still need a split installer.
-ARM support does not change that file-format requirement.
+Desktop Linux Home Manager installs a separate XAPK handler via `waydroid/`.
+Apply it with `make home-linux`, then double-click an `.xapk` in Thunar and choose
+**Install**. Waydroid starts automatically if needed, and the APK splits are
+installed together. If Android asks, approve USB debugging from this computer.
+A dialog reports success or the actual installer error. Existing app data is
+kept for compatible updates; no sudo is needed. Ordinary ZIP associations are
+left untouched. If Thunar was already running when the new MIME type was added,
+reopen Thunar once so it recognizes XAPK files.
+
+The handler supports version-2 XAPK bundles containing APK splits, including the
+Fate/Grand Order bundle. Bundles with OBB assets are rejected before installation;
+OBB copying is not implemented. Invalid archives, unsafe paths, oversized
+payloads, missing splits and ambiguous container addresses are rejected. ARM
+compatibility still depends on the configured native bridge. The installer only
+connects to the current user's Waydroid session over its own network bridge.
+
+Run the archive/lease tests with
+`nix-shell -p python3 --run 'python3 -m unittest discover -s waydroid -v'`.
 
 Software rendering and translation may be slow. Game compatibility is not
 guaranteed; anti-cheat and Play certification can still block games. The NixOS module enables LXC and trusts the container's `waydroid0`
