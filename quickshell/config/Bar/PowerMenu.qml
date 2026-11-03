@@ -11,8 +11,8 @@ Item {
     property string pendingAction: ""
     readonly property bool confirming: pendingAction.length > 0
 
-    implicitWidth: confirming ? 288 : actions.implicitWidth + 12
-    implicitHeight: confirming ? confirmation.implicitHeight + 24 : 32
+    implicitWidth: 288
+    implicitHeight: confirming ? confirmation.implicitHeight + 24 : actions.implicitHeight + 24
     focus: visible
     Keys.onEscapePressed: root.closeRequested()
 
@@ -39,9 +39,10 @@ Item {
             Quickshell.execDetached(["sh", "-c", "if command -v hyprshutdown >/dev/null 2>&1; then hyprshutdown; else hyprctl dispatch 'hl.dsp.exit()'; fi"])
     }
 
-    Row {
+    Column {
         id: actions
         anchors.centerIn: parent
+        width: parent.width - 24
         spacing: 4
         visible: !root.confirming
 
@@ -50,15 +51,15 @@ Item {
                 { label: "Lock", action: "lock" },
                 { label: "Log out", action: "logout" },
                 { label: "Restart", action: "reboot" },
-                { label: "Shut down", action: "poweroff" }
+                { label: "Power off", action: "poweroff" }
             ]
 
             Rectangle {
                 id: actionButton
                 required property var modelData
 
-                width: 36
-                height: 28
+                width: actions.width
+                height: 40
                 radius: 6
                 color: buttonMouse.containsMouse || activeFocus
                     ? Theme.Colors.activeWorkspace : Theme.Colors.transparent
@@ -69,8 +70,22 @@ Item {
                 Accessible.name: modelData.label
 
                 Components.Icon {
-                    anchors.centerIn: parent
+                    id: actionIcon
+                    anchors.left: parent.left
+                    anchors.leftMargin: 10
+                    anchors.verticalCenter: parent.verticalCenter
                     action: modelData.action
+                }
+
+                Text {
+                    anchors.left: actionIcon.right
+                    anchors.leftMargin: 12
+                    anchors.right: parent.right
+                    anchors.rightMargin: 10
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: modelData.label
+                    color: Theme.Colors.foreground
+                    font.pixelSize: 14
                 }
 
                 MouseArea {
@@ -81,11 +96,6 @@ Item {
                     onClicked: root.choose(modelData.action)
                 }
 
-                Components.Tooltip {
-                    text: modelData.label
-                    shown: buttonMouse.containsMouse || actionButton.activeFocus
-                    alignment: Qt.AlignHCenter
-                }
             }
         }
     }
@@ -100,7 +110,7 @@ Item {
         Text {
             width: parent.width
             text: root.pendingAction === "reboot" ? "Restart?"
-                : root.pendingAction === "poweroff" ? "Shut down?" : "Log out?"
+                : root.pendingAction === "poweroff" ? "Power off?" : "Log out?"
             color: Theme.Colors.foreground
             font.pixelSize: 18
             font.bold: true
