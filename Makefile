@@ -1,4 +1,4 @@
-.PHONY: nixos home home-linux home-mac home-wsl encrypt decrypt re-encrypt
+.PHONY: nixos home home-linux home-mac home-wsl update encrypt decrypt re-encrypt
 
 # Resolve paths relative to this Makefile, regardless of the working directory.
 DOTFILES := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
@@ -11,6 +11,10 @@ NIX_SYSTEM ?= $(shell nix $(NIX_FLAGS) eval --impure --raw --expr builtins.curre
 NIX_ARCH = $(firstword $(subst -, ,$(NIX_SYSTEM)))
 
 IS_WSL = $(shell if [ -n "$$WSL_DISTRO_NAME" ] || grep -qi microsoft /proc/sys/kernel/osrelease 2>/dev/null; then printf true; else printf false; fi)
+
+# Update the pinned nixpkgs snapshot; apply separately with make home.
+update:
+	nix $(NIX_FLAGS) flake update nixpkgs --flake "$(DOTFILES)"
 
 nixos:
 	sudo nixos-rebuild switch -I "nixos-config=$(DOTFILES)/nixos/configuration.nix"
