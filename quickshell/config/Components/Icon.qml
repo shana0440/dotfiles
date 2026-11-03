@@ -19,6 +19,7 @@ Item {
         wifiLow: "wifi-low",
         wifiOff: "wifi-off",
         audio: "audio-lines",
+        microphone: "mic",
         previous: "skip-back",
         next: "skip-forward",
         play: "play",

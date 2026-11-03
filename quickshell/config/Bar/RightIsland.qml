@@ -13,7 +13,7 @@ Components.Island {
     readonly property bool keyboardFocusRequired: expanded && mode !== "input"
     readonly property bool confirming: mode === "power" && menu.confirming
 
-    activeView: mode === "input" ? inputMenu : mode === "wifi" ? wifiMenu : mode === "power" ? menu : mode === "system" ? systemStatus : mode === "audio" ? audioMenu : defaultContent
+    activeView: mode === "input" ? inputMenu : mode === "wifi" ? wifiMenu : mode === "power" ? menu : mode === "system" ? systemStatus : mode === "audio" ? audioMenu : mode === "voice" ? voiceMenu : defaultContent
     alignment: Qt.AlignRight
     overflowView: defaultContent
 
@@ -33,6 +33,14 @@ Components.Island {
                 icon: "audio"
                 tooltip: "Select audio output device"
                 onClicked: root.mode = "audio"
+            }
+
+            Components.IconButton {
+                width: 40
+                height: 32
+                icon: "microphone"
+                tooltip: "Select voice input device (microphone)"
+                onClicked: root.mode = "voice"
             }
 
             InputMethodIndicator {
@@ -80,6 +88,12 @@ Components.Island {
         },
         AudioDeviceMenu {
             id: audioMenu
+            maximumHeight: root.availableHeight
+            onCloseRequested: root.close()
+        },
+        AudioDeviceMenu {
+            id: voiceMenu
+            input: true
             maximumHeight: root.availableHeight
             onCloseRequested: root.close()
         },

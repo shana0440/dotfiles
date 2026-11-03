@@ -7,15 +7,19 @@ Item {
     id: root
 
     property real maximumHeight: 720
-    readonly property var devices: Pipewire.nodes.values.filter(node => node.audio && node.isSink && !node.isStream)
-    readonly property var currentDevice: Pipewire.defaultAudioSink
+    property bool input: false
+    readonly property var devices: Pipewire.nodes.values.filter(node => node.audio && node.isSink !== input && !node.isStream)
+    readonly property var currentDevice: input ? Pipewire.defaultAudioSource : Pipewire.defaultAudioSink
     signal closeRequested()
 
     implicitWidth: 380
     implicitHeight: Math.min(78 + Math.max(40, devices.length * 48), maximumHeight)
 
     function selectDevice(device) {
-        Pipewire.preferredDefaultAudioSink = device
+        if (input)
+            Pipewire.preferredDefaultAudioSource = device
+        else
+            Pipewire.preferredDefaultAudioSink = device
     }
 
     // Keep clicks in the menu from reaching the outside-dismissal surface.
@@ -29,7 +33,7 @@ Item {
         Text {
             width: parent.width - 32
             height: 32
-            text: "Audio output"
+            text: root.input ? "Voice input · microphone" : "Audio output"
             color: Theme.Colors.foreground
             font.pixelSize: 16
             font.bold: true
@@ -64,7 +68,7 @@ Item {
                 visible: root.devices.length === 0
                 width: parent.width
                 height: 40
-                text: Pipewire.ready ? "No audio output devices available" : "Connecting to PipeWire…"
+                text: Pipewire.ready ? (root.input ? "No microphone devices available" : "No audio output devices available") : "Connecting to PipeWire…"
                 color: Theme.Colors.foreground
                 opacity: 0.65
                 font.pixelSize: 12
