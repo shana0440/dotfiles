@@ -17,6 +17,8 @@ let
   # Keep host-specific properties separate from Waydroid-owned image metadata.
   properties = (pkgs.formats.ini { }).generate "waydroid-properties.ini" {
     properties = {
+      # Treat mouse clicks as touchscreen input in every Android app.
+      "persist.waydroid.fake_touch" = "*";
       "ro.hardware.gralloc" = "default";
       "ro.hardware.egl" = "swiftshader";
       "ro.product.cpu.abilist" = if armTranslation then "x86_64,x86,arm64-v8a,armeabi-v7a,armeabi" else "x86_64,x86";
