@@ -329,7 +329,7 @@ hl.bind("CTRL + right", function() focusAdjacentWorkspace(1) end)
 
 -- Select an input method directly without cycling or changing workspaces.
 for key, inputMethod in ipairs({ "keyboard-us", "mozc", "chewing" }) do
-    hl.bind(mainMod .. " + CTRL + " .. key, hl.dsp.exec_cmd("fcitx5-remote -s " .. inputMethod))
+    hl.bind("CTRL + F" .. key, hl.dsp.exec_cmd("fcitx5-remote -s " .. inputMethod))
 end
 
 hl.bind(mainMod .. " + CTRL + SPACE", hl.dsp.exec_cmd("hypr-toggle-kana"))
