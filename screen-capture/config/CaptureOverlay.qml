@@ -30,7 +30,12 @@ Scope {
                 ? WlrLayer.Top : WlrLayer.Overlay
             // Hyprland routes pointer input only to exclusive layer surfaces while
             // an exclusive toolbar is open. Include the selector in that group.
-            WlrLayershell.keyboardFocus: Services.Capture.previewActive || Services.Capture.selectingRegion
+            // Among exclusive surfaces Hyprland prefers the one that became
+            // exclusive last, not the higher layer: become exclusive while the
+            // frame is still capturing, so the toolbar (mapped once it is ready)
+            // always comes later and wins pointer input over this full-screen one.
+            WlrLayershell.keyboardFocus: Services.Capture.capturing || Services.Capture.previewActive
+                || Services.Capture.selectingRegion
                 ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
 
             anchors { top: true; bottom: true; left: true; right: true }
