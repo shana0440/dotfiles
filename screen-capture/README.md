@@ -37,7 +37,8 @@ button without a spacer. The action reads **Capture** for screenshots and
 - **5**: record a window
 - **6**: record a region
 
-**Window modes** (Hyprland): point at a window to highlight it, click to lock the
+**Window modes** (Hyprland): point at a window and it is cut out of the dimmed
+screen with a dashed outline, like a selected range; click to lock the
 choice, then press Enter/Capture/Record. Window geometry and stacking are frozen
 at launch, together with an image of each visible window exported through
 Hyprland's native toplevel capture. Window screenshots therefore contain only

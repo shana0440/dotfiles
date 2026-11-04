@@ -74,13 +74,15 @@ Scope {
             Rectangle {
                 anchors.fill: parent
                 visible: Services.Capture.previewActive && !Services.Capture.selectingRegion
+                    && !Services.Capture.selectingWindow
                 color: "#88000000"
             }
 
             CaptureComponents.RegionEditor {
                 id: editor
                 anchors.fill: parent
-                visible: Services.Capture.selectingRegion || !Services.Capture.previewActive
+                // Hidden while capturing: its own dim would be photographed into the frozen frame.
+                visible: Services.Capture.selectingRegion || (!Services.Capture.previewActive && !Services.Capture.capturing)
                 editing: Services.Capture.selectingRegion
                 kind: Services.Capture.selectionKind
                 activeRegion: editing ? Services.Capture.selectionScreenName === overlay.modelData.name
