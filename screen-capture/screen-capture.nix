@@ -3,7 +3,7 @@
 let
   snapshot = pkgs.writeShellApplication {
     name = "screen-capture-snapshot";
-    runtimeInputs = with pkgs; [ grim wl-clipboard ];
+    runtimeInputs = with pkgs; [ grim hyprland wl-clipboard ];
     text = ''
       exec ${pkgs.python3.withPackages (ps: [ ps.pillow ])}/bin/python3 ${./scripts/snapshot.py} "$@"
     '';
@@ -18,9 +18,16 @@ let
     runtimeInputs = [ pkgs.coreutils ];
     text = builtins.readFile ./scripts/recording_finished.sh;
   };
+  windowRecording = pkgs.writeShellApplication {
+    name = "screen-capture-window-record";
+    runtimeInputs = with pkgs; [ grim ffmpeg ];
+    text = ''
+      exec ${pkgs.python3}/bin/python3 ${./scripts/window_record.py} "$@"
+    '';
+  };
   recording = pkgs.writeShellApplication {
     name = "screen-capture-record";
-    runtimeInputs = with pkgs; [ coreutils slurp systemd util-linux wf-recorder quickshell recordingFinished ];
+    runtimeInputs = with pkgs; [ coreutils slurp systemd util-linux wf-recorder quickshell recordingFinished windowRecording ];
     text = builtins.readFile ./scripts/record.sh;
   };
   application = pkgs.writeShellApplication {

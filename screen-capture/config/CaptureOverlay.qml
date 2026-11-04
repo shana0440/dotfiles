@@ -74,6 +74,12 @@ Scope {
                 onCancelled: root.cancelled()
             }
 
+            CaptureComponents.WindowSelector {
+                anchors.fill: parent
+                screenInfo: overlay.modelData
+                visible: Services.Capture.selectingWindow
+            }
+
             onVisibleChanged: {
                 if (visible && Services.Capture.selectingRegion)
                     Qt.callLater(() => editor.forceActiveFocus())

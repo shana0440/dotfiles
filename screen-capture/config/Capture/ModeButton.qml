@@ -5,6 +5,7 @@ import QtQuick.Shapes
 ToolButton {
     id: root
     property bool region: false
+    property bool windowMode: false
     property bool recording: false
 
     implicitWidth: 48
@@ -40,8 +41,13 @@ ToolButton {
                 PathLine { x: 1; y: 2 }
             }
             Rectangle {
-                visible: !root.region
+                visible: !root.region && !root.windowMode
                 x: 5; y: 17; width: 18; height: 2
+                color: "#f0f0f2"
+            }
+            Rectangle {
+                visible: root.windowMode
+                x: 2; y: 7; width: 24; height: 2
                 color: "#f0f0f2"
             }
             Rectangle {

@@ -2,7 +2,7 @@ set -euo pipefail
 umask 077
 
 case "${1:-}" in
-    full|region) mode="$1" ;;
+    full|region|window) mode="$1" ;;
     *) exit 2 ;;
 esac
 

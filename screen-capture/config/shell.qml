@@ -15,13 +15,16 @@ ShellRoot {
     property int mode: 0
     property string outputName: Quickshell.screens[0]?.name ?? ""
     readonly property var outputScreen: Quickshell.screens.find(screen => screen.name === outputName) ?? Quickshell.screens[0]
-    readonly property bool regionMode: mode === 1 || mode === 3
-    readonly property bool recordingMode: mode >= 2
+    readonly property bool regionMode: modes[mode].region
+    readonly property bool windowMode: modes[mode].window
+    readonly property bool recordingMode: modes[mode].recording
     readonly property var modes: [
-        { label: "1 · Capture entire desktop", region: false, recording: false },
-        { label: "2 · Capture selected portion", region: true, recording: false },
-        { label: "3 · Record entire screen", region: false, recording: true },
-        { label: "4 · Record selected portion", region: true, recording: true }
+        { label: "1 · Capture entire desktop", region: false, window: false, recording: false },
+        { label: "2 · Capture a window", region: false, window: true, recording: false },
+        { label: "3 · Capture selected portion", region: true, window: false, recording: false },
+        { label: "4 · Record entire screen", region: false, window: false, recording: true },
+        { label: "5 · Record a window", region: false, window: true, recording: true },
+        { label: "6 · Record selected portion", region: true, window: false, recording: true }
     ]
 
     function openMenu() {
@@ -39,7 +42,15 @@ ShellRoot {
         const previous = Services.Capture.selectingRegion ? Services.Capture.selectionRect : null
         const previousScreen = Services.Capture.selectionScreenName
         Services.Capture.cancelRegionSelection()
-        if (!regionMode || !Services.Capture.previewActive || !outputScreen)
+        Services.Capture.cancelWindowSelection()
+        if (!Services.Capture.previewActive || !outputScreen)
+            return
+        if (windowMode) {
+            Services.Capture.beginWindowSelection(recordingMode ? "recording" : "screenshot")
+            message = Services.Capture.preview?.windowError ?? ""
+            return
+        }
+        if (!regionMode)
             return
         Services.Capture.beginRegionSelection(recordingMode ? "recording" : "screenshot", outputName)
         Services.Capture.setRegionSelection(outputName, previous && previousScreen === outputName ? previous : {
@@ -50,12 +61,14 @@ ShellRoot {
 
     function chooseMode(index) {
         mode = index
+        message = ""
         configureSelection()
     }
 
     function dismiss() {
         menuOpen = false
         Services.Capture.cancelRegionSelection()
+        Services.Capture.cancelWindowSelection()
         Services.Capture.dismissPreview()
     }
 
@@ -67,14 +80,24 @@ ShellRoot {
         }
         if (pendingRecording.running || Services.Capture.takingScreenshot)
             return
-        if (!Services.Capture.previewActive)
+        if (!Services.Capture.previewActive || (windowMode && Services.Capture.selectedWindow === null))
             return
         menuOpen = false
-        if (regionMode) {
+        if (windowMode) {
+            if (recordingMode) {
+                pendingRecording.windowIdentifier = Services.Capture.selectedWindow.identifier
+                Services.Capture.cancelWindowSelection()
+                Services.Capture.dismissPreview()
+                pendingRecording.restart()
+            } else {
+                Services.Capture.captureWindowScreenshot()
+            }
+        } else if (regionMode) {
             Services.Capture.confirmRegionSelection()
         } else if (recordingMode) {
             Services.Capture.dismissPreview()
             pendingRecording.outputName = outputName
+            pendingRecording.windowIdentifier = ""
             pendingRecording.restart()
         } else {
             Services.Capture.takeScreenshot("full", outputName)
@@ -96,15 +119,21 @@ ShellRoot {
     Timer {
         id: pendingRecording
         property string outputName
+        property string windowIdentifier: ""
         interval: 180
-        onTriggered: Services.Capture.startRecording("full", outputName)
+        onTriggered: {
+            if (windowIdentifier)
+                Services.Capture.startWindowRecording(windowIdentifier)
+            else
+                Services.Capture.startRecording("full", outputName)
+        }
     }
 
     IpcHandler {
         target: "capture"
         function openMenu(): void { root.openMenu() }
         function selectRegion(kind: string): void {
-            root.mode = kind === "recording" ? 3 : 1
+            root.mode = kind === "recording" ? 5 : 2
             root.openMenu()
         }
         function stop(): void { Services.Capture.stopRecording() }
@@ -133,6 +162,10 @@ ShellRoot {
         function onErrorOccurred(message) {
             root.message = message
             root.menuOpen = true
+        }
+        function onSelectedWindowChanged() {
+            if (Services.Capture.selectingWindow && Services.Capture.selectedWindow)
+                root.outputName = Services.Capture.selectedWindow.screenName
         }
         function onSelectionScreenNameChanged() {
             if (Services.Capture.selectingRegion)
@@ -201,7 +234,7 @@ ShellRoot {
                             spacing: 6
 
                             Rectangle {
-                                visible: modeGroup.index === 2
+                                visible: modeGroup.index === 3
                                 Layout.preferredWidth: 1
                                 Layout.preferredHeight: 34
                                 color: "#74747c"
@@ -209,6 +242,7 @@ ShellRoot {
                             CaptureComponents.ModeButton {
                                 text: modeGroup.modelData.label
                                 region: modeGroup.modelData.region
+                                windowMode: modeGroup.modelData.window
                                 recording: modeGroup.modelData.recording
                                 checked: root.mode === modeGroup.index
                                 enabled: !Services.Capture.recording && Services.Capture.previewActive
@@ -228,7 +262,8 @@ ShellRoot {
                         text: Services.Capture.recording ? "Stop · " + Services.Capture.recordingElapsedSeconds + "s"
                             : root.recordingMode ? "Record" : "Capture"
                         enabled: !Services.Capture.recordingCommandRunning
-                            && (Services.Capture.recording || Services.Capture.previewActive)
+                            && (Services.Capture.recording || (Services.Capture.previewActive
+                                && (!root.windowMode || Services.Capture.selectedWindow !== null)))
                         palette.buttonText: "#eeeef2"
                         background: Rectangle {
                             radius: 7

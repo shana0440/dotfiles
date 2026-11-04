@@ -4,7 +4,7 @@ umask 077
 recording_mode() {
     local output query_status=0 states
     output=$(systemctl --user is-active \
-        screen-capture-record-full.service screen-capture-record-region.service) || query_status=$?
+        screen-capture-record-full.service screen-capture-record-region.service screen-capture-record-window.service) || query_status=$?
     # Collected transient units may no longer exist: is-active returns 4 then,
     # or 3 when the units exist but none are active.
     case "$query_status" in
@@ -17,6 +17,9 @@ recording_mode() {
     esac
     case "${states[1]:-}" in
         active|activating|deactivating) printf 'region\n'; return ;;
+    esac
+    case "${states[2]:-}" in
+        active|activating|deactivating) printf 'window\n'; return ;;
     esac
     printf 'none\n'
 }
@@ -65,8 +68,14 @@ case "$mode" in
     region)
         recorder_args=()
         ;;
+    window)
+        if [[ ! "${2:-}" =~ ^[0-9a-fA-F]+$ ]]; then
+            printf 'Window recording requires a native window identifier.\n' >&2
+            exit 2
+        fi
+        ;;
     *)
-        printf 'Usage: screen-capture-record {full OUTPUT|region [OUTPUT GEOMETRY]|stop|status}\n' >&2
+        printf 'Usage: screen-capture-record {full OUTPUT|region [OUTPUT GEOMETRY]|window IDENTIFIER|stop|status}\n' >&2
         exit 2
         ;;
 esac
@@ -76,6 +85,10 @@ exec {lock_fd}>"$XDG_RUNTIME_DIR/screen-capture-record.lock"
 flock -n "$lock_fd" || exit 1
 active_mode=$(recording_mode)
 [[ "$active_mode" == none ]] || exit 1
+
+if [[ "$mode" == window ]]; then
+    screen-capture-window-record --check "$2"
+fi
 
 geometry=""
 if [[ "$mode" == region ]]; then
@@ -104,6 +117,14 @@ recording_path=$(mktemp --suffix=.mp4 "$recording_directory/Recording-$(date +%Y
 session_file="$XDG_RUNTIME_DIR/screen-capture-record-$mode.path"
 printf '%s\0%s\0' "$recording_path" "$geometry" > "$session_file"
 
+if [[ "$mode" == window ]]; then
+    recorder_command=("$(command -v screen-capture-window-record)" "$2" "$recording_path")
+else
+    recorder_command=("$(command -v wf-recorder)" --overwrite
+        --audio-backend=pulse --audio=@DEFAULT_MONITOR@ --audio-codec=aac
+        "${recorder_args[@]}" -f "$recording_path")
+fi
+
 # The recorder outlives shell reloads; SIGINT lets it finalize the MP4 when stopped.
 # Select the playback monitor explicitly so the microphone stays excluded.
 if ! systemd-run --user --quiet --collect --service-type=exec \
@@ -114,9 +135,7 @@ if ! systemd-run --user --quiet --collect --service-type=exec \
     --setenv="XDG_CACHE_HOME=${XDG_CACHE_HOME:-$HOME/.cache}" \
     --setenv="WAYLAND_DISPLAY=$WAYLAND_DISPLAY" \
     --setenv="XDG_RUNTIME_DIR=$XDG_RUNTIME_DIR" \
-    -- "$(command -v wf-recorder)" --overwrite \
-    --audio-backend=pulse --audio=@DEFAULT_MONITOR@ --audio-codec=aac \
-    "${recorder_args[@]}" -f "$recording_path"; then
+    -- "${recorder_command[@]}"; then
     rm -f -- "$recording_path" "$session_file"
     exit 1
 fi

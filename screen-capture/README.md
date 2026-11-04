@@ -23,9 +23,25 @@ button without a spacer. The action reads **Capture** for screenshots and
 **Record** for recording modes. Choose a mode with the icons or number keys:
 
 - **1**: screenshot all screens (PNG, also copied to the clipboard)
-- **2**: screenshot a region
-- **3**: record a screen
-- **4**: record a region
+- **2**: screenshot a window
+- **3**: screenshot a region
+- **4**: record a screen
+- **5**: record a window
+- **6**: record a region
+
+**Window modes** (Hyprland): point at a window to highlight it, click to lock the
+choice, then press Enter/Capture/Record. Window geometry and stacking are frozen
+at launch, together with an image of each visible window exported through
+Hyprland's native toplevel capture. Window screenshots therefore contain only
+that window's content as of launch, never overlapping windows, the dimmed
+backdrop, or the toolbar.
+
+Window recording captures the selected toplevel natively at 30 fps (video plus
+system audio, no mic). It keeps following that window when it moves or is covered.
+If it is resized, the video keeps its starting canvas size and letterboxes. It
+finishes if the window closes or becomes unavailable (e.g. minimized or on a
+hidden workspace). Window recording uses software encoding and is heavier than
+full-screen/region recording on large windows.
 
 For region modes, drag to select and move/resize using the handles. Click
 **Capture** / **Record**, or press **Enter**, to confirm. There is no Options menu

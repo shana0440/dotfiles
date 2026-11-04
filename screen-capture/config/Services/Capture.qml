@@ -11,6 +11,11 @@ Singleton {
     property bool previewActive: false
     property bool previewRequested: false
     property bool recordingStatusKnown: false
+    property bool cleanupPending: false
+    property string windowSelectionKind: ""
+    property var selectedWindow: null
+    property bool windowSelectionLocked: false
+    readonly property bool selectingWindow: windowSelectionKind.length > 0
     readonly property bool freezing: freezeCommand.running
     signal previewReady()
 
@@ -22,12 +27,16 @@ Singleton {
                 refreshRecordingStatus()
             return
         }
-        if (freezing || takingScreenshot)
-            return
         if (previewActive || recording) {
             previewReady()
             return
         }
+        if (freezing || currentScreenshot !== null) {
+            previewRequested = true
+            return
+        }
+        if (takingScreenshot)
+            return
         cleanupPreview()
         const screens = Quickshell.screens.map(screen => ({
             name: screen.name, x: screen.x, y: screen.y,
@@ -37,10 +46,41 @@ Singleton {
     }
 
     function cleanupPreview() {
-        if (preview !== null) {
-            Quickshell.execDetached(["screen-capture-snapshot", "cleanup", preview.directory])
-            preview = null
+        if (preview === null)
+            return
+        if (freezing || currentScreenshot !== null) {
+            cleanupPending = true
+            return
         }
+        Quickshell.execDetached(["screen-capture-snapshot", "cleanup", preview.directory])
+        preview = null
+        cleanupPending = false
+    }
+
+    function beginWindowSelection(kind) {
+        windowSelectionKind = kind
+        windowSelectionLocked = false
+        const windows = preview?.windows ?? []
+        selectedWindow = windows.find(window => window.identifier === selectedWindow?.identifier) ?? windows[0] ?? null
+    }
+
+    function cancelWindowSelection() {
+        windowSelectionKind = ""
+        windowSelectionLocked = false
+    }
+
+    function captureWindowScreenshot() {
+        if (!selectedWindow || !previewActive)
+            return
+        const identifier = selectedWindow.identifier
+        cancelWindowSelection()
+        runScreenshot(["screen-capture-snapshot", "save-window", preview.directory, identifier])
+        dismissPreview()
+    }
+
+    function startWindowRecording(identifier) {
+        if (!recording && !recordingCommandRunning)
+            recordingCommand.exec(["screen-capture-record", "window", identifier])
     }
 
     function dismissPreview() {
@@ -58,20 +98,32 @@ Singleton {
 
     Process {
         id: freezeCommand
-        stdout: StdioCollector { id: freezeOutput }
-        onExited: (exitCode, exitStatus) => {
-            if (exitCode !== 0) {
-                root.errorOccurred("Could not freeze the desktop. Please try again.")
-                return
+        property bool delivered: false
+        onStarted: delivered = false
+        stdout: SplitParser {
+            onRead: data => {
+                try {
+                    root.preview = JSON.parse(data)
+                    freezeCommand.delivered = true
+                    root.previewActive = !root.recording
+                    if (root.recording)
+                        root.cleanupPreview()
+                    root.previewReady()
+                } catch (error) {
+                    root.errorOccurred("Could not read the frozen desktop: " + error)
+                }
             }
-            try {
-                root.preview = JSON.parse(freezeOutput.text)
-                root.previewActive = !root.recording
-                if (root.recording)
-                    root.cleanupPreview()
-                root.previewReady()
-            } catch (error) {
-                root.errorOccurred("Could not read the frozen desktop: " + error)
+        }
+        onExited: (exitCode, exitStatus) => {
+            if (!delivered) {
+                root.previewRequested = false
+                root.errorOccurred("Could not freeze the desktop. Please try again.")
+            }
+            if (root.cleanupPending && !root.previewActive)
+                root.cleanupPreview()
+            if (root.previewRequested) {
+                root.previewRequested = false
+                Qt.callLater(root.openPreview)
             }
         }
     }
@@ -282,7 +334,7 @@ Singleton {
 
     function applyRecordingStatus(data) {
         const status = JSON.parse(data)
-        const mode = status.mode === "full" || status.mode === "region" ? status.mode : ""
+        const mode = ["full", "region", "window"].includes(status.mode) ? status.mode : ""
         const startedAtMs = Math.max(0, Number(status.startedAtSeconds) || 0) * 1000
         const geometry = Geometry.parse(status.geometry ?? "") ? status.geometry : ""
         if (mode !== recordingMode || geometry.length > 0)
@@ -300,6 +352,7 @@ Singleton {
 
     Process {
         id: screenshotCommand
+        stderr: StdioCollector { id: screenshotErrors }
         onRunningChanged: {
             // Failed-to-start processes emit this signal without emitting exited.
             if (!running && root.currentScreenshot !== null) {
@@ -320,7 +373,11 @@ Singleton {
             if (!root.previewActive)
                 root.cleanupPreview()
             if (exitCode !== 0)
-                root.errorOccurred("Screenshot failed (exit " + exitCode + ").")
+                root.errorOccurred(screenshotErrors.text.trim() || "Screenshot failed (exit " + exitCode + ").")
+            if (root.previewRequested) {
+                root.previewRequested = false
+                Qt.callLater(root.openPreview)
+            }
         }
     }
 
