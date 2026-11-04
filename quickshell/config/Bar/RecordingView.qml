@@ -16,7 +16,6 @@ Item {
         return hours > 0 ? String(hours).padStart(2, "0") + ":" + clock : clock
     }
     signal stopRequested()
-    signal controlsRequested()
 
     implicitWidth: 300
     implicitHeight: 32
@@ -26,11 +25,8 @@ Item {
         x: 12
         width: stopButton.x - x - 8
         height: parent.height
-        activeFocusOnTab: true
-        Accessible.role: Accessible.Button
-        Accessible.name: "Screen Recording, " + root.elapsedText + ", capture controls"
-        Keys.onReturnPressed: root.controlsRequested()
-        Keys.onSpacePressed: root.controlsRequested()
+        Accessible.role: Accessible.StaticText
+        Accessible.name: "Screen Recording, " + root.elapsedText
 
         Row {
             anchors.fill: parent
@@ -64,20 +60,6 @@ Item {
                 elide: Text.ElideRight
                 verticalAlignment: Text.AlignVCenter
             }
-        }
-
-        MouseArea {
-            id: detailsMouse
-            anchors.fill: parent
-            hoverEnabled: true
-            cursorShape: Qt.PointingHandCursor
-            onClicked: root.controlsRequested()
-        }
-
-        Components.Tooltip {
-            target: details
-            text: "Capture controls"
-            shown: detailsMouse.containsMouse || details.activeFocus
         }
     }
 

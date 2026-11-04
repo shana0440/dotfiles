@@ -1,7 +1,7 @@
 set -euo pipefail
 
 notify_screenshot_event() {
-    local shell_config="${XDG_CONFIG_HOME:-$HOME/.config}/quickshell"
+    local shell_config="${XDG_CONFIG_HOME:-$HOME/.config}/screen-capture"
     # Saving and clipboard delivery must work while Quickshell is unavailable.
     timeout 1s quickshell --path "$shell_config" \
         ipc call screenshots "$@" >/dev/null 2>&1 || true
@@ -14,7 +14,7 @@ case "${1:-}" in
     region)
         geometry="${2:-}"
         if [[ -z "$geometry" ]]; then
-            if timeout 1s quickshell --path "${XDG_CONFIG_HOME:-$HOME/.config}/quickshell" \
+            if timeout 1s quickshell --path "${XDG_CONFIG_HOME:-$HOME/.config}/screen-capture" \
                 ipc call capture selectRegion screenshot >/dev/null 2>&1; then
                 exit 0
             fi
@@ -30,7 +30,7 @@ case "${1:-}" in
         capture_args=(-g "$geometry")
         ;;
     *)
-        printf 'Usage: hypr-screenshot {full|region [GEOMETRY]}\n' >&2
+        printf 'Usage: screen-capture-screenshot {full|region [GEOMETRY]}\n' >&2
         exit 2
         ;;
 esac
