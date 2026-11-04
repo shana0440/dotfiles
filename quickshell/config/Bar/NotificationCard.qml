@@ -10,6 +10,19 @@ Rectangle {
     radius: 8
     color: Theme.Colors.activeWorkspace
 
+    Components.IconButton {
+        anchors.right: parent.right
+        anchors.top: parent.top
+        anchors.margins: 8
+        z: 1
+        width: 24
+        height: 24
+        iconSize: 14
+        icon: "close"
+        tooltip: "Dismiss notification"
+        onClicked: { if (root.notification) root.notification.dismiss() }
+    }
+
     Column {
         id: content
         x: 12
@@ -17,71 +30,67 @@ Rectangle {
         width: parent.width - 24
         spacing: 6
 
-        Item {
+        Row {
+            id: message
             width: parent.width
-            height: 24
+            spacing: 12
 
-            Text {
-                anchors.left: parent.left
-                anchors.right: dismiss.left
-                anchors.verticalCenter: parent.verticalCenter
-                text: root.notification ? root.notification.appName : ""
-                textFormat: Text.PlainText
-                elide: Text.ElideRight
-                color: Theme.Colors.foreground
-                opacity: 0.65
-                font.pixelSize: 11
+            Image {
+                id: thumbnail
+                width: 64
+                height: 64
+                source: root.notification ? root.notification.image : ""
+                sourceSize.width: 160
+                sourceSize.height: 160
+                asynchronous: true
+                fillMode: Image.PreserveAspectFit
+                visible: source.toString().length > 0 && status !== Image.Error
             }
 
-            Components.IconButton {
-                id: dismiss
-                anchors.right: parent.right
-                width: 24
-                height: 24
-                iconSize: 14
-                icon: "close"
-                tooltip: "Dismiss notification"
-                onClicked: { if (root.notification) root.notification.dismiss() }
+            Column {
+                width: message.width - (thumbnail.visible ? thumbnail.width + message.spacing : 0)
+                spacing: 6
+
+                Text {
+                    width: parent.width - 28
+                    text: root.notification ? root.notification.summary : ""
+                    textFormat: Text.PlainText
+                    color: Theme.Colors.foreground
+                    font.pixelSize: 14
+                    font.bold: true
+                    wrapMode: Text.Wrap
+                    maximumLineCount: 3
+                    elide: Text.ElideRight
+                }
+
+                Text {
+                    width: parent.width
+                    text: root.notification ? root.notification.body : ""
+                    textFormat: Text.PlainText
+                    visible: text.length > 0
+                    color: Theme.Colors.foreground
+                    font.pixelSize: 12
+                    wrapMode: Text.Wrap
+                    maximumLineCount: 6
+                    elide: Text.ElideRight
+                }
+
+                Text {
+                    width: parent.width
+                    text: root.notification ? root.notification.appName : ""
+                    textFormat: Text.PlainText
+                    visible: text.length > 0
+                    elide: Text.ElideRight
+                    color: Theme.Colors.foreground
+                    opacity: 0.65
+                    font.pixelSize: 11
+                }
             }
-        }
-
-        Image {
-            width: parent.width
-            height: 160
-            source: root.notification ? root.notification.image : ""
-            sourceSize.width: 768
-            sourceSize.height: 480
-            asynchronous: true
-            fillMode: Image.PreserveAspectFit
-            visible: source.toString().length > 0 && status !== Image.Error
-        }
-
-        Text {
-            width: parent.width
-            text: root.notification ? root.notification.summary : ""
-            textFormat: Text.PlainText
-            color: Theme.Colors.foreground
-            font.pixelSize: 14
-            font.bold: true
-            wrapMode: Text.Wrap
-            maximumLineCount: 3
-            elide: Text.ElideRight
-        }
-
-        Text {
-            width: parent.width
-            text: root.notification ? root.notification.body : ""
-            textFormat: Text.PlainText
-            visible: text.length > 0
-            color: Theme.Colors.foreground
-            font.pixelSize: 12
-            wrapMode: Text.Wrap
-            maximumLineCount: 6
-            elide: Text.ElideRight
         }
 
         Flow {
-            width: parent.width
+            x: thumbnail.visible ? thumbnail.width + message.spacing : 0
+            width: parent.width - x
             spacing: 6
             visible: children.length > 0
 
@@ -91,7 +100,7 @@ Rectangle {
                 Rectangle {
                     id: actionButton
                     required property var modelData
-                    width: Math.min(actionText.implicitWidth + 20, content.width)
+                    width: Math.min(actionText.implicitWidth + 20, parent.width)
                     height: 28
                     radius: 6
                     color: Theme.Colors.background
