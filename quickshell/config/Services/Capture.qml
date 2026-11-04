@@ -39,6 +39,13 @@ Singleton {
         recordingMode = mode
     }
 
+    // Pushed by screen-capture-record when a recording starts or stops; the
+    // timer below remains as a fallback (e.g. a window closing ends a recording).
+    IpcHandler {
+        target: "screenCapture"
+        function changed(): void { root.refreshStatus() }
+    }
+
     SystemClock {
         id: clock
         precision: SystemClock.Seconds

@@ -91,13 +91,16 @@ The application status snapshot includes `recording`, `mode`, `startedAtMs`, and
 `geometry`, plus `preview` to indicate whether a frozen frame is displayed. The
 helper status query also works without the application running.
 
-The bar (`quickshell/config/Services/Capture.qml`) polls
-`screen-capture-record status --json` once a second. While a recording runs it
+`screen-capture-record` pings the bar (`quickshell ipc call screenCapture changed`)
+when a recording starts or is stopped through it, so the bar updates immediately.
+The bar (`quickshell/config/Services/Capture.qml`) also polls
+`screen-capture-record status --json` once a second as a fallback, e.g. when a
+recorded window closing ends a recording on its own. While a recording runs it
 shows the elapsed time and a Stop button in the center island, and stops via
 `screen-capture-record stop`. The bar has no capture menu or settings island;
 launch capture with Super+Shift+S or the application launcher.
 
-There are no push events or D-Bus interface yet (polling only), and
+There is no D-Bus interface yet, and
 notifications are not implemented; the bar's saved-capture notification view
 is currently never triggered. The app's own floating Stop control also remains
 visible while recording.

@@ -24,6 +24,15 @@ recording_mode() {
     printf 'none\n'
 }
 
+# Tell the bar immediately so it need not wait for its polling fallback.
+# Best effort and detached: capture must work with no bar running.
+notify_bar() {
+    {
+        timeout 2s quickshell --path "${XDG_CONFIG_HOME:-$HOME/.config}/quickshell" \
+            ipc call screenCapture changed
+    } >/dev/null 2>&1 &
+}
+
 mode="${1:-}"
 case "$mode" in
     status)
@@ -55,6 +64,7 @@ case "$mode" in
         active_mode=$(recording_mode)
         if [[ "$active_mode" != none ]]; then
             systemctl --user stop "screen-capture-record-$active_mode.service"
+            notify_bar
         fi
         exit 0
         ;;
@@ -139,4 +149,5 @@ if ! systemd-run --user --quiet --collect --service-type=exec \
     rm -f -- "$recording_path" "$session_file"
     exit 1
 fi
+notify_bar
 printf '%s\n' "$recording_path"
