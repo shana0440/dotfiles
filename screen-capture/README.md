@@ -128,10 +128,16 @@ shows the elapsed time and a Stop button in the center island, and stops via
 `screen-capture-record stop`. The bar has no capture menu or settings island;
 launch capture with Super+Shift+S or the application launcher.
 
-There is no D-Bus interface yet, and
-notifications are not implemented; the bar's saved-capture notification view
-is currently never triggered. The app's own floating Stop control is hidden when started with
-`--no-stop-toolbar`.
+Successful screenshots and completed recordings send standard freedesktop D-Bus
+notifications, including the saved file path and an image preview. Screenshots use
+the saved image; recordings generate a thumbnail under
+`$XDG_CACHE_HOME/screen-capture/previews`. The recording completion hook notifies
+even if the capture UI has closed, and does not announce failed recordings.
+Notification delivery is best effort and never prevents saving or clipboard delivery.
+Quickshell shows these in its merged notification island and notification history;
+other notification daemons can display them too. The capture control interface
+remains Quickshell IPC, not D-Bus. The app's own floating Stop control is hidden
+when started with `--no-stop-toolbar`.
 
 ## Manual validation
 

@@ -118,6 +118,13 @@ def write_png(image):
         raise
     print(target, flush=True)
     try:
+        subprocess.Popen(["screen-capture-notify", "screenshot", target],
+                         stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                         start_new_session=True)
+    except OSError:
+        # Notification delivery is independent of saving and clipboard delivery.
+        pass
+    try:
         with open(target, "rb") as stream:
             subprocess.run(["wl-copy", "--type", "image/png"], stdin=stream, check=False, timeout=5)
     except subprocess.TimeoutExpired:

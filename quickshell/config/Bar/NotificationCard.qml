@@ -45,6 +45,17 @@ Rectangle {
             }
         }
 
+        Image {
+            width: parent.width
+            height: 160
+            source: root.notification ? root.notification.image : ""
+            sourceSize.width: 768
+            sourceSize.height: 480
+            asynchronous: true
+            fillMode: Image.PreserveAspectFit
+            visible: source.toString().length > 0 && status !== Image.Error
+        }
+
         Text {
             width: parent.width
             text: root.notification ? root.notification.summary : ""

@@ -54,4 +54,5 @@ grim -l 1 "${capture_args[@]}" "$screenshot_path"
 screenshot_saved=true
 printf '%s\n' "$screenshot_path"
 notify_screenshot_event captured "$screenshot_path"
+screen-capture-notify screenshot "$screenshot_path" >/dev/null 2>&1 &
 wl-copy --type image/png < "$screenshot_path"

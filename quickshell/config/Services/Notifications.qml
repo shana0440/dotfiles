@@ -30,7 +30,7 @@ Singleton {
         bodySupported: true
         actionsSupported: true
         bodyMarkupSupported: false
-        imageSupported: false
+        imageSupported: true
 
         onNotification: notification => {
             notification.tracked = true
