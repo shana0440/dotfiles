@@ -65,11 +65,23 @@ The region components and capture adapter were originally copied from the bar,
 which no longer contains them. There are no imports or IPC calls between the two
 configurations.
 
-`scripts/snapshot.py` captures one uncompressed PPM frame with grim. Qt clips each
-output from the same image, avoiding PNG compression and per-output encoding on
-the launch path. Pillow is loaded only when saving a PNG screenshot. Temporary frames live
-in private directories under `$XDG_RUNTIME_DIR` and are removed on capture,
-cancel, or normal UI shutdown. Native screenshot resolution is retained.
+The frozen desktop comes from compositor screencopy (Quickshell
+`ScreencopyView`, one non-live frame per output) shown directly from GPU
+memory, so the toolbar appears without waiting for a file to be written, decoded
+and uploaded. In a 3840×2160 nested test the toolbar was ready about 8–10 ms
+after the request (software rendering), against roughly 170–235 ms with the
+earlier grim-to-file approach.
+
+Screenshots are saved from those same frames: each overlay grabs its
+`ScreencopyView` (only that item, never the backdrop or toolbar) at native
+resolution into a private temporary PPM, and `scripts/snapshot.py save-screens`
+composes the outputs (highest scale wins, like grim), crops regions, writes the
+PNG and copies it to the clipboard. Pillow is loaded only at save time.
+Hyprland's native window list and per-window frames are prepared by
+`snapshot.py freeze` in parallel; window modes show "Loading windows…" for the
+few tens of milliseconds until it reports. Temporary frames live in private
+directories under `$XDG_RUNTIME_DIR` and are removed on capture, cancel, or
+normal UI shutdown.
 
 `scripts/` owns capture operations. The `screen-capture-record-{full,region,window}`
 systemd user units keep recording independently of UI reloads. These units,

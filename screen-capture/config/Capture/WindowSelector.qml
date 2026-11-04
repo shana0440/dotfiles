@@ -60,7 +60,8 @@ Item {
             text: root.selected
                 ? root.selected.title + "\n" + (Services.Capture.windowSelectionLocked ? "Selected · " : "Click to select · ")
                     + (Services.Capture.windowSelectionKind === "recording" ? "Enter to record" : "Enter to capture")
-                : (Services.Capture.preview?.windowError || "Point at a window and click to select it")
+                : (Services.Capture.preview === null ? "Loading windows…"
+                    : Services.Capture.preview.windowError || "Point at a window and click to select it")
             textFormat: Text.PlainText
             color: "white"
             font.pixelSize: 12

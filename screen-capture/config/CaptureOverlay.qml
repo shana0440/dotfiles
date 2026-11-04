@@ -17,12 +17,12 @@ Scope {
             id: overlay
             required property var modelData
             screen: modelData
-            visible: Services.Capture.previewActive || Services.Capture.selectingRegion || Services.Capture.startingRecordingGeometry.length > 0
+            visible: Services.Capture.capturing || Services.Capture.previewActive || Services.Capture.selectingRegion || Services.Capture.startingRecordingGeometry.length > 0
                 || (Services.Capture.recordingMode === "region" && Services.Capture.recordingGeometry.length > 0)
             color: "transparent"
             exclusionMode: ExclusionMode.Ignore
             WlrLayershell.namespace: "screen-capture-region"
-            WlrLayershell.layer: Services.Capture.previewActive ? WlrLayer.Top : WlrLayer.Overlay
+            WlrLayershell.layer: Services.Capture.capturing || Services.Capture.previewActive ? WlrLayer.Top : WlrLayer.Overlay
             // Hyprland routes pointer input only to exclusive layer surfaces while
             // an exclusive toolbar is open. Include the selector in that group.
             WlrLayershell.keyboardFocus: Services.Capture.previewActive || Services.Capture.selectingRegion
@@ -33,16 +33,42 @@ Scope {
             // region from its visibility when switching into region selection.
             mask: Region { item: Services.Capture.previewActive || Services.Capture.selectingRegion ? overlay.contentItem : null }
 
-            Image {
+            // A fresh view per capture: its first frame is the frozen desktop.
+            Loader {
+                id: frameLoader
                 anchors.fill: parent
-                visible: Services.Capture.previewActive
-                readonly property var frame: Services.Capture.preview?.screens.find(screen => screen.name === overlay.modelData.name)
-                source: frame ? "file://" + frame.image : ""
-                sourceClipRect: frame?.clip
-                    ? Qt.rect(frame.clip.x, frame.clip.y, frame.clip.width, frame.clip.height)
-                    : Qt.rect(0, 0, 0, 0)
-                fillMode: Image.Stretch
-                cache: false
+                active: Services.Capture.capturing || Services.Capture.previewActive
+                sourceComponent: ScreencopyView {
+                    captureSource: overlay.modelData
+                    live: false
+                    paintCursor: false
+                    onHasContentChanged: if (hasContent) Services.Capture.frameReady(overlay.modelData.name)
+                    onStopped: if (!hasContent) Services.Capture.frameFailed("")
+                }
+            }
+
+            Connections {
+                target: Services.Capture
+                function onGrabRequested(directory) {
+                    const view = frameLoader.item
+                    if (!view || !view.hasContent) {
+                        Services.Capture.frameFailed("Could not save the screenshot.")
+                        return
+                    }
+                    // grabToImage scales the requested size by the window's pixel
+                    // ratio; ask for it divided so the file is exactly native size.
+                    const size = view.sourceSize
+                    const request = Qt.size(size.width / overlay.devicePixelRatio, size.height / overlay.devicePixelRatio)
+                    const path = directory + "/screen-" + Quickshell.screens.indexOf(overlay.modelData) + ".ppm"
+                    const started = view.grabToImage(result => {
+                        if (result.saveToFile(path))
+                            Services.Capture.frameGrabbed(overlay.modelData.name, path, size.width, size.height)
+                        else
+                            Services.Capture.frameFailed("Could not save the screenshot.")
+                    }, request)
+                    if (!started)
+                        Services.Capture.frameFailed("Could not save the screenshot.")
+                }
             }
 
             Rectangle {

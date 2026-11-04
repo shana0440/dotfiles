@@ -9,6 +9,15 @@ Singleton {
 
     property var preview: null
     property bool previewActive: false
+    // Desktop frames come from compositor screencopy in the overlay windows, which
+    // is far faster than writing/decoding an image file. `preview` (window list and
+    // window frames) arrives separately from the helper a moment later.
+    property bool capturing: false
+    property var frameScreens: ({})
+    property var grabbedFrames: ({})
+    property bool saving: false
+    property string saveGeometry: ""
+    property bool grabAfterManifest: false
     property bool previewRequested: false
     property bool recordingStatusKnown: false
     property bool cleanupPending: false
@@ -18,6 +27,7 @@ Singleton {
     readonly property bool selectingWindow: windowSelectionKind.length > 0
     readonly property bool freezing: freezeCommand.running
     signal previewReady()
+    signal grabRequested(string directory)
 
     function openPreview() {
         // A restarted UI must not freeze a recording that already runs in systemd.
@@ -38,6 +48,9 @@ Singleton {
         if (takingScreenshot)
             return
         cleanupPreview()
+        frameScreens = ({})
+        capturing = true
+        frameTimeout.restart()
         const screens = Quickshell.screens.map(screen => ({
             name: screen.name, x: screen.x, y: screen.y,
             width: screen.width, height: screen.height
@@ -45,10 +58,52 @@ Singleton {
         freezeCommand.exec(["screen-capture-snapshot", "freeze", JSON.stringify(screens)])
     }
 
-    function cleanupPreview() {
-        if (preview === null)
+    function frameReady(name) {
+        if (!capturing || previewActive)
             return
-        if (freezing || currentScreenshot !== null) {
+        const ready = Object.assign({}, frameScreens)
+        ready[name] = true
+        frameScreens = ready
+        if (!Quickshell.screens.every(screen => ready[screen.name]))
+            return
+        frameTimeout.stop()
+        if (recording) {
+            dismissPreview()
+            return
+        }
+        previewActive = true
+        previewReady()
+    }
+
+    function frameFailed(message) {
+        frameTimeout.stop()
+        grabTimeout.stop()
+        const wasSaving = saving
+        saving = false
+        screenshotPending = false
+        dismissPreview()
+        errorOccurred(message || (wasSaving ? "Could not save the screenshot." : "Could not capture the desktop. Please try again."))
+    }
+
+    Timer {
+        id: frameTimeout
+        interval: 2500
+        onTriggered: root.frameFailed("")
+    }
+
+    Timer {
+        id: grabTimeout
+        interval: 6000
+        onTriggered: root.frameFailed("Could not save the screenshot.")
+    }
+
+    function cleanupPreview() {
+        if (preview === null) {
+            if (freezing)
+                cleanupPending = true
+            return
+        }
+        if (freezing || currentScreenshot !== null || saving) {
             cleanupPending = true
             return
         }
@@ -84,15 +139,47 @@ Singleton {
     }
 
     function dismissPreview() {
+        capturing = false
         previewActive = false
+        frameTimeout.stop()
         // The save process still needs the source frame until it exits.
-        if (currentScreenshot === null)
+        if (currentScreenshot === null && !saving)
             cleanupPreview()
     }
 
+    // Save from the frozen frames themselves: a separate screen capture here would
+    // photograph our own backdrop and toolbar.
     function frozenScreenshot(geometry) {
+        if (!previewActive || saving)
+            return
+        saving = true
+        screenshotPending = true
+        saveGeometry = geometry || ""
+        grabbedFrames = ({})
+        grabTimeout.restart()
+        if (preview)
+            grabRequested(preview.directory)
+        else
+            grabAfterManifest = true
+    }
+
+    function frameGrabbed(name, path, pixelWidth, pixelHeight) {
+        if (!saving)
+            return
+        const grabbed = Object.assign({}, grabbedFrames)
+        grabbed[name] = { path: path, pixelWidth: pixelWidth, pixelHeight: pixelHeight }
+        grabbedFrames = grabbed
+        if (!Quickshell.screens.every(screen => grabbed[screen.name]))
+            return
+        grabTimeout.stop()
+        const frames = Quickshell.screens.map(screen => ({
+            name: screen.name, x: screen.x, y: screen.y, width: screen.width, height: screen.height,
+            image: grabbed[screen.name].path,
+            pixelWidth: grabbed[screen.name].pixelWidth, pixelHeight: grabbed[screen.name].pixelHeight
+        }))
         const directory = preview.directory
-        runScreenshot(["screen-capture-snapshot", "save", directory, geometry || ""])
+        saving = false
+        runScreenshot(["screen-capture-snapshot", "save-screens", directory, JSON.stringify(frames), saveGeometry])
         dismissPreview()
     }
 
@@ -105,10 +192,12 @@ Singleton {
                 try {
                     root.preview = JSON.parse(data)
                     freezeCommand.delivered = true
-                    root.previewActive = !root.recording
-                    if (root.recording)
-                        root.cleanupPreview()
-                    root.previewReady()
+                    if (root.windowSelectionKind)
+                        root.beginWindowSelection(root.windowSelectionKind)
+                    if (root.grabAfterManifest) {
+                        root.grabAfterManifest = false
+                        root.grabRequested(root.preview.directory)
+                    }
                 } catch (error) {
                     root.errorOccurred("Could not read the frozen desktop: " + error)
                 }
@@ -117,7 +206,7 @@ Singleton {
         onExited: (exitCode, exitStatus) => {
             if (!delivered) {
                 root.previewRequested = false
-                root.errorOccurred("Could not freeze the desktop. Please try again.")
+                root.errorOccurred("Could not list the windows to capture.")
             }
             if (root.cleanupPending && !root.previewActive)
                 root.cleanupPreview()

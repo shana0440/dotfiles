@@ -1,4 +1,4 @@
-"""Freeze launch-time desktop/window frames; save screenshots without capture UI."""
+"""Window list/frames for the frozen preview; compose and save screenshots."""
 
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
@@ -80,6 +80,8 @@ def freeze_window(directory, window):
 
 
 def freeze(screens):
+    """Prepare the frame directory and window list. Desktop pixels come from the
+    compositor screencopy shown by the UI, so launch need not wait for an image."""
     if not screens:
         raise ValueError("No screens available")
     left = min(screen["x"] for screen in screens)
@@ -88,73 +90,23 @@ def freeze(screens):
     height = max(screen["y"] + screen["height"] for screen in screens) - top
     directory = Path(tempfile.mkdtemp(prefix="screen-capture-frame-", dir=os.environ["XDG_RUNTIME_DIR"]))
     try:
+        windows, window_error = visible_windows(screens)
+        manifest = {"directory": str(directory), "x": left, "y": top,
+                    "width": width, "height": height, "screens": screens,
+                    "windows": windows, "windowError": window_error}
+        (directory / "manifest.json").write_text(json.dumps(manifest))
+        # Show the toolbar as soon as the list is known; native window frames
+        # finish in parallel without delaying full-screen/region users.
+        print(json.dumps(manifest), flush=True)
         with ThreadPoolExecutor(max_workers=4) as workers:
-            window_list = workers.submit(visible_windows, screens)
-            target = directory / "desktop.ppm"
-            subprocess.run(["grim", "-t", "ppm", str(target)], check=True, timeout=10)
-            with target.open("rb") as stream:
-                if stream.readline().strip() != b"P6":
-                    raise ValueError("Unexpected compositor image format")
-                pixel_width, pixel_height = map(int, stream.readline().split())
-                if stream.readline().strip() != b"255":
-                    raise ValueError("Unexpected compositor image depth")
-            scale_x, scale_y = pixel_width / width, pixel_height / height
-            for screen in screens:
-                x, y = screen["x"] - left, screen["y"] - top
-                clip_x, clip_y = round(x * scale_x), round(y * scale_y)
-                screen["image"] = str(target)
-                screen["clip"] = {
-                    "x": clip_x, "y": clip_y,
-                    "width": round((x + screen["width"]) * scale_x) - clip_x,
-                    "height": round((y + screen["height"]) * scale_y) - clip_y,
-                }
-            windows, window_error = window_list.result()
             for window in windows:
                 workers.submit(freeze_window, directory, window)
-            manifest = {"directory": str(directory), "x": left, "y": top,
-                        "width": width, "height": height, "screens": screens,
-                        "windows": windows, "windowError": window_error}
-            (directory / "manifest.json").write_text(json.dumps(manifest))
-            # Show the toolbar now; native window frames finish in parallel, without
-            # making full-screen/region users wait for every window to be exported.
-            print(json.dumps(manifest), flush=True)
     except BaseException:
         shutil.rmtree(directory, ignore_errors=True)
         raise
 
 
-def save(directory, geometry="", identifier=None):
-    from PIL import Image
-
-    directory = snapshot_path(directory)
-    manifest = json.loads((directory / "manifest.json").read_text())
-    if identifier is not None:
-        if identifier not in {window["identifier"] for window in manifest["windows"]}:
-            raise ValueError("The selected window is not part of this frozen frame")
-        source_path = directory / f"window-{identifier}.png"
-        deadline = time.monotonic() + 6
-        while not source_path.exists():
-            error_path = source_path.with_suffix(".error")
-            if error_path.exists():
-                raise ValueError(error_path.read_text())
-            if time.monotonic() >= deadline:
-                raise ValueError("Timed out waiting for the frozen window image")
-            time.sleep(0.02)
-    else:
-        source_path = directory / "desktop.ppm"
-    with Image.open(source_path) as source:
-        image = source.copy()
-    if geometry:
-        match = re.fullmatch(r"(-?\d+),(-?\d+) ([1-9]\d*)x([1-9]\d*)", geometry)
-        if not match:
-            raise ValueError("Invalid screenshot geometry")
-        x, y, width, height = map(int, match.groups())
-        x, y = x - manifest["x"], y - manifest["y"]
-        if x < 0 or y < 0 or x + width > manifest["width"] or y + height > manifest["height"]:
-            raise ValueError("Screenshot region is outside the frozen desktop")
-        scale_x, scale_y = image.width / manifest["width"], image.height / manifest["height"]
-        image = image.crop((round(x * scale_x), round(y * scale_y),
-                            round((x + width) * scale_x), round((y + height) * scale_y)))
+def write_png(image):
     pictures = Path(os.environ.get("XDG_PICTURES_DIR", str(Path.home() / "Pictures"))) / "Screenshots"
     pictures.mkdir(parents=True, exist_ok=True)
     fd, target = tempfile.mkstemp(prefix=f"Screenshot-{datetime.now():%Y-%m-%d_%H-%M-%S}-", suffix=".png", dir=pictures)
@@ -172,19 +124,82 @@ def save(directory, geometry="", identifier=None):
         print("Screen capture: clipboard delivery timed out; screenshot was saved", file=sys.stderr)
 
 
+def save_screens(directory, frames_json, geometry=""):
+    """Compose per-output frozen frames like grim: highest scale wins."""
+    from PIL import Image
+
+    directory = snapshot_path(directory)
+    frames = json.loads(frames_json)
+    if not frames:
+        raise ValueError("No frozen frames to save")
+    for frame in frames:
+        image_path = Path(frame["image"]).resolve()
+        if image_path.parent != directory or not re.fullmatch(r"screen-\d+\.ppm", image_path.name):
+            raise ValueError("Invalid frozen frame path")
+        frame["image"] = image_path
+    left = min(frame["x"] for frame in frames)
+    top = min(frame["y"] for frame in frames)
+    width = max(frame["x"] + frame["width"] for frame in frames) - left
+    height = max(frame["y"] + frame["height"] for frame in frames) - top
+    scale = max(frame["pixelWidth"] / frame["width"] for frame in frames)
+    if len(frames) == 1:
+        with Image.open(frames[0]["image"]) as source:
+            image = source.copy()
+    else:
+        image = Image.new("RGB", (round(width * scale), round(height * scale)))
+        for frame in frames:
+            with Image.open(frame["image"]) as source:
+                target_size = (round(frame["width"] * scale), round(frame["height"] * scale))
+                part = source if source.size == target_size else source.resize(target_size, Image.BILINEAR)
+                image.paste(part, (round((frame["x"] - left) * scale), round((frame["y"] - top) * scale)))
+    if geometry:
+        match = re.fullmatch(r"(-?\d+),(-?\d+) ([1-9]\d*)x([1-9]\d*)", geometry)
+        if not match:
+            raise ValueError("Invalid screenshot geometry")
+        x, y, region_width, region_height = map(int, match.groups())
+        x, y = x - left, y - top
+        if x < 0 or y < 0 or x + region_width > width or y + region_height > height:
+            raise ValueError("Screenshot region is outside the frozen desktop")
+        scale_x, scale_y = image.width / width, image.height / height
+        image = image.crop((round(x * scale_x), round(y * scale_y),
+                            round((x + region_width) * scale_x), round((y + region_height) * scale_y)))
+    write_png(image)
+
+
+def save_window(directory, identifier):
+    from PIL import Image
+
+    directory = snapshot_path(directory)
+    manifest = json.loads((directory / "manifest.json").read_text())
+    if identifier not in {window["identifier"] for window in manifest["windows"]}:
+        raise ValueError("The selected window is not part of this frozen frame")
+    source_path = directory / f"window-{identifier}.png"
+    deadline = time.monotonic() + 6
+    while not source_path.exists():
+        error_path = source_path.with_suffix(".error")
+        if error_path.exists():
+            raise ValueError(error_path.read_text())
+        if time.monotonic() >= deadline:
+            raise ValueError("Timed out waiting for the frozen window image")
+        time.sleep(0.02)
+    with Image.open(source_path) as source:
+        image = source.copy()
+    write_png(image)
+
+
 if __name__ == "__main__":
     try:
         command = sys.argv[1]
         if command == "freeze":
             freeze(json.loads(sys.argv[2]))
-        elif command == "save":
-            save(sys.argv[2], sys.argv[3] if len(sys.argv) > 3 else "")
+        elif command == "save-screens":
+            save_screens(sys.argv[2], sys.argv[3], sys.argv[4] if len(sys.argv) > 4 else "")
         elif command == "save-window":
-            save(sys.argv[2], identifier=sys.argv[3])
+            save_window(sys.argv[2], sys.argv[3])
         elif command == "cleanup":
             shutil.rmtree(snapshot_path(sys.argv[2]), ignore_errors=True)
         else:
-            raise ValueError("Expected freeze, save, save-window, or cleanup")
+            raise ValueError("Expected freeze, save-screens, save-window, or cleanup")
     except Exception as error:
         print(f"Screen capture: {error}", file=sys.stderr)
         sys.exit(1)
