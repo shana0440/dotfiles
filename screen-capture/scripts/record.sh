@@ -150,6 +150,7 @@ if ! systemd-run --user --quiet --collect --service-type=exec \
     --property="ExecStopPost=$(command -v screen-capture-recording-finished) $mode" \
     --setenv="XDG_CONFIG_HOME=${XDG_CONFIG_HOME:-$HOME/.config}" \
     --setenv="XDG_CACHE_HOME=${XDG_CACHE_HOME:-$HOME/.cache}" \
+    --setenv="DBUS_SESSION_BUS_ADDRESS=${DBUS_SESSION_BUS_ADDRESS:-unix:path=$XDG_RUNTIME_DIR/bus}" \
     --setenv="WAYLAND_DISPLAY=$WAYLAND_DISPLAY" \
     --setenv="XDG_RUNTIME_DIR=$XDG_RUNTIME_DIR" \
     -- "${recorder_command[@]}"; then

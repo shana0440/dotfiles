@@ -1,7 +1,10 @@
 # Quickshell validation
 
-- Use the user's already-running Quickshell instance. Do not launch another
-  instance or restart it unless the user explicitly asks.
+- When the user requests Agent Workspace Linux testing, that request authorizes
+  launching an isolated Quickshell instance there. Do not ask again. Keep its
+  D-Bus session isolated and leave the user's desktop instance untouched.
+- Otherwise, use the user's already-running Quickshell instance. Do not launch
+  another instance or restart it unless the user explicitly asks.
 - Validate changes by interacting with the actual desktop and capturing
   screenshots or screen recordings. Inspect the captured evidence yourself.
 - Do not add automated tests, offscreen harnesses, fake services, or fixtures.

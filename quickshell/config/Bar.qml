@@ -17,7 +17,7 @@ PanelWindow {
     readonly property bool menuNeedsKeyboardFocus: centerIsland.expanded || rightIsland.keyboardFocusRequired
 
     function closeMenus() {
-        centerIsland.expanded = false
+        centerIsland.close()
         rightIsland.close()
     }
 
@@ -75,6 +75,7 @@ PanelWindow {
         Region { item: appsIsland.visible ? appsIsland : null }
         Region { item: centerIsland }
         Region { item: mediaIsland.visible ? mediaIsland : null }
+        Region { item: notificationIsland.visible ? notificationIsland : null }
         Region { item: rightIsland }
     }
 
@@ -135,8 +136,9 @@ PanelWindow {
                 const position = eventPoint.position
                 const onCenterGroup = containsBarPoint(centerIsland, position)
                     || containsBarPoint(mediaIsland, position)
+                    || containsBarPoint(notificationIsland, position)
                 if (centerIsland.expanded && !onCenterGroup)
-                    centerIsland.expanded = false
+                    centerIsland.close()
                 if (rightIsland.expanded && !containsBarPoint(rightIsland, position))
                     rightIsland.close()
             }
@@ -160,6 +162,7 @@ PanelWindow {
         BarComponents.CenterIsland {
             id: centerIsland
             anchors.horizontalCenter: parent.horizontalCenter
+            availableHeight: Math.min(560, Math.max(144, root.height - root.islandMargin * 2))
         }
 
         BarComponents.MediaIsland {
@@ -168,6 +171,14 @@ PanelWindow {
             anchors.rightMargin: merged ? -width : root.islandSpacing
             merged: centerIsland.sideIslandsMerged
             onClicked: centerIsland.open("media")
+        }
+
+        BarComponents.NotificationIsland {
+            id: notificationIsland
+            anchors.left: centerIsland.right
+            anchors.leftMargin: merged ? -width : root.islandSpacing
+            merged: centerIsland.sideIslandsMerged
+            onClicked: centerIsland.open("notifications")
         }
 
         BarComponents.RightIsland {

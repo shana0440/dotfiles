@@ -31,7 +31,9 @@ Item {
         screenshotRegion: "scan",
         record: "video",
         recordRegion: "square-dashed",
-        stop: "square"
+        stop: "square",
+        notifications: "bell",
+        clearNotifications: "list-x"
     })[action] ?? "power"
     readonly property string themedSvg: {
         const svg = svgTemplate.text().replace(/currentColor/g, iconColor.toString())
