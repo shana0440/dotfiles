@@ -1,8 +1,8 @@
 import QtQuick
-import QtQuick.Controls
 import Quickshell
 import Quickshell.Wayland
 import "../Theme" as Theme
+import "../Components" as Components
 import "../Services" as Services
 
 Rectangle {
@@ -118,21 +118,11 @@ Rectangle {
                         onClicked: button.modelData.activate()
                     }
 
-                    ToolTip {
-                        id: tooltip
-                        visible: mouse.containsMouse
+                    Components.Tooltip {
+                        shown: mouse.containsMouse
                         delay: 500
+                        alignment: Qt.AlignHCenter
                         text: button.label
-                        contentItem: Text {
-                            text: tooltip.text
-                            color: Theme.Colors.foreground
-                            font.pixelSize: 12
-                        }
-                        background: Rectangle {
-                            color: Theme.Colors.background
-                            border.color: Theme.Colors.activeWorkspace
-                            radius: 6
-                        }
                     }
                 }
             }
