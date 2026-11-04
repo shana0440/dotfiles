@@ -105,8 +105,9 @@ PanelWindow {
     exclusionMode: ExclusionMode.Ignore
     color: Theme.Colors.transparent
     WlrLayershell.keyboardFocus: menuNeedsKeyboardFocus ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
+    // Let overlapping floating windows cover the idle bar, but keep menus and alerts above apps.
     WlrLayershell.layer: menuOpen || centerIsland.notificationVisible || Services.Capture.recording || Services.Capture.takingScreenshot
-        ? WlrLayer.Overlay : WlrLayer.Top
+        ? WlrLayer.Overlay : WlrLayer.Bottom
 
     // Layer-shell infers the reservation edge from three-edge anchoring.
     PanelWindow {
