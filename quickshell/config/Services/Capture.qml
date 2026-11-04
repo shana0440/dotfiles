@@ -74,8 +74,10 @@ Singleton {
         }
     }
 
+    // Start and Stop are pushed; polling only catches recordings that end on
+    // their own (window closed, recorder failure), so it can be slow.
     Timer {
-        interval: 1000
+        interval: 5000
         running: true
         repeat: true
         triggeredOnStart: true
