@@ -16,6 +16,8 @@
         telegram-desktop
         signal-desktop
         anki
+      ] ++ lib.optionals (pkgs.stdenv.hostPlatform.system == "x86_64-linux") [
+        (import ./eagle/package.nix { inherit pkgs; })
       ];
       supported = pkg: lib.meta.availableOn pkgs.stdenv.hostPlatform pkg;
     in {

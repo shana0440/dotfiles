@@ -275,7 +275,8 @@ is not found afterwards, open a new login session or use
 ## Apply application changes
 
 Edit the `homeManager` module in `applications.nix` for Discord, Bitwarden Desktop, Telegram,
-Signal, and Anki, then run `make home` without sudo or a NixOS rebuild. This module
+Signal, Anki, and [Eagle via Wine](eagle/README.md) (x86_64 only), then run
+`make home` without sudo or a NixOS rebuild. This module
 is imported only by desktop Linux; macOS and WSL profiles are unchanged.
 Packages unavailable for the selected architecture (such as Discord on ARM Linux)
 are skipped with a Home Manager warning.

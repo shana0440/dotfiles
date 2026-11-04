@@ -29,6 +29,15 @@ hl.monitor({
 })
 
 
+-- Render XWayland windows at native resolution rather than bitmap-upscaling
+-- them on fractional-scale monitors. Eagle supplies its own Electron DPI scale.
+-- Other XWayland applications may need their own HiDPI settings.
+hl.config({
+    xwayland = {
+        force_zero_scaling = true,
+    },
+})
+
 ---------------------
 ---- MY PROGRAMS ----
 ---------------------
