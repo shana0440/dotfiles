@@ -35,19 +35,33 @@ let
     runtimeInputs = [ pkgs.coreutils pkgs.quickshell screenshot recording snapshot ];
     text = ''
       shell_config="''${XDG_CONFIG_HOME:-$HOME/.config}/screen-capture"
-      case "''${1:-}" in
-        --background)
-          # Preload QML without showing or freezing the desktop.
-          export SCREEN_CAPTURE_BACKGROUND=1
-          ;;
-        "")
-          # Reopening from a launcher addresses this application, never the bar.
-          if timeout 2s quickshell --path "$shell_config" ipc call capture openMenu >/dev/null 2>&1; then
-            exit 0
-          fi
-          ;;
-        *) printf 'Usage: screen-capture [--background]\n' >&2; exit 2 ;;
-      esac
+      background=0
+      hide_stop=false
+      for argument in "$@"; do
+        case "$argument" in
+          --background)
+            # Preload QML without showing or freezing the desktop.
+            export SCREEN_CAPTURE_BACKGROUND=1
+            background=1
+            ;;
+          --no-stop-toolbar)
+            # The bar shows recording state and Stop; hide our floating control.
+            # Passed with each open request; the env covers a fresh start.
+            export SCREEN_CAPTURE_HIDE_STOP_TOOLBAR=1
+            hide_stop=true
+            ;;
+          *)
+            printf 'Usage: screen-capture [--background] [--no-stop-toolbar]\n' >&2
+            exit 2
+            ;;
+        esac
+      done
+      if [ "$background" = 0 ]; then
+        # Reopening from a launcher addresses this application, never the bar.
+        if timeout 2s quickshell --path "$shell_config" ipc call capture openMenu "$hide_stop" >/dev/null 2>&1; then
+          exit 0
+        fi
+      fi
       exec quickshell --path "$shell_config" --no-duplicate --daemonize
     '';
   };

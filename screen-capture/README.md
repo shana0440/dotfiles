@@ -8,7 +8,14 @@ reflects recording state and offers Stop.
 
 The Linux Home Manager profile imports `screen-capture.nix`. After applying it,
 open **Screen Capture** from the application launcher or run `screen-capture`.
-Launching again reopens the existing application's menu. Hyprland preloads the
+Launching again reopens the existing application's menu.
+
+Flags: `--background` preloads without showing anything; `--no-stop-toolbar`
+hides the app's floating Stop control for the recording started from that
+invocation, for use with the bar's recording indicator. It is sent with each open
+request, so the preloaded background process needs no flag; only the shortcut
+passes it (`hyprland/hyprland.lua`). Reopening the menu during a recording still
+shows a Stop button, and Escape dismisses it without stopping. Hyprland preloads the
 hidden UI at session startup with `screen-capture --background`; this does not
 show a toolbar or capture a frame. You can also run that command once in an
 existing session after applying the configuration.
@@ -114,8 +121,8 @@ launch capture with Super+Shift+S or the application launcher.
 
 There is no D-Bus interface yet, and
 notifications are not implemented; the bar's saved-capture notification view
-is currently never triggered. The app's own floating Stop control also remains
-visible while recording.
+is currently never triggered. The app's own floating Stop control is hidden when started with
+`--no-stop-toolbar`.
 
 ## Manual validation
 

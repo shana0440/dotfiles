@@ -11,6 +11,9 @@ ShellRoot {
     id: root
 
     property bool menuOpen: false
+    // Set per invocation by `screen-capture --no-stop-toolbar` when another UI (the
+    // bar) offers Stop. The environment value only covers a fresh start.
+    property bool hideStopToolbar: Quickshell.env("SCREEN_CAPTURE_HIDE_STOP_TOOLBAR") === "1"
     property string message: ""
     property int mode: 0
     property string outputName: Quickshell.screens[0]?.name ?? ""
@@ -131,7 +134,10 @@ ShellRoot {
 
     IpcHandler {
         target: "capture"
-        function openMenu(): void { root.openMenu() }
+        function openMenu(hideStopToolbar: bool): void {
+            root.hideStopToolbar = hideStopToolbar
+            root.openMenu()
+        }
         function selectRegion(kind: string): void {
             root.mode = kind === "recording" ? 5 : 2
             root.openMenu()
@@ -180,8 +186,8 @@ ShellRoot {
 
     PanelWindow {
         id: panel
-        // Keep Stop reachable even after capture preparation hides the menu.
-        visible: root.menuOpen || Services.Capture.recording
+        // Keep Stop reachable while recording, unless another UI provides it.
+        visible: root.menuOpen || (Services.Capture.recording && !root.hideStopToolbar)
         screen: root.outputScreen
         anchors.bottom: true
         margins.bottom: 36
@@ -191,8 +197,9 @@ ShellRoot {
         exclusionMode: ExclusionMode.Ignore
         WlrLayershell.namespace: "screen-capture-toolbar"
         WlrLayershell.layer: WlrLayer.Overlay
-        // A persistent recording control must not steal desktop keyboard focus.
-        WlrLayershell.keyboardFocus: Services.Capture.recording
+        // The idle recording control must not steal desktop keyboard focus, but a
+        // menu the user reopened must receive Escape/Enter.
+        WlrLayershell.keyboardFocus: Services.Capture.recording && !root.menuOpen
             ? WlrKeyboardFocus.None : WlrKeyboardFocus.Exclusive
 
         // Only the rounded toolbar accepts pointer input.
