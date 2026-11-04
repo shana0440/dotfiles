@@ -11,6 +11,8 @@
   config = {
     home.username = "kwguo";
 
+    home.sessionPath = [ "${config.home.homeDirectory}/.local/bin" ];
+
     nix = {
       package = pkgs.nix;
       settings.experimental-features = [ "nix-command" "flakes" ];
