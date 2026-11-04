@@ -11,7 +11,7 @@ Item {
     property string kind: "screenshot"
     property var region: ({ x: 0, y: 0, width: 0, height: 0 })
     readonly property bool hasRegion: activeRegion && region.width > 0 && region.height > 0
-    readonly property bool adjustable: editing && kind === "recording"
+    readonly property bool adjustable: editing
     // Leave fractional-scale edge pixels clear of the recording's shade and border.
     readonly property int capturePadding: editing ? 0 : 1
     readonly property var clearRegion: Geometry.intersection({
@@ -42,11 +42,7 @@ Item {
             if (pressed)
                 root.selectionEdited(Geometry.fromPoints(start, Qt.point(mouse.x, mouse.y), root.width, root.height))
         }
-        onReleased: {
-            root.dragging = false
-            if (root.editing && root.kind === "screenshot" && root.hasRegion)
-                root.confirmed()
-        }
+        onReleased: root.dragging = false
         onCanceled: root.dragging = false
     }
 
@@ -179,9 +175,9 @@ Item {
         regionWidth: Math.round(root.region.width)
         regionHeight: Math.round(root.region.height)
         recording: root.kind === "recording"
-        showRecordButton: root.adjustable && root.hasRegion && !root.dragging
-        onRecordRequested: root.confirmed()
         x: Math.max(12, Math.min(root.width - width - 12, root.region.x + (root.region.width - width) / 2))
-        y: Math.max(12, Math.min(root.height - height - 12, root.region.y + root.region.height + 16))
+        // Keep the size hint clear of the bottom capture toolbar.
+        y: Math.max(12, root.region.y + root.region.height + height + 16 < root.height - 120
+            ? root.region.y + root.region.height + 16 : root.region.y - height - 16)
     }
 }

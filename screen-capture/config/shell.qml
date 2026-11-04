@@ -3,62 +3,109 @@ import QtQuick.Controls.Basic
 import QtQuick.Layouts
 import Quickshell
 import Quickshell.Io
+import Quickshell.Wayland
+import "Capture" as CaptureComponents
 import "Services" as Services
 
 ShellRoot {
     id: root
 
-    property bool menuOpen: true
+    property bool menuOpen: false
     property string message: ""
-
-    component CaptureButton: Button {
-        palette.button: "#292929"
-        palette.buttonText: "white"
-        palette.highlight: "#a78bfa"
-        implicitHeight: 40
-    }
+    property int mode: 0
+    property string outputName: Quickshell.screens[0]?.name ?? ""
+    readonly property var outputScreen: Quickshell.screens.find(screen => screen.name === outputName) ?? Quickshell.screens[0]
+    readonly property bool regionMode: mode === 1 || mode === 3
+    readonly property bool recordingMode: mode >= 2
+    readonly property var modes: [
+        { label: "1 · Capture entire desktop", region: false, recording: false },
+        { label: "2 · Capture selected portion", region: true, recording: false },
+        { label: "3 · Record entire screen", region: false, recording: true },
+        { label: "4 · Record selected portion", region: true, recording: true }
+    ]
 
     function openMenu() {
-        if (Services.Capture.selectingRegion)
-            Services.Capture.cancelRegionSelection()
-        // Remap even when already open, so launcher activation brings it forward.
-        menuOpen = false
-        menu.minimized = false
-        Qt.callLater(() => { root.menuOpen = true })
-    }
-
-    function capture(kind, mode) {
-        if (pendingCapture.running)
-            return
         message = ""
-        menuOpen = false
-        pendingCapture.kind = kind
-        pendingCapture.mode = mode
-        pendingCapture.outputName = output.currentText
-        pendingCapture.restart()
+        if (menuOpen && !Services.Capture.previewActive && !Services.Capture.recording) {
+            // Do not bake a recording/error toolbar into the next frozen frame.
+            menuOpen = false
+            reopenDelay.restart()
+        } else {
+            Services.Capture.openPreview()
+        }
     }
 
-    // Allow the application window to disappear before starting capture.
+    function configureSelection() {
+        const previous = Services.Capture.selectingRegion ? Services.Capture.selectionRect : null
+        const previousScreen = Services.Capture.selectionScreenName
+        Services.Capture.cancelRegionSelection()
+        if (!regionMode || !Services.Capture.previewActive || !outputScreen)
+            return
+        Services.Capture.beginRegionSelection(recordingMode ? "recording" : "screenshot", outputName)
+        Services.Capture.setRegionSelection(outputName, previous && previousScreen === outputName ? previous : {
+            x: outputScreen.width * 0.2, y: outputScreen.height * 0.2,
+            width: outputScreen.width * 0.6, height: outputScreen.height * 0.5
+        })
+    }
+
+    function chooseMode(index) {
+        mode = index
+        configureSelection()
+    }
+
+    function dismiss() {
+        menuOpen = false
+        Services.Capture.cancelRegionSelection()
+        Services.Capture.dismissPreview()
+    }
+
+    function capture() {
+        // Stopping must stay available even while another capture is finishing.
+        if (Services.Capture.recording) {
+            Services.Capture.stopRecording()
+            return
+        }
+        if (pendingRecording.running || Services.Capture.takingScreenshot)
+            return
+        if (!Services.Capture.previewActive)
+            return
+        menuOpen = false
+        if (regionMode) {
+            Services.Capture.confirmRegionSelection()
+        } else if (recordingMode) {
+            Services.Capture.dismissPreview()
+            pendingRecording.outputName = outputName
+            pendingRecording.restart()
+        } else {
+            Services.Capture.takeScreenshot("full", outputName)
+        }
+    }
+
+    Component.onCompleted: {
+        if (Quickshell.env("SCREEN_CAPTURE_BACKGROUND") !== "1")
+            openMenu()
+    }
+    Component.onDestruction: Services.Capture.cleanupPreview()
+
     Timer {
-        id: pendingCapture
-        property string kind
-        property string mode
+        id: reopenDelay
+        interval: 80
+        onTriggered: Services.Capture.openPreview()
+    }
+
+    Timer {
+        id: pendingRecording
         property string outputName
         interval: 180
-        onTriggered: {
-            if (kind === "screenshot")
-                Services.Capture.takeScreenshot(mode, outputName)
-            else
-                Services.Capture.startRecording(mode, outputName)
-        }
+        onTriggered: Services.Capture.startRecording("full", outputName)
     }
 
     IpcHandler {
         target: "capture"
         function openMenu(): void { root.openMenu() }
         function selectRegion(kind: string): void {
-            root.menuOpen = false
-            Services.Capture.beginRegionSelection(kind, output.currentText)
+            root.mode = kind === "recording" ? 3 : 1
+            root.openMenu()
         }
         function stop(): void { Services.Capture.stopRecording() }
         function status(): string {
@@ -66,124 +113,142 @@ ShellRoot {
                 recording: Services.Capture.recording,
                 mode: Services.Capture.recordingMode,
                 startedAtMs: Services.Capture.recordingStartedAtMs,
-                geometry: Services.Capture.recordingGeometry
+                geometry: Services.Capture.recordingGeometry,
+                preview: Services.Capture.previewActive
             })
         }
     }
 
     Connections {
         target: Services.Capture
+        function onPreviewReady() {
+            root.configureSelection()
+            root.menuOpen = true
+        }
+        function onRecordingChanged() {
+            if (!Services.Capture.recording && root.menuOpen)
+                root.openMenu()
+        }
         function onScreenshotSaved(filePath) { root.message = "Saved: " + filePath }
         function onErrorOccurred(message) {
             root.message = message
             root.menuOpen = true
         }
+        function onSelectionScreenNameChanged() {
+            if (Services.Capture.selectingRegion)
+                root.outputName = Services.Capture.selectionScreenName
+        }
     }
 
-    CaptureOverlay {}
+    CaptureOverlay {
+        onConfirmed: root.capture()
+        onCancelled: root.dismiss()
+    }
 
-    FloatingWindow {
-        id: menu
-        visible: root.menuOpen
-        title: "Screen Capture"
-        implicitWidth: 420
-        implicitHeight: content.implicitHeight + 40
-        minimumSize: Qt.size(implicitWidth, implicitHeight)
-        maximumSize: minimumSize
-        color: "#121212"
-        onClosed: root.menuOpen = false
+    PanelWindow {
+        id: panel
+        // Keep Stop reachable even after capture preparation hides the menu.
+        visible: root.menuOpen || Services.Capture.recording
+        screen: root.outputScreen
+        anchors.bottom: true
+        margins.bottom: 36
+        implicitWidth: Math.min(actions.implicitWidth + 24, (root.outputScreen?.width ?? 1280) - 24)
+        implicitHeight: 70 + (root.message ? 48 : 0)
+        color: "transparent"
+        exclusionMode: ExclusionMode.Ignore
+        WlrLayershell.namespace: "screen-capture-toolbar"
+        WlrLayershell.layer: WlrLayer.Overlay
+        // A persistent recording control must not steal desktop keyboard focus.
+        WlrLayershell.keyboardFocus: Services.Capture.recording
+            ? WlrKeyboardFocus.None : WlrKeyboardFocus.Exclusive
 
-        ColumnLayout {
-            id: content
+        // Only the rounded toolbar accepts pointer input.
+        mask: Region { item: surface }
+
+        Rectangle {
+            id: surface
             anchors.fill: parent
-            anchors.margins: 20
-            spacing: 12
+            anchors.margins: 4
+            radius: 13
+            color: "#f238383f"
+            border.color: "#777780"
+            border.width: 1
 
-            Label {
-                text: "Screen Capture"
-                color: "white"
-                font.pixelSize: 22
-                font.bold: true
-            }
-            Label {
-                text: "Screenshots and screen recordings"
-                color: "#b0b0b0"
-            }
-            ComboBox {
-                id: output
-                Layout.fillWidth: true
-                model: Quickshell.screens.map(screen => screen.name)
-                Accessible.name: "Screen to record"
-                palette.button: "#292929"
-                palette.buttonText: "white"
-                palette.base: "#292929"
-                palette.text: "white"
-                palette.highlight: "#a78bfa"
-            }
-            GridLayout {
-                columns: 2
-                Layout.fillWidth: true
-                CaptureButton {
-                    id: screenshotAll
-                    text: "1 · Screenshot all"
-                    Layout.fillWidth: true
-                    enabled: !Services.Capture.takingScreenshot
-                    onClicked: root.capture("screenshot", "full")
-                    Shortcut { sequence: "1"; enabled: root.menuOpen && screenshotAll.enabled; onActivated: screenshotAll.clicked() }
-                }
-                CaptureButton {
-                    id: screenshotRegion
-                    text: "2 · Screenshot region"
-                    Layout.fillWidth: true
-                    enabled: !Services.Capture.takingScreenshot
-                    onClicked: root.capture("screenshot", "region")
-                    Shortcut { sequence: "2"; enabled: root.menuOpen && screenshotRegion.enabled; onActivated: screenshotRegion.clicked() }
-                }
-                CaptureButton {
-                    id: recordScreen
-                    text: "3 · Record screen"
-                    Layout.fillWidth: true
-                    enabled: output.currentText.length > 0 && !Services.Capture.recording && !Services.Capture.recordingCommandRunning
-                    onClicked: root.capture("recording", "full")
-                    Shortcut { sequence: "3"; enabled: root.menuOpen && recordScreen.enabled; onActivated: recordScreen.clicked() }
-                }
-                CaptureButton {
-                    id: recordRegion
-                    text: "4 · Record region"
-                    Layout.fillWidth: true
-                    enabled: !Services.Capture.recording && !Services.Capture.recordingCommandRunning
-                    onClicked: root.capture("recording", "region")
-                    Shortcut { sequence: "4"; enabled: root.menuOpen && recordRegion.enabled; onActivated: recordRegion.clicked() }
-                }
-            }
-            RowLayout {
-                visible: Services.Capture.recording
-                Layout.fillWidth: true
+            ColumnLayout {
+                anchors.fill: parent
+                anchors.margins: 8
+                spacing: 8
+
                 Label {
+                    visible: root.message.length > 0
+                    text: root.message
+                    color: "#dddde2"
+                    elide: Text.ElideMiddle
                     Layout.fillWidth: true
-                    color: "#ff7373"
-                    text: "Recording · " + Math.floor(Services.Capture.recordingElapsedSeconds / 60)
-                        + ":" + String(Services.Capture.recordingElapsedSeconds % 60).padStart(2, "0")
                 }
-                CaptureButton {
-                    text: Services.Capture.recordingCommandRunning ? "Stopping…" : "Stop recording"
-                    enabled: !Services.Capture.recordingCommandRunning
-                    onClicked: Services.Capture.stopRecording()
+
+                RowLayout {
+                    id: actions
+                    Layout.alignment: Qt.AlignHCenter
+                    spacing: 6
+                    Repeater {
+                        model: root.modes
+                        RowLayout {
+                            id: modeGroup
+                            required property var modelData
+                            required property int index
+                            visible: !Services.Capture.recording
+                            spacing: 6
+
+                            Rectangle {
+                                visible: modeGroup.index === 2
+                                Layout.preferredWidth: 1
+                                Layout.preferredHeight: 34
+                                color: "#74747c"
+                            }
+                            CaptureComponents.ModeButton {
+                                text: modeGroup.modelData.label
+                                region: modeGroup.modelData.region
+                                recording: modeGroup.modelData.recording
+                                checked: root.mode === modeGroup.index
+                                enabled: !Services.Capture.recording && Services.Capture.previewActive
+                                onClicked: root.chooseMode(modeGroup.index)
+                                Shortcut {
+                                    sequence: String(modeGroup.index + 1)
+                                    context: Qt.ApplicationShortcut
+                                    enabled: root.menuOpen && !Services.Capture.recording
+                                    onActivated: root.chooseMode(modeGroup.index)
+                                }
+                            }
+                        }
+                    }
+                    Button {
+                        id: captureButton
+                        hoverEnabled: true
+                        text: Services.Capture.recording ? "Stop · " + Services.Capture.recordingElapsedSeconds + "s"
+                            : root.recordingMode ? "Record" : "Capture"
+                        enabled: !Services.Capture.recordingCommandRunning
+                            && (Services.Capture.recording || Services.Capture.previewActive)
+                        palette.buttonText: "#eeeef2"
+                        background: Rectangle {
+                            radius: 7
+                            color: captureButton.down ? "#64646e"
+                                : captureButton.hovered ? "#52525a" : "transparent"
+                            border.width: captureButton.visualFocus ? 1 : 0
+                            border.color: "#c4b5fd"
+                            Behavior on color { ColorAnimation { duration: 100 } }
+                        }
+                        implicitHeight: 42
+                        Layout.preferredWidth: 98
+                        onClicked: root.capture()
+                    }
                 }
-            }
-            Label {
-                visible: root.message.length > 0
-                text: root.message
-                color: "#b0b0b0"
-                wrapMode: Text.WrapAnywhere
-                Layout.fillWidth: true
-            }
-            Label {
-                text: "Esc to dismiss · Recording includes system audio"
-                color: "#b0b0b0"
-                font.pixelSize: 11
             }
         }
-        Shortcut { sequence: "Escape"; enabled: root.menuOpen; onActivated: root.menuOpen = false }
+        // The selector and toolbar are separate native windows; shortcuts must
+        // keep working after a drag gives the selector keyboard focus.
+        Shortcut { sequence: "Escape"; context: Qt.ApplicationShortcut; enabled: root.menuOpen; onActivated: root.dismiss() }
+        Shortcut { sequence: "Return"; context: Qt.ApplicationShortcut; enabled: root.menuOpen; onActivated: root.capture() }
+        Shortcut { sequence: "Enter"; context: Qt.ApplicationShortcut; enabled: root.menuOpen; onActivated: root.capture() }
     }
 }

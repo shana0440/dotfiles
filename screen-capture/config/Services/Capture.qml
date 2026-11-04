@@ -7,6 +7,75 @@ import "../Capture/RegionGeometry.js" as Geometry
 Singleton {
     id: root
 
+    property var preview: null
+    property bool previewActive: false
+    property bool previewRequested: false
+    property bool recordingStatusKnown: false
+    readonly property bool freezing: freezeCommand.running
+    signal previewReady()
+
+    function openPreview() {
+        // A restarted UI must not freeze a recording that already runs in systemd.
+        if (!recordingStatusKnown) {
+            previewRequested = true
+            if (!recordingStatus.running)
+                refreshRecordingStatus()
+            return
+        }
+        if (freezing || takingScreenshot)
+            return
+        if (previewActive || recording) {
+            previewReady()
+            return
+        }
+        cleanupPreview()
+        const screens = Quickshell.screens.map(screen => ({
+            name: screen.name, x: screen.x, y: screen.y,
+            width: screen.width, height: screen.height
+        }))
+        freezeCommand.exec(["screen-capture-snapshot", "freeze", JSON.stringify(screens)])
+    }
+
+    function cleanupPreview() {
+        if (preview !== null) {
+            Quickshell.execDetached(["screen-capture-snapshot", "cleanup", preview.directory])
+            preview = null
+        }
+    }
+
+    function dismissPreview() {
+        previewActive = false
+        // The save process still needs the source frame until it exits.
+        if (currentScreenshot === null)
+            cleanupPreview()
+    }
+
+    function frozenScreenshot(geometry) {
+        const directory = preview.directory
+        runScreenshot(["screen-capture-snapshot", "save", directory, geometry || ""])
+        dismissPreview()
+    }
+
+    Process {
+        id: freezeCommand
+        stdout: StdioCollector { id: freezeOutput }
+        onExited: (exitCode, exitStatus) => {
+            if (exitCode !== 0) {
+                root.errorOccurred("Could not freeze the desktop. Please try again.")
+                return
+            }
+            try {
+                root.preview = JSON.parse(freezeOutput.text)
+                root.previewActive = !root.recording
+                if (root.recording)
+                    root.cleanupPreview()
+                root.previewReady()
+            } catch (error) {
+                root.errorOccurred("Could not read the frozen desktop: " + error)
+            }
+        }
+    }
+
     property var activeScreenshots: []
     property bool screenshotPending: false
     property var screenshotQueue: []
@@ -87,6 +156,8 @@ Singleton {
     function takeScreenshot(mode, outputName) {
         if (mode === "region")
             beginRegionSelection("screenshot", outputName)
+        else if (previewActive)
+            frozenScreenshot("")
         else
             runScreenshot(["screen-capture-screenshot", mode])
     }
@@ -159,6 +230,12 @@ Singleton {
         if (!selectingRegion || !screen || selectionRect.width <= 0 || selectionRect.height <= 0)
             return
         selectionRect = Geometry.fit(selectionRect, screen.width, screen.height)
+        if (selectionKind === "screenshot" && previewActive) {
+            const geometry = Geometry.serialize(selectionRect, screen)
+            selectionKind = ""
+            frozenScreenshot(geometry)
+            return
+        }
         regionCaptureDelay.kind = selectionKind
         regionCaptureDelay.geometry = Geometry.serialize(selectionRect, screen)
         regionCaptureDelay.outputName = screen.name
@@ -167,6 +244,7 @@ Singleton {
         else
             prepareScreenshot()
         selectionKind = ""
+        dismissPreview()
         regionCaptureDelay.restart()
     }
 
@@ -231,11 +309,16 @@ Singleton {
         }
         stdout: SplitParser {
             onRead: data => {
-                if (data.length > 0)
+                if (data.length > 0) {
                     root.screenshotCommandSaved = true
+                    if (root.currentScreenshot !== null && root.currentScreenshot[0] === "screen-capture-snapshot")
+                        root.screenshotSaved(data)
+                }
             }
         }
         onExited: (exitCode, exitStatus) => {
+            if (!root.previewActive)
+                root.cleanupPreview()
             if (exitCode !== 0)
                 root.errorOccurred("Screenshot failed (exit " + exitCode + ").")
         }
@@ -268,8 +351,17 @@ Singleton {
         property bool completesRegionStart: false
         stdout: StdioCollector { id: recordingStatusOutput }
         onExited: (exitCode, exitStatus) => {
-            if (exitCode === 0)
+            if (exitCode === 0) {
                 root.applyRecordingStatus(recordingStatusOutput.text.trim())
+                root.recordingStatusKnown = true
+                if (root.previewRequested) {
+                    root.previewRequested = false
+                    Qt.callLater(root.openPreview)
+                }
+            } else if (root.previewRequested) {
+                root.previewRequested = false
+                root.errorOccurred("Could not check the recording service. Please try again.")
+            }
             // Only a status query issued after Start may retire the pending outline.
             if (completesRegionStart)
                 root.startingRecordingGeometry = ""

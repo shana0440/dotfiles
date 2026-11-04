@@ -1,6 +1,13 @@
 { config, pkgs, ... }:
 
 let
+  snapshot = pkgs.writeShellApplication {
+    name = "screen-capture-snapshot";
+    runtimeInputs = with pkgs; [ grim wl-clipboard ];
+    text = ''
+      exec ${pkgs.python3.withPackages (ps: [ ps.pillow ])}/bin/python3 ${./scripts/snapshot.py} "$@"
+    '';
+  };
   screenshot = pkgs.writeShellApplication {
     name = "screen-capture-screenshot";
     runtimeInputs = with pkgs; [ coreutils grim slurp wl-clipboard quickshell ];
@@ -18,19 +25,28 @@ let
   };
   application = pkgs.writeShellApplication {
     name = "screen-capture";
-    runtimeInputs = [ pkgs.coreutils pkgs.quickshell screenshot recording ];
+    runtimeInputs = [ pkgs.coreutils pkgs.quickshell screenshot recording snapshot ];
     text = ''
       shell_config="''${XDG_CONFIG_HOME:-$HOME/.config}/screen-capture"
-      # Reopening from a launcher addresses this application, never the bar.
-      if timeout 2s quickshell --path "$shell_config" ipc call capture openMenu >/dev/null 2>&1; then
-        exit 0
-      fi
+      case "''${1:-}" in
+        --background)
+          # Preload QML without showing or freezing the desktop.
+          export SCREEN_CAPTURE_BACKGROUND=1
+          ;;
+        "")
+          # Reopening from a launcher addresses this application, never the bar.
+          if timeout 2s quickshell --path "$shell_config" ipc call capture openMenu >/dev/null 2>&1; then
+            exit 0
+          fi
+          ;;
+        *) printf 'Usage: screen-capture [--background]\n' >&2; exit 2 ;;
+      esac
       exec quickshell --path "$shell_config" --no-duplicate --daemonize
     '';
   };
 in
 {
-  home.packages = [ application screenshot recording ];
+  home.packages = [ application screenshot recording snapshot ];
 
   xdg.configFile."screen-capture".source = config.lib.file.mkOutOfStoreSymlink
     "${config.dotfiles.directory}/screen-capture/config";
