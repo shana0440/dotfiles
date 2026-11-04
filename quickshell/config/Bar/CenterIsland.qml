@@ -11,17 +11,23 @@ Components.Island {
     property bool expanded: false
     property string expandedView: "calendar"
     property bool volumeVisible: false
-    readonly property bool notificationVisible: notificationDismissTimer.running
+    property int availableHeight: 560
+    readonly property bool captureNotificationVisible: notificationDismissTimer.running
+    readonly property bool notificationVisible: captureNotificationVisible || Services.Notifications.previewVisible
     readonly property bool showingMedia: expanded && expandedView === "media"
     readonly property bool showingRecording: activeView === recordingView
     readonly property bool sideIslandsMerged: expanded || notificationVisible || Services.Capture.recording
 
     activeView: {
-        if (notificationVisible)
+        if (captureNotificationVisible)
             return captureNotification
         if (expanded) {
+            if (expandedView === "notifications")
+                return notificationList
             return showingMedia ? mediaView : calendar
         }
+        if (Services.Notifications.previewVisible)
+            return notificationPreview
         if (volumeVisible)
             return volumeSlider
         if (Services.Capture.recording)
@@ -34,16 +40,34 @@ Components.Island {
         NumberAnimation { duration: root.resizeDuration; easing.type: Easing.OutCubic }
     }
 
+    function close() {
+        expanded = false
+        notificationDismissTimer.stop()
+        Services.Notifications.hidePreview()
+    }
+
     function open(view) {
         notificationDismissTimer.stop()
+        Services.Notifications.hidePreview()
         expandedView = view
         expanded = true
+    }
+
+    Connections {
+        target: Services.Notifications
+        function onReceived() {
+            notificationDismissTimer.stop()
+            root.volumeVisible = false
+            volumeTimeout.stop()
+            root.expanded = false
+        }
     }
 
     function showCaptureNotification(filePath, previewPath, fallbackIcon) {
         if (!filePath)
             return
         expanded = false
+        Services.Notifications.hidePreview()
         volumeVisible = false
         volumeTimeout.stop()
         captureNotification.filePath = filePath
@@ -135,6 +159,18 @@ Components.Island {
         },
         CaptureNotification {
             id: captureNotification
+        },
+        NotificationView {
+            id: notificationList
+            maximumHeight: root.availableHeight
+            onCloseRequested: root.close()
+        },
+        NotificationView {
+            id: notificationPreview
+            preview: true
+            maximumHeight: root.availableHeight
+            onCloseRequested: root.close()
+            onListRequested: root.open("notifications")
         }
     ]
 }
