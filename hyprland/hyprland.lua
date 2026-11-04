@@ -274,7 +274,15 @@ local shortcutKeycodes = {
     S = 39, O = 32, L = 46, T = 28, W = 25, R = 27,
 }
 for _, key in ipairs({ "C", "V", "X", "A", "Z", "F", "S", "O", "L", "T", "W", "R" }) do
-    hl.bind(mainMod .. " + " .. key, hl.dsp.send_shortcut({ mods = "CTRL", key = "code:" .. shortcutKeycodes[key] }))
+    hl.bind(mainMod .. " + " .. key, function()
+        local window = hl.get_active_window()
+        -- Let Kitty handle native copy/paste, without synthetic key events
+        -- that can leave its key-repeat state stuck.
+        if window and window.class == "kitty" and (key == "C" or key == "V") then
+            return { ok = false }
+        end
+        return hl.dispatch(hl.dsp.send_shortcut({ mods = "CTRL", key = "code:" .. shortcutKeycodes[key] }))
+    end, { auto_consuming = true })
 end
 for _, key in ipairs({ "Z", "T", "R" }) do
     hl.bind(mainMod .. " + SHIFT + " .. key, hl.dsp.send_shortcut({ mods = "CTRL SHIFT", key = "code:" .. shortcutKeycodes[key] }))
