@@ -88,10 +88,9 @@ ShellRoot {
         menuOpen = false
         if (windowMode) {
             if (recordingMode) {
-                pendingRecording.windowIdentifier = Services.Capture.selectedWindow.identifier
-                Services.Capture.cancelWindowSelection()
-                Services.Capture.dismissPreview()
-                pendingRecording.restart()
+                pendingRecording.windowIdentifier = Services.Capture.beginWindowRecording()
+                if (pendingRecording.windowIdentifier)
+                    pendingRecording.restart()
             } else {
                 Services.Capture.captureWindowScreenshot()
             }

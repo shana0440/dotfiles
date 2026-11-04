@@ -19,10 +19,15 @@ Scope {
             screen: modelData
             visible: Services.Capture.capturing || Services.Capture.previewActive || Services.Capture.selectingRegion || Services.Capture.startingRecordingGeometry.length > 0
                 || (Services.Capture.recordingMode === "region" && Services.Capture.recordingGeometry.length > 0)
+                || (Services.Capture.recordingMode === "window" && Services.Capture.windowGeometry.length > 0)
             color: "transparent"
             exclusionMode: ExclusionMode.Ignore
             WlrLayershell.namespace: "screen-capture-region"
-            WlrLayershell.layer: Services.Capture.capturing || Services.Capture.previewActive ? WlrLayer.Top : WlrLayer.Overlay
+            // The window outline appears after the Stop control; keep it one layer lower so
+            // its dimming never covers Stop (or the bar's recording indicator).
+            WlrLayershell.layer: Services.Capture.capturing || Services.Capture.previewActive
+                || Services.Capture.recordingMode === "window" || Services.Capture.startingWindow
+                ? WlrLayer.Top : WlrLayer.Overlay
             // Hyprland routes pointer input only to exclusive layer surfaces while
             // an exclusive toolbar is open. Include the selector in that group.
             WlrLayershell.keyboardFocus: Services.Capture.previewActive || Services.Capture.selectingRegion

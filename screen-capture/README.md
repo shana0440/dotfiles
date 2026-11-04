@@ -45,6 +45,14 @@ Hyprland's native toplevel capture. Window screenshots therefore contain only
 that window's content as of launch, never overlapping windows, the dimmed
 backdrop, or the toolbar.
 
+While a window is recording, the rest of the screen is dimmed and the recorded
+window is outlined with a dashed border, like range recording. The outline follows
+the window as it moves or resizes (Hyprland is polled about 10 times a second
+during the recording) and hides if the window is unmapped or on a hidden
+workspace. It is only drawn on screen; the video contains just the window. The dimming
+stays continuous when you press Record: the chosen window's rectangle stands in
+until the live outline takes over.
+
 Window recording captures the selected toplevel natively at 30 fps (video plus
 system audio, no mic). It keeps following that window when it moves or is covered.
 If it is resized, the video keeps its starting canvas size and letterboxes. It

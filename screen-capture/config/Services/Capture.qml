@@ -133,6 +133,20 @@ Singleton {
         dismissPreview()
     }
 
+    // Keep the dimmed cut-out on screen from the moment Record is pressed: the live
+    // outline only exists once the recording and window tracker are running, so the
+    // chosen window's rectangle bridges the gap (as range recording does).
+    function beginWindowRecording() {
+        const window = selectedWindow
+        if (!window || recording || recordingCommandRunning || !previewActive)
+            return ""
+        startingRecordingGeometry = window.x + "," + window.y + " " + window.width + "x" + window.height
+        startingWindow = true
+        cancelWindowSelection()
+        dismissPreview()
+        return window.identifier
+    }
+
     function startWindowRecording(identifier) {
         if (!recording && !recordingCommandRunning)
             recordingCommand.exec(["screen-capture-record", "window", identifier])
@@ -230,8 +244,14 @@ Singleton {
     property string recordingMode: ""
     property real recordingStartedAtMs: 0
     property string recordingGeometry: ""
+    property string recordingWindow: ""
+    // Live rectangle of the recorded window, so the outline can follow it.
+    property string windowGeometry: ""
     property string startingRecordingGeometry: ""
-    readonly property string visibleRecordingGeometry: startingRecordingGeometry || recordingGeometry
+    // True while the placeholder outline above stands in for a window being started.
+    property bool startingWindow: false
+    onStartingRecordingGeometryChanged: if (startingRecordingGeometry.length === 0) startingWindow = false
+    readonly property string visibleRecordingGeometry: startingRecordingGeometry || recordingGeometry || windowGeometry
     property bool recordingStatusRefreshQueued: false
     property bool confirmRegionStartOnNextStatus: false
     property string selectionKind: ""
@@ -428,9 +448,13 @@ Singleton {
         const geometry = Geometry.parse(status.geometry ?? "") ? status.geometry : ""
         if (mode !== recordingMode || geometry.length > 0)
             recordingGeometry = mode === "region" ? geometry : ""
+        recordingWindow = mode === "window" && /^[0-9a-fA-F]+$/.test(status.window ?? "") ? status.window : ""
         // The completion hook removes session metadata while the service is still stopping.
         if (mode !== recordingMode || startedAtMs > 0)
             recordingStartedAtMs = mode ? startedAtMs : 0
+        // Hand over from the placeholder to the live outline without a flash.
+        if (mode === "window" && windowGeometry.length === 0 && startingRecordingGeometry.length > 0)
+            windowGeometry = startingRecordingGeometry
         recordingMode = mode
     }
 
@@ -490,6 +514,37 @@ Singleton {
             }
             root.refreshRecordingStatus()
         }
+    }
+
+    function updateWindowGeometry(line) {
+        let geometry = ""
+        try {
+            const [clientsJson, monitorsJson] = line.split("\t")
+            // (This QML engine has no Array.flatMap.)
+            const visible = []
+            for (const monitor of JSON.parse(monitorsJson))
+                visible.push(monitor.activeWorkspace?.id, monitor.specialWorkspace?.id)
+            const client = JSON.parse(clientsJson).find(client => client.stableId === recordingWindow)
+            if (client && client.mapped && !client.hidden && visible.includes(client.workspace?.id))
+                geometry = Math.round(client.at[0]) + "," + Math.round(client.at[1]) + " "
+                    + Math.round(client.size[0]) + "x" + Math.round(client.size[1])
+        } catch (error) {
+            // A partial or unavailable reading simply hides the outline for a moment.
+        }
+        if (geometry !== windowGeometry)
+            windowGeometry = geometry
+    }
+
+    // Poll Hyprland only while a window recording runs (about 10 Hz).
+    Process {
+        id: windowTracker
+        running: root.recordingMode === "window" && root.recordingWindow.length > 0
+        command: ["sh", "-c",
+            "while :; do hyprctl -j clients | tr -d '\\n'; printf '\\t'; hyprctl -j monitors | tr -d '\\n'; echo; sleep 0.1; done"]
+        stdout: SplitParser {
+            onRead: data => root.updateWindowGeometry(data)
+        }
+        onRunningChanged: if (!running) root.windowGeometry = ""
     }
 
     Process {

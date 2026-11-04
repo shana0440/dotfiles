@@ -43,18 +43,23 @@ case "$mode" in
                 started_at_seconds=$(stat -c %Y "$XDG_RUNTIME_DIR/screen-capture-record-$active_mode.path" 2>/dev/null || printf '0')
             fi
             recording_geometry=""
+            recording_window=""
             session_file="${XDG_RUNTIME_DIR:-}/screen-capture-record-$active_mode.path"
-            if [[ "$active_mode" == region && -n "${XDG_RUNTIME_DIR:-}" && -f "$session_file" ]]; then
+            if [[ "$active_mode" != none && -n "${XDG_RUNTIME_DIR:-}" && -f "$session_file" ]]; then
                 {
                     IFS= read -r -d '' _ || true
                     IFS= read -r -d '' recording_geometry || true
-                } < "$session_file" 2>/dev/null || recording_geometry=""
-                if [[ ! "$recording_geometry" =~ ^-?[0-9]+,-?[0-9]+\ [1-9][0-9]*x[1-9][0-9]*$ ]]; then
+                    IFS= read -r -d '' recording_window || true
+                } < "$session_file" 2>/dev/null || { recording_geometry=""; recording_window=""; }
+                if [[ "$active_mode" != region || ! "$recording_geometry" =~ ^-?[0-9]+,-?[0-9]+\ [1-9][0-9]*x[1-9][0-9]*$ ]]; then
                     recording_geometry=""
                 fi
+                if [[ "$active_mode" != window || ! "$recording_window" =~ ^[0-9a-fA-F]+$ ]]; then
+                    recording_window=""
+                fi
             fi
-            printf '{"mode":"%s","startedAtSeconds":%s,"geometry":"%s"}\n' \
-                "$active_mode" "$started_at_seconds" "$recording_geometry"
+            printf '{"mode":"%s","startedAtSeconds":%s,"geometry":"%s","window":"%s"}\n' \
+                "$active_mode" "$started_at_seconds" "$recording_geometry" "$recording_window"
         else
             printf '%s\n' "$active_mode"
         fi
@@ -125,7 +130,9 @@ recording_directory="${XDG_VIDEOS_DIR:-$HOME/Videos}/Recordings"
 mkdir -p -- "$recording_directory"
 recording_path=$(mktemp --suffix=.mp4 "$recording_directory/Recording-$(date +%Y-%m-%d_%H-%M-%S)-XXXXXX")
 session_file="$XDG_RUNTIME_DIR/screen-capture-record-$mode.path"
-printf '%s\0%s\0' "$recording_path" "$geometry" > "$session_file"
+window_identifier=""
+[[ "$mode" != window ]] || window_identifier="$2"
+printf '%s\0%s\0%s\0' "$recording_path" "$geometry" "$window_identifier" > "$session_file"
 
 if [[ "$mode" == window ]]; then
     recorder_command=("$(command -v screen-capture-window-record)" "$2" "$recording_path")

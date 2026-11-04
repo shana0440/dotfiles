@@ -32,7 +32,7 @@ let
   };
   application = pkgs.writeShellApplication {
     name = "screen-capture";
-    runtimeInputs = [ pkgs.coreutils pkgs.quickshell screenshot recording snapshot ];
+    runtimeInputs = [ pkgs.coreutils pkgs.quickshell pkgs.hyprland screenshot recording snapshot ];
     text = ''
       shell_config="''${XDG_CONFIG_HOME:-$HOME/.config}/screen-capture"
       background=0
