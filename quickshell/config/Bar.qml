@@ -21,67 +21,11 @@ PanelWindow {
         rightIsland.close()
     }
 
-    function openCaptureMenu() {
-        Services.Capture.cancelRegionSelection()
-        captureDelay.stop()
-        rightIsland.close()
-        centerIsland.open("capture")
-    }
-
-    IpcHandler {
-        target: "capture"
-        function openMenu() { root.openCaptureMenu() }
-        function cancelSelection() { Services.Capture.cancelRegionSelection() }
-        function takeScreenshot(mode: string) {
-            if (root.menuOpen) {
-                root.requestCapture("takeScreenshot", mode)
-            } else {
-                captureDelay.stop()
-                Services.Capture.cancelRegionSelection()
-                Services.Capture.takeScreenshot(mode, root.screen.name)
-            }
-        }
-        function selectRegion(kind: string) {
-            captureDelay.stop()
-            root.closeMenus()
-            Services.Capture.beginRegionSelection(kind, root.screen.name)
-        }
-    }
-
     IpcHandler {
         target: "inputMenu"
         function close() {
             if (rightIsland.mode === "input")
                 rightIsland.close()
-        }
-    }
-
-    function requestCapture(action, mode) {
-        captureDelay.stop()
-        Services.Capture.cancelRegionSelection()
-        if (action === "takeScreenshot" && mode === "full")
-            Services.Capture.prepareScreenshot()
-        closeMenus()
-        if (action === "stopRecording") {
-            Services.Capture.stopRecording()
-        } else {
-            captureDelay.action = action
-            captureDelay.mode = mode
-            captureDelay.restart()
-        }
-    }
-
-    // Release menu input grabs and finish the island animation before capture starts.
-    Timer {
-        id: captureDelay
-        property string action: ""
-        property string mode: ""
-        interval: centerIsland.resizeDuration + centerIsland.fadeDuration
-        onTriggered: {
-            if (action === "takeScreenshot")
-                Services.Capture.takeScreenshot(mode, root.screen.name)
-            else if (action === "startRecording")
-                Services.Capture.startRecording(mode, root.screen.name)
         }
     }
 
@@ -106,7 +50,7 @@ PanelWindow {
     color: Theme.Colors.transparent
     WlrLayershell.keyboardFocus: menuNeedsKeyboardFocus ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
     // Let overlapping floating windows cover the idle bar, but keep menus and alerts above apps.
-    WlrLayershell.layer: menuOpen || centerIsland.notificationVisible || Services.Capture.recording || Services.Capture.takingScreenshot
+    WlrLayershell.layer: menuOpen || centerIsland.notificationVisible || Services.Capture.recording
         ? WlrLayer.Overlay : WlrLayer.Bottom
 
     // Layer-shell infers the reservation edge from three-edge anchoring.
@@ -131,7 +75,6 @@ PanelWindow {
         Region { item: appsIsland.visible ? appsIsland : null }
         Region { item: centerIsland }
         Region { item: mediaIsland.visible ? mediaIsland : null }
-        Region { item: settingsIsland.visible ? settingsIsland : null }
         Region { item: rightIsland }
     }
 
@@ -191,7 +134,7 @@ PanelWindow {
             onTapped: eventPoint => {
                 const position = eventPoint.position
                 const onCenterGroup = containsBarPoint(centerIsland, position)
-                    || containsBarPoint(mediaIsland, position) || containsBarPoint(settingsIsland, position)
+                    || containsBarPoint(mediaIsland, position)
                 if (centerIsland.expanded && !onCenterGroup)
                     centerIsland.expanded = false
                 if (rightIsland.expanded && !containsBarPoint(rightIsland, position))
@@ -217,15 +160,6 @@ PanelWindow {
         BarComponents.CenterIsland {
             id: centerIsland
             anchors.horizontalCenter: parent.horizontalCenter
-            onCaptureRequested: (action, mode) => root.requestCapture(action, mode)
-        }
-
-        BarComponents.SettingsIsland {
-            id: settingsIsland
-            anchors.left: centerIsland.right
-            anchors.leftMargin: merged ? -width : root.islandSpacing
-            merged: centerIsland.sideIslandsMerged && !Services.Capture.takingScreenshot
-            onClicked: root.openCaptureMenu()
         }
 
         BarComponents.MediaIsland {

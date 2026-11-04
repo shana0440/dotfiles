@@ -1,7 +1,8 @@
 # Screen Capture
 
-Standalone Quickshell application for wlroots Wayland desktops. This is additive:
-the existing bar capture menu, helpers, selector, and shortcuts are unchanged.
+Standalone Quickshell application for wlroots Wayland desktops. It replaces the
+bar's former built-in capture menu, selector and helper scripts; the bar only
+reflects recording state and offers Stop.
 
 ## Launch
 
@@ -60,8 +61,9 @@ falling back to `~/Pictures` and `~/Videos`.
 ## Ownership and lifecycle
 
 `config/` owns the menu, region editor, recording outline, and capture state.
-The region components and capture adapter were initially copied from the bar;
-there are no imports or IPC calls into the bar's configuration.
+The region components and capture adapter were originally copied from the bar,
+which no longer contains them. There are no imports or IPC calls between the two
+configurations.
 
 `scripts/snapshot.py` captures one uncompressed PPM frame with grim. Qt clips each
 output from the same image, avoiding PNG compression and per-output encoding on
@@ -69,12 +71,12 @@ the launch path. Pillow is loaded only when saving a PNG screenshot. Temporary f
 in private directories under `$XDG_RUNTIME_DIR` and are removed on capture,
 cancel, or normal UI shutdown. Native screenshot resolution is retained.
 
-`scripts/` owns capture operations. The `screen-capture-record-{full,region}`
+`scripts/` owns capture operations. The `screen-capture-record-{full,region,window}`
 systemd user units keep recording independently of UI reloads. These units,
-runtime files, helper commands, config directory, and overlay namespace are
-separate from the legacy bar implementation.
+runtime files, helper commands, config directory, and overlay namespace belong
+to this app.
 
-## Control surface (not connected to the bar yet)
+## Control surface and bar integration
 
 ```sh
 quickshell --path "$HOME/.config/screen-capture" ipc call capture openMenu
@@ -89,9 +91,16 @@ The application status snapshot includes `recording`, `mode`, `startedAtMs`, and
 `geometry`, plus `preview` to indicate whether a frozen frame is displayed. The
 helper status query also works without the application running.
 
-Push events / a D-Bus interface and bar integration are deferred to the next
-step. This version provides command/query IPC only. Notifications are not
-implemented.
+The bar (`quickshell/config/Services/Capture.qml`) polls
+`screen-capture-record status --json` once a second. While a recording runs it
+shows the elapsed time and a Stop button in the center island, and stops via
+`screen-capture-record stop`. The bar has no capture menu or settings island;
+launch capture with Super+Shift+S or the application launcher.
+
+There are no push events or D-Bus interface yet (polling only), and
+notifications are not implemented; the bar's saved-capture notification view
+is currently never triggered. The app's own floating Stop control also remains
+visible while recording.
 
 ## Manual validation
 

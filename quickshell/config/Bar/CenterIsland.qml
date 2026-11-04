@@ -15,14 +15,11 @@ Components.Island {
     readonly property bool showingMedia: expanded && expandedView === "media"
     readonly property bool showingRecording: activeView === recordingView
     readonly property bool sideIslandsMerged: expanded || notificationVisible || Services.Capture.recording
-    signal captureRequested(string action, string mode)
 
     activeView: {
         if (notificationVisible)
             return captureNotification
         if (expanded) {
-            if (expandedView === "capture")
-                return captureMenu
             return showingMedia ? mediaView : calendar
         }
         if (volumeVisible)
@@ -59,13 +56,6 @@ Components.Island {
         expanded = false
         volumeVisible = true
         volumeTimeout.restart()
-    }
-
-    Connections {
-        target: Services.Capture
-        function onScreenshotSaved(filePath) {
-            root.showCaptureNotification(filePath, filePath, "screenshot")
-        }
     }
 
     IpcHandler {
@@ -141,12 +131,7 @@ Components.Island {
             id: recordingView
             elapsedSeconds: Services.Capture.recordingElapsedSeconds
             stopping: Services.Capture.recordingCommandRunning
-            onStopRequested: root.captureRequested("stopRecording", "")
-            onControlsRequested: root.open("capture")
-        },
-        CaptureMenu {
-            id: captureMenu
-            onCaptureRequested: (action, mode) => root.captureRequested(action, mode)
+            onStopRequested: Services.Capture.stopRecording()
         },
         CaptureNotification {
             id: captureNotification
