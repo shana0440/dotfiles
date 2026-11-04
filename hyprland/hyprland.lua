@@ -288,6 +288,40 @@ local closeWindowBind = hl.bind(mainMod .. " + SHIFT + C", hl.dsp.window.close()
 hl.bind(mainMod .. " + M", hl.dsp.exec_cmd("command -v hyprshutdown >/dev/null 2>&1 && hyprshutdown || hyprctl dispatch 'hl.dsp.exit()'"))
 hl.bind(mainMod .. " + E", hl.dsp.exec_cmd(fileManager))
 hl.bind("ALT + F", hl.dsp.window.float({ action = "toggle" }))
+
+-- Temporarily center a window without changing its size.
+local centeredWindows = {}
+hl.bind("ALT + SHIFT + F", function()
+    local window = hl.get_active_window()
+    if not window or window.fullscreen ~= 0 then
+        return
+    end
+
+    local saved = centeredWindows[window.address]
+    if saved then
+        centeredWindows[window.address] = nil
+        if window.floating then
+            hl.dispatch(hl.dsp.window.resize({ x = saved.size.x, y = saved.size.y, window = window }))
+            hl.dispatch(hl.dsp.window.move({ x = saved.at.x, y = saved.at.y, window = window }))
+            if not saved.floating then
+                -- The layout determines the final tiled slot and size.
+                hl.dispatch(hl.dsp.window.float({ action = "unset", window = window }))
+            end
+        end
+        return
+    end
+
+    centeredWindows[window.address] = { at = window.at, size = window.size, floating = window.floating }
+    local size = centeredWindows[window.address].size
+    hl.dispatch(hl.dsp.window.float({ action = "set", window = window }))
+    hl.dispatch(hl.dsp.window.resize({ x = size.x, y = size.y, window = window }))
+    hl.dispatch(hl.dsp.window.center({ window = window }))
+end)
+hl.on("window.close", function(event)
+    if event.window then
+        centeredWindows[event.window.address] = nil
+    end
+end)
 hl.bind(mainMod .. " + SPACE", hl.dsp.exec_cmd(menu))
 hl.bind(mainMod .. " + P", hl.dsp.window.pseudo())
 hl.bind(mainMod .. " + J", hl.dsp.layout("togglesplit"))    -- dwindle only
