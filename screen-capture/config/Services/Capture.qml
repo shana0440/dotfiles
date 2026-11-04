@@ -470,6 +470,10 @@ Singleton {
             // Failed-to-start processes emit this signal without emitting exited.
             if (!running && root.currentScreenshot !== null) {
                 root.currentScreenshot = null
+                // exited may have fired first and deferred cleanup while this
+                // screenshot was still current; retry now that it is cleared.
+                if (root.cleanupPending && !root.previewActive)
+                    root.cleanupPreview()
                 Qt.callLater(root.startNextScreenshot)
             }
         }

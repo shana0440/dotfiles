@@ -31,32 +31,31 @@ def record(identifier, target):
     width, height = (width + 1) // 2 * 2, (height + 1) // 2 * 2
     # Keep the initial canvas size if the user resizes/moves the window. The
     # captured content follows the toplevel and never includes occluding apps.
-    video_filter = (f"scale={width}:{height}:force_original_aspect_ratio=decrease:force_divisible_by=2,"
+    video_filter = (f"fps={FPS},scale={width}:{height}:force_original_aspect_ratio=decrease:force_divisible_by=2,"
                     f"pad={width}:{height}:(ow-iw)/2:(oh-ih)/2,setsar=1")
     encoder = subprocess.Popen([
         "ffmpeg", "-nostdin", "-hide_banner", "-loglevel", "warning", "-y",
         "-probesize", "32", "-analyzeduration", "0", "-f", "image2pipe",
-        "-framerate", str(FPS), "-vcodec", "ppm", "-i", "pipe:0",
+        "-framerate", str(FPS), "-use_wallclock_as_timestamps", "1",
+        "-vcodec", "ppm", "-i", "pipe:0",
         "-f", "pulse", "-i", "@DEFAULT_MONITOR@", "-filter_threads", "1",
         "-vf", video_filter, "-c:v", "libx264", "-preset", "superfast", "-crf", "20",
         "-pix_fmt", "yuv420p", "-c:a", "aac", "-shortest", target,
     ], stdin=subprocess.PIPE)
-    started = time.monotonic()
-    written = 0
+    next_frame = time.monotonic()
     try:
         while not stopping and encoder.poll() is None:
-            # Duplicate frames when a capture is slow, keeping video duration in
-            # real time instead of speeding it up relative to system audio.
-            due = max(1, int((time.monotonic() - started) * FPS) + 1 - written)
-            for _ in range(due):
-                if stopping:
-                    break
-                encoder.stdin.write(frame)
-                written += 1
+            # Frames are timestamped on arrival and the fps filter fills gaps,
+            # so a slow encoder or capture only lowers the frame rate and the
+            # video stays in real time with the audio. Never queue extra
+            # frames to catch up: the blocking write is the back pressure that
+            # keeps capture from outrunning the encoder.
+            encoder.stdin.write(frame)
             encoder.stdin.flush()
-            delay = started + written / FPS - time.monotonic()
-            if delay > 0:
-                time.sleep(delay)
+            now = time.monotonic()
+            next_frame = max(next_frame + 1 / FPS, now)
+            if next_frame > now:
+                time.sleep(next_frame - now)
             if stopping:
                 break
             try:
