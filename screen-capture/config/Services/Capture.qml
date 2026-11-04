@@ -264,10 +264,10 @@ Singleton {
         ? Math.max(0, Math.floor((recordingClock.date.getTime() - recordingStartedAtMs) / 1000)) : 0
 
     function screenshotStarted(filePath, processId) {
-        if (!filePath || !Number.isInteger(processId) || processId < 0)
+        if (!filePath || !Number.isInteger(processId) || processId <= 0)
             return
         activeScreenshots = activeScreenshots.filter(capture => capture.path !== filePath).concat([{
-            path: filePath, processId: processId, expiresAt: Date.now() + 30000
+            path: filePath, processId: processId
         }])
     }
 
@@ -275,18 +275,14 @@ Singleton {
         activeScreenshots = activeScreenshots.filter(capture => capture.path !== filePath)
     }
 
-    // PID-less notifications from older installed helpers have a bounded lease.
-    // New helpers are tracked for their actual lifetime, including long captures.
+    // A helper that dies without reporting `finished` must not block captures forever.
     Timer {
         interval: 1000
         running: root.activeScreenshots.length > 0
         repeat: true
         onTriggered: {
-            root.activeScreenshots = root.activeScreenshots.filter(capture =>
-                capture.processId > 0 || capture.expiresAt > Date.now())
-            const processIds = root.activeScreenshots.filter(capture => capture.processId > 0)
-                .map(capture => String(capture.processId))
-            if (processIds.length > 0 && !screenshotLiveness.running)
+            const processIds = root.activeScreenshots.map(capture => String(capture.processId))
+            if (!screenshotLiveness.running)
                 screenshotLiveness.exec(["sh", "-c",
                     'for pid do kill -0 "$pid" 2>/dev/null || printf "%s\\n" "$pid"; done',
                     "screenshot-liveness"].concat(processIds))
@@ -305,7 +301,6 @@ Singleton {
 
     IpcHandler {
         target: "screenshots"
-        function started(filePath: string) { root.screenshotStarted(filePath, 0) }
         function startedByProcess(filePath: string, processId: int) { root.screenshotStarted(filePath, processId) }
         function finished(filePath: string) { root.screenshotFinished(filePath) }
         function captured(filePath: string) {

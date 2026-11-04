@@ -148,6 +148,7 @@ ShellRoot {
                 mode: Services.Capture.recordingMode,
                 startedAtMs: Services.Capture.recordingStartedAtMs,
                 geometry: Services.Capture.recordingGeometry,
+                window: Services.Capture.recordingWindow,
                 preview: Services.Capture.previewActive
             })
         }
