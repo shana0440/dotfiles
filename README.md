@@ -3,6 +3,7 @@
 Standalone Home Manager for kwguo on Linux, macOS, and WSL, using release 26.05.
 
 - `applications.nix`: exports `nixos` (Firefox/Steam) and `homeManager` (Discord, Bitwarden, Telegram, Signal, Anki) modules
+- [`vpn/`](vpn/README.md): Proton VPN and Windscribe desktop apps, with NixOS networking, keyring, and helper services
 - `config.nix`: shared user settings and dotfiles options
 - `home.nix`: desktop Linux profile with explicit CLI and desktop module imports
 - `macos.nix`: macOS profile with explicit CLI and Kitty module imports

@@ -11,6 +11,7 @@
     ./shell/shell.nix
     ./programs.nix
     (import ./applications.nix).homeManager
+    (import ./vpn/vpn.nix).homeManager
     ./kitty/kitty.nix
     ./fonts/fonts.nix
     ./gtk/gtk.nix

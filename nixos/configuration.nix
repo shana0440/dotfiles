@@ -5,6 +5,7 @@
   imports = [
     ./hardware-configuration.nix
     (import ../applications.nix).nixos
+    (import ../vpn/vpn.nix).nixos
     ./desktop.nix
     ./waydroid.nix
     ./user.nix
@@ -46,10 +47,7 @@
   hardware.cpu.intel.updateMicrocode = true;
 
   networking.hostName = "kwguo-nixos";
-  networking.networkmanager = {
-    enable = true;
-    dns = "none";
-  };
+  # NetworkManager and VPN-aware DNS are configured by vpn/vpn.nix.
   networking.nameservers = [ "1.1.1.1" "8.8.8.8" ];
   networking.firewall.enable = true;
   time.timeZone = "Asia/Taipei";

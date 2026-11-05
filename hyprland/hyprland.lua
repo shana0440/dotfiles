@@ -477,6 +477,15 @@ hl.window_rule({
 -- })
 -- overlayLayerRule:set_enabled(false)
 
+-- Windscribe has a compact, custom-drawn UI; let it choose its floating size.
+hl.window_rule({
+    name  = "float-windscribe",
+    match = { class = "^(Windscribe2?|windscribe)$" },
+
+    float  = true,
+    center = true,
+})
+
 -- Hyprland-run windowrule
 hl.window_rule({
     name  = "move-hyprland-run",
