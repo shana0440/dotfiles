@@ -305,7 +305,28 @@ local closeWindowBind = hl.bind(mainMod .. " + SHIFT + C", hl.dsp.window.close()
 -- closeWindowBind:set_enabled(false)
 hl.bind(mainMod .. " + M", hl.dsp.exec_cmd("command -v hyprshutdown >/dev/null 2>&1 && hyprshutdown || hyprctl dispatch 'hl.dsp.exit()'"))
 hl.bind(mainMod .. " + E", hl.dsp.exec_cmd(fileManager))
-hl.bind("ALT + F", hl.dsp.window.float({ action = "toggle" }))
+-- Fullscreen on a floating window, restoring its previous layout on exit.
+local fullscreenWindows = {}
+hl.bind("ALT + F", function()
+    local window = hl.get_active_window()
+    if not window then
+        return
+    end
+
+    local saved = fullscreenWindows[window.address]
+    if saved or window.fullscreen ~= 0 then
+        hl.dispatch(hl.dsp.window.fullscreen({ action = "unset", window = window }))
+        if saved then
+            hl.dispatch(hl.dsp.window.float({ action = saved.floating and "set" or "unset", window = window }))
+            fullscreenWindows[window.address] = nil
+        end
+        return
+    end
+
+    fullscreenWindows[window.address] = { floating = window.floating }
+    hl.dispatch(hl.dsp.window.float({ action = "set", window = window }))
+    hl.dispatch(hl.dsp.window.fullscreen({ action = "set", window = window }))
+end)
 
 -- Temporarily center a window without changing its size.
 local centeredWindows = {}
@@ -338,6 +359,7 @@ end)
 hl.on("window.close", function(event)
     if event.window then
         centeredWindows[event.window.address] = nil
+        fullscreenWindows[event.window.address] = nil
     end
 end)
 hl.bind(mainMod .. " + SPACE", hl.dsp.exec_cmd(menu))
