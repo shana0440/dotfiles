@@ -282,6 +282,15 @@ local shortcutKeycodes = {
     C = 54, V = 55, X = 53, A = 38, Z = 52, F = 41,
     S = 39, O = 32, L = 46, T = 28, W = 25, R = 27,
 }
+-- Inside a bind, send_shortcut emits only the key press and waits to forward the
+-- release; releasing Super before the key loses it, so apps auto-repeat the key.
+-- A timer runs outside the bind and emits a complete press+release instead.
+local function sendShortcut(mods, key)
+    hl.timer(function()
+        hl.dispatch(hl.dsp.send_shortcut({ mods = mods, key = "code:" .. shortcutKeycodes[key] }))
+    end, { timeout = 1, type = "oneshot" })
+    return { ok = true }
+end
 for _, key in ipairs({ "C", "V", "X", "A", "Z", "F", "S", "O", "L", "T", "W", "R" }) do
     hl.bind(mainMod .. " + " .. key, function()
         local window = hl.get_active_window()
@@ -290,11 +299,11 @@ for _, key in ipairs({ "C", "V", "X", "A", "Z", "F", "S", "O", "L", "T", "W", "R
         if window and window.class == "kitty" and (key == "C" or key == "V") then
             return { ok = false }
         end
-        return hl.dispatch(hl.dsp.send_shortcut({ mods = "CTRL", key = "code:" .. shortcutKeycodes[key] }))
+        return sendShortcut("CTRL", key)
     end, { auto_consuming = true })
 end
 for _, key in ipairs({ "Z", "T", "R" }) do
-    hl.bind(mainMod .. " + SHIFT + " .. key, hl.dsp.send_shortcut({ mods = "CTRL SHIFT", key = "code:" .. shortcutKeycodes[key] }))
+    hl.bind(mainMod .. " + SHIFT + " .. key, function() return sendShortcut("CTRL SHIFT", key) end)
 end
 
 hl.bind(mainMod .. " + SHIFT + S", hl.dsp.exec_cmd("screen-capture --no-stop-toolbar"))
