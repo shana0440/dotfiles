@@ -17,6 +17,7 @@
     age # age-keygen: create keys for SOPS-encrypted secrets
     curl # curl: transfer data using URLs
     fd # fd: fast file and directory search
+    gh # gh: GitHub command-line interface
     gnumake # make: run build and configuration targets
     podman # podman: manage containers without a daemon
     podman-compose # podman-compose: run Compose applications with Podman
