@@ -14,6 +14,7 @@
     (import ./applications.nix).homeManager
     ./anki.nix
     ./moshi.nix
+    ./zen.nix
     (import ./vpn/vpn.nix).homeManager
     ./kitty/kitty.nix
     ./fonts/fonts.nix

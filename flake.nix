@@ -2,6 +2,11 @@
   description = "kwguo's standalone Home Manager configuration";
 
   inputs = {
+    zen-browser = {
+      url = "github:0xc000022070/zen-browser-flake";
+      inputs.nixpkgs.follows = "nixpkgs";
+      inputs.home-manager.follows = "home-manager";
+    };
     nixpkgs.url = "https://channels.nixos.org/nixos-26.05/nixexprs.tar.xz";
     home-manager = {
       url = "https://github.com/nix-community/home-manager/archive/refs/heads/release-26.05.tar.gz";
@@ -9,11 +14,12 @@
     };
   };
 
-  outputs = { nixpkgs, home-manager, ... }:
+  outputs = { nixpkgs, home-manager, zen-browser, ... }:
     let
       mkHome = system: module: home-manager.lib.homeManagerConfiguration {
         pkgs = nixpkgs.legacyPackages.${system};
         modules = [ module ];
+        extraSpecialArgs = { inherit zen-browser; };
       };
     in {
       packages.x86_64-linux.eagle = import ./eagle/package.nix {
