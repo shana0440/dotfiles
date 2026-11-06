@@ -21,7 +21,6 @@
         bitwarden-desktop
         telegram-desktop
         signal-desktop
-        anki
       ] ++ lib.optionals (pkgs.stdenv.hostPlatform.system == "x86_64-linux") [
         (import ./eagle/package.nix { inherit pkgs; })
         (import ./nexon/package.nix { inherit pkgs; })
