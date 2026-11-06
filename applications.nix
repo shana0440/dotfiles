@@ -17,6 +17,7 @@
   homeManager = { lib, pkgs, ... }:
     let
       applications = with pkgs; [
+        file-roller
         discord
         bitwarden-desktop
         telegram-desktop
@@ -35,6 +36,14 @@
 
       home.packages = builtins.filter supported applications
         ++ lib.optional pkgs.stdenv.hostPlatform.isLinux appimageRun;
+
+      # Open archives in the graphical archive manager.
+      home.activation.archiveDefaultHandler = lib.mkIf pkgs.stdenv.hostPlatform.isLinux
+        (lib.hm.dag.entryAfter [ "linkGeneration" ] ''
+          run ${pkgs.xdg-utils}/bin/xdg-mime default org.gnome.FileRoller.desktop application/zip
+          run ${pkgs.xdg-utils}/bin/xdg-mime default org.gnome.FileRoller.desktop application/x-zip-compressed
+          run ${pkgs.xdg-utils}/bin/xdg-mime default org.gnome.FileRoller.desktop application/x-7z-compressed
+        '');
 
       home.activation.appimageDefaultRunner = lib.mkIf pkgs.stdenv.hostPlatform.isLinux
         (lib.hm.dag.entryAfter [ "linkGeneration" ] ''
