@@ -67,10 +67,17 @@
   services.tailscale.enable = true;
   services.usbmuxd.enable = true;
 
+  # Moshi connects over SSH, then starts mosh-server for roaming sessions.
   services.openssh = {
-    enable = false;
-    openFirewall = false;
+    enable = true;
+    openFirewall = true;
+    settings = {
+      PasswordAuthentication = false;
+      KbdInteractiveAuthentication = false;
+      PermitRootLogin = "no";
+    };
   };
+  programs.mosh.enable = true;
 
   security.polkit.enable = true;
   security.rtkit.enable = true;
