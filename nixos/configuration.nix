@@ -65,6 +65,7 @@
   };
 
   services.tailscale.enable = true;
+  services.usbmuxd.enable = true;
 
   services.openssh = {
     enable = false;
