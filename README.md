@@ -393,6 +393,13 @@ interface in the host firewall; it does not change the host firewall backend.
 Use `waydroid status` and `journalctl -u waydroid-container -b` for diagnostics.
 See the [upstream GPU fallback instructions](https://docs.waydro.id/faq/get-waydroid-to-work-through-a-vm).
 
+## UxPlay (AirPlay receiver)
+
+UxPlay is installed by `make home-linux`. Apply `make nixos` once to enable
+Avahi discovery and open the receiver ports, then run `uxplay -p` (the `-p`
+selects the fixed ports allowed by the firewall). On an Apple device on the
+same LAN, choose this computer under **Screen Mirroring**. No autostart is enabled.
+
 ## Steam
 
 The `nixos` module in `applications.nix` enables Steam with `programs.steam.enable = true` and

@@ -7,6 +7,16 @@
     programs.firefox.enable = true;
     programs.steam.enable = true;
 
+    # UxPlay advertises its AirPlay receiver over mDNS.
+    services.avahi = {
+      enable = true;
+      publish.enable = true;
+      publish.userServices = true;
+      openFirewall = true;
+    };
+    networking.firewall.allowedTCPPorts = [ 7000 7001 7100 ];
+    networking.firewall.allowedUDPPorts = [ 6000 6001 7011 ];
+
     programs.appimage = {
       enable = true;
       binfmt = true;
@@ -22,6 +32,7 @@
         bitwarden-desktop
         telegram-desktop
         signal-desktop
+        uxplay # AirPlay screen mirroring receiver
       ] ++ lib.optionals (pkgs.stdenv.hostPlatform.system == "x86_64-linux") [
         (import ./eagle/package.nix { inherit pkgs; })
         (import ./nexon/package.nix { inherit pkgs; })
