@@ -34,6 +34,24 @@ let
     ];
     text = builtins.readFile ./hide-helper.sh;
   };
+  nativeExplorer = pkgs.pkgsCross.mingwW64.stdenv.mkDerivation {
+    name = "eagle-native-explorer";
+    src = ./native-explorer.c;
+    dontUnpack = true;
+    buildPhase = ''
+      $CC -municode -mwindows -Wall -Wextra -Werror -O2 "$src" -o explorer.exe -lshell32
+    '';
+    installPhase = ''
+      install -Dm755 explorer.exe "$out/bin/explorer.exe"
+    '';
+  };
+  nativeReveal = pkgs.writeShellApplication {
+    name = "eagle-native-reveal";
+    runtimeInputs = [ pkgs.python3 pkgs.glib pkgs.xdg-utils ];
+    text = ''
+      exec python3 ${./native-reveal.py} "$@"
+    '';
+  };
   launcher = pkgs.writeShellApplication {
     name = "eagle";
     runtimeInputs = [
@@ -78,6 +96,13 @@ let
         winetricks -q corefonts fontsmooth=rgb
         touch "$WINEPREFIX/.eagle-rendering-v2"
       fi
+      # Intercept filesystem browsing only in Eagle's private prefix. Keep a
+      # real Explorer for Wine's /desktop startup; never modify Eagle's files.
+      system32="$WINEPREFIX/drive_c/windows/system32"
+      cp --remove-destination ${wine}/lib/wine/x86_64-windows/explorer.exe "$system32/eagle-wine-explorer.exe"
+      cp --remove-destination ${nativeExplorer}/bin/explorer.exe "$system32/explorer.exe"
+      export EAGLE_NATIVE_REVEAL="${nativeReveal}/bin/eagle-native-reveal"
+      export WINEDLLOVERRIDES="winemenubuilder.exe=d;explorer.exe=n"
       flock -u 9
       exec 9>&-
       scale_args=()

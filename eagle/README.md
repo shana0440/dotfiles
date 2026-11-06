@@ -41,6 +41,29 @@ The launcher detects the focused Hyprland monitor's scale and passes it to
 Electron, so Eagle renders at native resolution on a 150% monitor. This Hyprland
 setting affects **all XWayland apps**; other apps may need their own HiDPI setup.
 
+### Native file manager
+
+**Open in Explorer** (`Ctrl+Enter`) opens the item's folder in your Linux file
+manager (Thunar here), rather than Wine Explorer. After updating with `make home`,
+fully quit and relaunch Eagle to enable it.
+
+The launcher installs a small Explorer adapter only in Eagle's private prefix.
+It translates Windows paths using Wine's drive mappings and calls the standard
+`org.freedesktop.FileManager1` interface, falling back to `xdg-open`. File requests
+select the file when supported; Eagle itself currently requests its containing
+folder. Wine's desktop startup is forwarded to the original Explorer. Eagle's
+application files, Windows file-selection dialogs, and other prefixes are unchanged.
+
+For large NAS libraries, Wine can repeatedly enumerate every entry while looking
+for a missing `desktop.ini` (including case-insensitive filename fallbacks), before
+it even launches the adapter. On the real desktop, a 27,836-entry `images/`
+directory made a Windows reveal probe take 37 seconds. Adding a minimal
+`<library>.library/images/desktop.ini` containing `[.ShellClassInfo]` reduced the
+same probe to 1.4 seconds; Eagle's shortcut reached the adapter in 0.8 seconds.
+Do not overwrite an existing `desktop.ini`. This is a per-library workaround,
+not something the launcher automatically writes into users' libraries.
+Host recording: `~/.local/state/eagle-test/host-reveal-fixed.mp4`.
+
 Wine prefixes isolate app configuration, **not filesystem access**.
 
 ## Headless test
@@ -61,6 +84,13 @@ core fonts: UI text is visibly smoother and the large white helper is hidden.
 Also verified directly on the real Hyprland desktop at 150% scale: automatic
 helper hiding after a fresh launch, native-resolution text, and one main Eagle
 window. Screenshot: `~/.local/state/eagle-test/hyprland-fixed.png`.
+Native reveal was tested in a separate, copied prefix with a disposable library:
+Eagle's **Open in Explorer** menu opens the correct item directory in Thunar.
+Quoted `/select,` paths with spaces and Unicode were also verified through Wine.
+Helper unit tests: `python3 -B eagle/test-native-reveal.py`.
+Recording: `~/.local/state/eagle-test/native-file-manager.mp4`.
+Screenshot: `~/.local/state/eagle-test/native-file-manager.png`.
+
 A small Wine tray host and rendering warnings can remain, including a failed
 online-download helper request. Browser integration,
 plugins, video/PSD/RAW previews and other advanced features are not verified.
