@@ -3,7 +3,7 @@
 {
   home.packages = [ (import ./package.nix { inherit pkgs; }) ];
 
-  xdg.desktopEntries.waydroid = {
+  xdg.desktopEntries.Waydroid = {
     name = "Waydroid";
     comment = "Open the Android desktop";
     exec = "/run/current-system/sw/bin/waydroid show-full-ui";
