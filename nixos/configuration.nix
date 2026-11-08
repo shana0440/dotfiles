@@ -80,6 +80,17 @@
   };
   programs.mosh.enable = true;
 
+  # Controlled from the Quickshell right island, which also runs the pairing agent.
+  hardware.bluetooth = {
+    enable = true;
+    powerOnBoot = true;
+    settings.General = {
+      # Report headset battery levels and allow fast reconnects.
+      Experimental = true;
+      FastConnectable = true;
+    };
+  };
+
   security.polkit.enable = true;
   security.rtkit.enable = true;
   services.pipewire = {

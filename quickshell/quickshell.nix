@@ -13,6 +13,12 @@ let
       exec ${pkgs.python3.withPackages (ps: [ ps.dbus-next ])}/bin/python3 -u ${./scripts/launcher_badges.py}
     '';
   };
+  bluetoothAgent = pkgs.writeShellApplication {
+    name = "bluetooth-pairing-agent";
+    text = ''
+      exec ${pkgs.python3.withPackages (ps: [ ps.dbus-next ])}/bin/python3 -u ${./scripts/bluetooth_agent.py}
+    '';
+  };
   playbackMonitor = pkgs.writeShellApplication {
     name = "pipewire-playback-monitor";
     runtimeInputs = [ pkgs.pipewire ];
@@ -22,7 +28,7 @@ let
   };
 in
 {
-  home.packages = [ pkgs.quickshell pkgs.pipewire playbackMonitor systemStatus launcherBadgeMonitor ]
+  home.packages = [ pkgs.quickshell pkgs.pipewire playbackMonitor systemStatus launcherBadgeMonitor bluetoothAgent ]
     ++ lib.optionals pkgs.stdenv.isLinux [
       pkgs.cava
       pkgs.wl-clipboard
