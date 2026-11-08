@@ -91,6 +91,10 @@
     };
   };
 
+  # The in-kernel hid-microsoft driver rejects the Xbox One S controller's
+  # Bluetooth HID descriptor, so the pad connects but creates no input device.
+  hardware.xpadneo.enable = true;
+
   security.polkit.enable = true;
   security.rtkit.enable = true;
   services.pipewire = {
