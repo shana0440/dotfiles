@@ -1,14 +1,9 @@
-# Shared coding-agent CLIs, managed by Nix rather than npm global installs.
+# Shared coding-agent tools, managed by Nix rather than npm global installs.
 { pkgs, ... }:
 
 {
-  # Claude Code is distributed under a proprietary license.
-  nixpkgs.config.allowUnfree = true;
-
   home.packages = with pkgs; [
-    claude-code
-    codex
-    opencode
+    (import ./t3code/package.nix { inherit pkgs; })
     pi-coding-agent
   ];
 }
