@@ -1,6 +1,7 @@
 import QtQuick
 import "../Theme" as Theme
 import "../Components" as Components
+import "../Services" as Services
 
 Components.Island {
     id: root
@@ -13,13 +14,22 @@ Components.Island {
     readonly property bool keyboardFocusRequired: expanded && mode !== "input"
     readonly property bool confirming: mode === "power" && menu.confirming
 
-    activeView: mode === "input" ? inputMenu : mode === "wifi" ? wifiMenu : mode === "power" ? menu : mode === "system" ? systemStatus : mode === "audio" ? audioMenu : mode === "voice" ? voiceMenu : defaultContent
+    activeView: mode === "input" ? inputMenu : mode === "wifi" ? wifiMenu : mode === "bluetooth" ? bluetoothMenu : mode === "power" ? menu : mode === "system" ? systemStatus : mode === "audio" ? audioMenu : mode === "voice" ? voiceMenu : defaultContent
     alignment: Qt.AlignRight
     overflowView: defaultContent
 
     function close() {
         mode = "default"
         menu.cancel()
+    }
+
+    // Pairing prompts can arrive while the menu is closed, e.g. from a remote device.
+    Connections {
+        target: Services.Bluetooth
+        function onRequestChanged() {
+            if (Services.Bluetooth.request)
+                root.mode = "bluetooth"
+        }
     }
 
     views: [
@@ -54,6 +64,10 @@ Components.Island {
                 icon: "systemStatus"
                 tooltip: "System status"
                 onClicked: root.mode = "system"
+            }
+
+            BluetoothIndicator {
+                onClicked: root.mode = "bluetooth"
             }
 
             Wifi {
@@ -105,6 +119,12 @@ Components.Island {
         },
         PowerMenu {
             id: menu
+            onCloseRequested: root.close()
+        },
+        BluetoothMenu {
+            id: bluetoothMenu
+            active: root.mode === "bluetooth"
+            maximumHeight: root.availableHeight
             onCloseRequested: root.close()
         },
         WifiMenu {

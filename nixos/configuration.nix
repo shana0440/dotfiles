@@ -80,6 +80,21 @@
   };
   programs.mosh.enable = true;
 
+  # Controlled from the Quickshell right island, which also runs the pairing agent.
+  hardware.bluetooth = {
+    enable = true;
+    powerOnBoot = true;
+    settings.General = {
+      # Report headset battery levels and allow fast reconnects.
+      Experimental = true;
+      FastConnectable = true;
+    };
+  };
+
+  # The in-kernel hid-microsoft driver rejects the Xbox One S controller's
+  # Bluetooth HID descriptor, so the pad connects but creates no input device.
+  hardware.xpadneo.enable = true;
+
   security.polkit.enable = true;
   security.rtkit.enable = true;
   services.pipewire = {
