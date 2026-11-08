@@ -1,4 +1,4 @@
-.PHONY: nixos home home-linux home-mac home-wsl update encrypt decrypt re-encrypt
+.PHONY: nixos nixos-update home home-linux home-mac home-wsl update encrypt decrypt re-encrypt
 
 # Resolve paths relative to this Makefile, regardless of the working directory.
 DOTFILES := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
@@ -18,6 +18,10 @@ update:
 
 nixos:
 	sudo nixos-rebuild switch -I "nixos-config=$(DOTFILES)/nixos/configuration.nix"
+
+# Update the root NixOS channel and switch to the rebuilt system.
+nixos-update:
+	sudo nixos-rebuild switch --upgrade -I "nixos-config=$(DOTFILES)/nixos/configuration.nix"
 
 home:
 	@if [ "$$(uname -s)" = Darwin ]; then \

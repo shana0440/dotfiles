@@ -53,6 +53,15 @@ Imported from https://github.com/shana0440/dotfiles at commit
 These modules are shared across Linux, macOS, and WSL. Repository-local Git
 settings continue to override user-level defaults.
 
+## Updating NixOS
+
+Run `make nixos-update` to update the root NixOS channel and rebuild/switch the
+system using `nixos/configuration.nix`. This stays on the configured channel;
+it does not change the NixOS release. Use `make nixos` to apply system
+configuration changes without updating the channel.
+
+Home Manager dependencies are separate: run `make update`, then `make home`.
+
 ## Platform profiles
 
 `make home` detects macOS, Linux, or WSL and delegates to `home-mac`,
