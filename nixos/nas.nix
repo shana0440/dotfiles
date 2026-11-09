@@ -35,19 +35,18 @@ in
     secretsFile = lib.mkOption {
       type = lib.types.path;
       default = ./nas/secrets.enc.yaml;
-      description = "SOPS-encrypted YAML containing device and credentials keys.";
+      description = "SOPS-encrypted YAML containing the NFS device key (HOST:/EXPORT/PATH).";
     };
   };
 
   config = lib.mkIf cfg.enable {
-    boot.supportedFilesystems = [ "cifs" ];
+    boot.supportedFilesystems = [ "nfs" ];
 
     sops = {
       useSystemdActivation = true;
       age.keyFile = lib.mkDefault "${config.users.users.${user}.home}/.config/sops/age/keys.txt";
       secrets = {
         "nas/device" = secret "device";
-        "nas/credentials" = secret "credentials";
       };
     };
 
@@ -60,7 +59,7 @@ in
       wantedBy = [ "multi-user.target" ];
       requires = [ "sops-install-secrets.service" ];
       after = [ "sops-install-secrets.service" ];
-      path = [ pkgs.systemd ];
+      path = [ pkgs.systemd pkgs.nfs-utils ];
       serviceConfig = {
         Type = "oneshot";
         RemainAfterExit = true;
@@ -76,19 +75,17 @@ in
       script = ''
         device=$(< ${lib.escapeShellArg config.sops.secrets."nas/device".path})
         case "$device" in
-          //?*/?*) ;;
-          *) echo "Invalid NAS device: expected //HOST/SHARE" >&2; exit 1 ;;
+          ?*:/?*) ;;
+          *) echo "Invalid NAS device: expected HOST:/EXPORT/PATH" >&2; exit 1 ;;
         esac
         systemd-mount --automount=yes --collect --fsck=no --canonicalize=no \
-          --type=cifs --description="NAS share" \
+          --type=nfs --description="NAS share (NFSv4)" \
           --timeout-idle-sec=0 --property=TimeoutSec=10s \
           --options=${lib.escapeShellArg (lib.concatStringsSep "," [
-            "credentials=${config.sops.secrets."nas/credentials".path}"
-            "uid=${user}"
-            "gid=${group}"
+            "vers=4.0"
+            "proto=tcp"
+            "hard"
             "rw"
-            "file_mode=0600"
-            "dir_mode=0700"
             "nosuid"
             "nodev"
             "_netdev"
