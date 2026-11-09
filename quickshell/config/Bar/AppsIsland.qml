@@ -12,6 +12,13 @@ Rectangle {
     readonly property int buttonSize: 28
     readonly property int buttonSpacing: 4
     readonly property int padding: 8
+    // heuristicLookup() is not reactive; bump this when desktop entries (re)load.
+    property int entriesRevision: 0
+
+    Connections {
+        target: DesktopEntries
+        function onApplicationsChanged() { root.entriesRevision++ }
+    }
 
     visible: windows.count > 0 && availableWidth >= buttonSize + padding * 2
     width: visible ? Math.min(appRow.width + padding * 2, availableWidth) : 0
@@ -53,7 +60,10 @@ Rectangle {
                 Rectangle {
                     id: button
                     required property var modelData
-                    readonly property var entry: DesktopEntries.heuristicLookup(modelData.appId)
+                    readonly property var entry: {
+                        root.entriesRevision
+                        return DesktopEntries.heuristicLookup(modelData.appId)
+                    }
                     readonly property string label: modelData.title || entry?.name || modelData.appId || "Application"
 
                     Component.onCompleted: Qt.callLater(() => appList.revealActive(button))
