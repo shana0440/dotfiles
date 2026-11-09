@@ -8,7 +8,7 @@ Item {
 
     property date today: new Date()
     property date displayedMonth: new Date(today.getFullYear(), today.getMonth(), 1)
-    readonly property int firstWeekday: (displayedMonth.getDay() + 6) % 7
+    readonly property int firstWeekday: displayedMonth.getDay()
 
     function changeMonth(offset) {
         displayedMonth = new Date(displayedMonth.getFullYear(), displayedMonth.getMonth() + offset, 1)
@@ -99,7 +99,7 @@ Item {
 
                         width: weekdays.width / 7
                         height: weekdays.height
-                        text: Qt.locale().standaloneDayName((index + 1) % 7, Locale.ShortFormat)
+                        text: Qt.locale().standaloneDayName(index, Locale.ShortFormat)
                         color: Theme.Colors.foreground
                         opacity: 0.6
                         font.pixelSize: 12
