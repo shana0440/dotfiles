@@ -34,9 +34,10 @@ works the same way.
   `${XDG_CACHE_HOME:-~/.cache}/wallpaper/colonies/`. The picker fills it when it
   opens; each used map is regenerated in the background so patterns don't repeat.
   An empty pool costs one synchronous map (about 0.25 s).
-- `colonies.frag` draws the cells; `WallpaperTransition.qml` hosts it on a layer
-  above awww and below windows, covering the full output including the bar's
-  reserved strip.
+- `colonies.frag` draws the cells; `WallpaperTransition.qml` hosts it on awww's
+  Background layer, mapped after awww so it stacks above the wallpaper but below
+  the bar (Bottom layer) and windows. It covers the full output, including the
+  bar's reserved strip, while the bar stays visible on top.
 - Hand-over: the layer fades in while the shader still shows exactly the old
   image, awww switches underneath with no transition, the shader ends on exactly
   the new image, and the layer fades out. Each output uses its own old image and
@@ -85,9 +86,9 @@ Source images are never modified.
   starts, renderer abort, map renewal, fade fallback, even area growth, connected
   colonies (not speckle), pool reuse and atomic warm-up, and accent selection.
 - Private agent workspace: nested Sway on X11 with its own runtime, cache, and
-  awww, plus a stand-in 52 px reserved bar. Covered: solid colour → image, picker →
+  awww, plus a stand-in 52 px reserved bar on the Bottom layer like the real one. Covered: solid colour → image, picker →
   colonies, CLI changes, the reserved strip changing with the rest of the screen
-  (no early reveal), missing-shell fallback, concurrent switches, and landscape +
+  (no early reveal), the bar staying visible during the change, missing-shell fallback, concurrent switches, and landscape +
   portrait (scale 1.5) outputs. Host wallpapers were not changed by these tests.
 
 Recordings (outside the repository):

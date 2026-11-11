@@ -1,5 +1,6 @@
 // Visual regression fixture: a transparent top bar with an exclusive zone.
-// The transition must cover the wallpaper behind the whole reserved strip.
+// Like the real bar, it idles on the Bottom layer: the transition must cover
+// the wallpaper behind the whole reserved strip yet stay below this bar.
 import QtQuick
 import Quickshell
 import Quickshell.Wayland
@@ -14,7 +15,7 @@ Scope {
             implicitHeight: 52
             exclusiveZone: 52
             color: "transparent"
-            WlrLayershell.layer: WlrLayer.Top
+            WlrLayershell.layer: WlrLayer.Bottom
             WlrLayershell.namespace: "wallpaper-test-reserved-bar"
             WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
             mask: Region {}

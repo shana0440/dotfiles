@@ -159,7 +159,10 @@ Scope {
             // A zero exclusiveZone reserves nothing but still obeys others'
             // reservations, exposing the new awww image above the animation.
             exclusionMode: ExclusionMode.Ignore
-            WlrLayershell.layer: WlrLayer.Bottom
+            // Same layer as awww (Background) so the bar, which idles on the
+            // Bottom layer, stays visible above the transition. The surface is
+            // mapped per change, after awww's, so it stacks above the wallpaper.
+            WlrLayershell.layer: WlrLayer.Background
             WlrLayershell.namespace: "quickshell-wallpaper-transition"
             WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
             mask: Region {}
