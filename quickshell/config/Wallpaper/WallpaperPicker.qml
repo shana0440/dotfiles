@@ -168,6 +168,8 @@ Scope {
                         z: 100 - distance
                         opacity: Math.max(0, 1 - distance * 0.23)
                         Rectangle {
+                            id: cardFrame
+                            readonly property real skew: -0.16
                             anchors.centerIn: parent
                             width: carousel.cardWidth
                             height: carousel.cardHeight
@@ -175,15 +177,31 @@ Scope {
                             color: Theme.Colors.background
                             border { width: 3; color: slot.index === carousel.currentIndex ? Theme.Colors.accent : Theme.Colors.activeWorkspace }
                             transform: Matrix4x4 {
-                                matrix: Qt.matrix4x4(1, -0.16, 0, carousel.cardHeight * 0.08, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1)
+                                matrix: Qt.matrix4x4(1, cardFrame.skew, 0, -cardFrame.height * cardFrame.skew / 2, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1)
                             }
-                            Image {
+                            Item {
+                                id: imageClip
+                                readonly property real skew: parent.skew
                                 anchors.fill: parent
                                 anchors.margins: 3
-                                source: slot.modelData.thumbnail
-                                fillMode: Image.PreserveAspectCrop
-                                asynchronous: true
-                                sourceSize.width: 900
+                                clip: true
+
+                                // The clip inherits the card's parallelogram, but
+                                // the inverse shear keeps the artwork upright.
+                                // Overscan covers both slanted edges without gaps.
+                                Image {
+                                    id: artwork
+                                    anchors.centerIn: parent
+                                    width: parent.width + Math.abs(imageClip.skew) * height
+                                    height: parent.height
+                                    transform: Matrix4x4 {
+                                        matrix: Qt.matrix4x4(1, -imageClip.skew, 0, artwork.height * imageClip.skew / 2, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1)
+                                    }
+                                    source: slot.modelData.thumbnail
+                                    fillMode: Image.PreserveAspectCrop
+                                    asynchronous: true
+                                    sourceSize.width: 900
+                                }
                             }
                             MouseArea {
                                 anchors.fill: parent

@@ -13,6 +13,9 @@ Subdirectories are not scanned. The directory is not created or populated automa
 - **Enter** or double-click a card: apply to all monitors with a short fade.
 - **Escape** or click outside: cancel without changing the wallpaper.
 
+Cards use parallelogram frames with clipped, upright artwork: only the frame
+is sheared; an inverse transform keeps the image itself undistorted.
+
 Opening refreshes thumbnails asynchronously and selects the wallpaper currently
 shown by awww. Invalid images are skipped with a warning; application errors keep
 the picker open. The picker does not change theme colours or run AI segmentation.
