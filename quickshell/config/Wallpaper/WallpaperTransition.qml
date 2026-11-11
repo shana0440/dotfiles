@@ -128,7 +128,10 @@ Scope {
             visible: root.active
             anchors { top: true; bottom: true; left: true; right: true }
             color: "transparent"
-            exclusiveZone: 0
+            // Paint the entire output, including space reserved by the bar.
+            // A zero exclusiveZone reserves nothing but still obeys others'
+            // reservations, exposing the new awww image above the animation.
+            exclusionMode: ExclusionMode.Ignore
             WlrLayershell.layer: WlrLayer.Bottom
             WlrLayershell.namespace: "quickshell-wallpaper-transition"
             WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
