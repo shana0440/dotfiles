@@ -7,6 +7,7 @@ from pathlib import Path
 import subprocess
 import sys
 import tempfile
+import time
 
 EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp"}
 
@@ -53,6 +54,82 @@ def catalog(directory, cache):
     return {"items": items, "directory": str(directory), "errors": errors}
 
 
+def transition_ipc(action, *arguments):
+    config_home = Path(os.environ.get("XDG_CONFIG_HOME", str(Path.home() / ".config")))
+    shell = os.environ.get("WALLPAPER_SHELL", str(config_home / "quickshell"))
+    result = subprocess.run(["quickshell", "--path", shell, "ipc", "call",
+                             "wallpaperTransition", action, *arguments],
+                            check=True, capture_output=True, text=True, timeout=1)
+    return result.stdout.strip()
+
+
+def wait_transition(token, expected, seconds):
+    deadline = time.monotonic() + seconds
+    while time.monotonic() < deadline:
+        state = json.loads(transition_ipc("status", token))
+        if state["phase"] == expected:
+            return
+        if state["phase"] in {"error", "superseded", "idle"}:
+            raise RuntimeError(state.get("error") or "Transition stopped")
+        time.sleep(0.03)
+    raise TimeoutError("Outline transition timed out")
+
+
+def outline_transition(image):
+    token = None
+    complete = False
+    try:
+        result = subprocess.run(["wallpaper-outline", "cached", str(image)],
+                                check=True, capture_output=True, text=True, timeout=2)
+        field = json.loads(result.stdout)
+        if not field.get("ready"):
+            return False
+        result = subprocess.run(["awww", "query", "--json"], check=True,
+                                capture_output=True, text=True, timeout=2)
+        outputs = json.loads(result.stdout).get("", [])
+        # No previous image (e.g. a first login/solid colour) means a plain fade.
+        if not outputs or any(not o.get("displaying", {}).get("image") for o in outputs):
+            return False
+        if all(o["displaying"]["image"] == str(image) for o in outputs):
+            return False
+        token = transition_ipc("prepare", json.dumps({"image": str(image), "map": field["map"], "outputs": outputs}))
+        if not token.isdigit():
+            token = None
+            return False
+        wait_transition(token, "ready", 3)
+        # The picker closes before the background effect starts. CLI callers
+        # can also consume this line; a successful command still waits for done.
+        print("transition-ready", flush=True)
+        time.sleep(0.20)
+        if transition_ipc("go", token) != "ok":
+            raise RuntimeError("Outline transition did not start")
+        wait_transition(token, "done", 6)
+        complete = True
+        return True
+    except (OSError, ValueError, KeyError, RuntimeError, TimeoutError, subprocess.SubprocessError) as error:
+        print(f"Outline unavailable; using fade: {error}", file=sys.stderr)
+        return False
+    finally:
+        if token and not complete:
+            try:
+                transition_ipc("abort", token)
+            except (OSError, subprocess.SubprocessError):
+                pass
+
+
+def set_wallpaper(image):
+    import fcntl
+    cache = Path(os.environ.get("XDG_CACHE_HOME", str(Path.home() / ".cache"))) / "wallpaper"
+    cache.mkdir(parents=True, exist_ok=True)
+    # Serialize complete handoffs so rapid CLI selections cannot change awww
+    # underneath another transition. The picker itself allows one at a time.
+    with (cache / "switch.lock").open("w") as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX)
+        if not outline_transition(image):
+            subprocess.run(["awww", "img", str(image), "--transition-type", "fade",
+                            "--transition-duration", "0.35"], check=True, timeout=5)
+
+
 def main():
     if len(sys.argv) > 1 and sys.argv[1] == "set":
         if len(sys.argv) != 3:
@@ -60,8 +137,7 @@ def main():
         image = Path(sys.argv[2]).expanduser().resolve(strict=True)
         if not image.is_file() or image.suffix.lower() not in EXTENSIONS:
             raise ValueError("Choose a JPG, PNG, or WebP image")
-        subprocess.run(["awww", "img", str(image), "--transition-type", "fade",
-                        "--transition-duration", "0.35"], check=True)
+        set_wallpaper(image)
         return
     directory = Path(os.environ["WALLPAPER_DIR"]).expanduser().resolve()
     cache = Path(os.environ.get("XDG_CACHE_HOME", str(Path.home() / ".cache"))) / "wallpaper/thumbnails"

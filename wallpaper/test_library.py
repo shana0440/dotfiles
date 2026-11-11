@@ -78,7 +78,9 @@ class LibraryTests(unittest.TestCase):
 
     def test_set_passes_filename_as_single_argument(self):
         image = self.image()
-        with patch.object(sys, "argv", ["library", "set", str(image)]), patch.object(library.subprocess, "run") as run:
+        with patch.object(sys, "argv", ["library", "set", str(image)]), patch.object(
+            library, "outline_transition", return_value=False
+        ), patch.dict(os.environ, {"XDG_CACHE_HOME": str(self.cache)}), patch.object(library.subprocess, "run") as run:
             library.main()
         self.assertEqual(run.call_args.args[0][:3], ["awww", "img", str(image)])
         self.assertTrue(run.call_args.kwargs["check"])
@@ -86,6 +88,8 @@ class LibraryTests(unittest.TestCase):
     def test_set_propagates_daemon_failure(self):
         image = self.image()
         with patch.object(sys, "argv", ["library", "set", str(image)]), patch.object(
+            library, "outline_transition", return_value=False
+        ), patch.dict(os.environ, {"XDG_CACHE_HOME": str(self.cache)}), patch.object(
             library.subprocess, "run", side_effect=subprocess.CalledProcessError(1, "awww")
         ):
             with self.assertRaises(subprocess.CalledProcessError):

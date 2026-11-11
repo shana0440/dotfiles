@@ -64,7 +64,8 @@ let
   };
   setWallpaper = pkgs.writeShellApplication {
     name = "wallpaper-set";
-    runtimeInputs = [ pkgs.awww ];
+    runtimeInputs = [ pkgs.awww pkgs.quickshell ]
+      ++ lib.optionals (pkgs.stdenv.hostPlatform.system == "x86_64-linux") [ outline ];
     text = ''
       exec ${pkgs.python3}/bin/python3 ${./library.py} set "$@"
     '';

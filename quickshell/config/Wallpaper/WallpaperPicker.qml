@@ -25,6 +25,7 @@ Scope {
         preparing = true
         opened = true
         query.running = true
+        if (!outlineWarm.running) outlineWarm.running = true
     }
     function finishOpening() {
         if (!opened || !preparing || query.running || library.running) return
@@ -89,15 +90,35 @@ Scope {
             Qt.callLater(root.finishOpening)
         }
     }
+    // GPU work happens in a separate process, never on the QML/UI thread.
+    // Cached maps are instant; cold/unsuitable images still switch with a fade.
+    Process {
+        id: outlineWarm
+        command: ["wallpaper-outline", "warm"]
+        stdout: StdioCollector {}
+        stderr: StdioCollector {}
+    }
     Process {
         id: setter
         command: ["wallpaper-set", root.pendingPath]
+        stdout: SplitParser {
+            onRead: data => {
+                if (data === "transition-ready") {
+                    root.opened = false
+                    root.preparing = false
+                }
+            }
+        }
         stderr: StdioCollector { id: setError }
         onExited: (code) => {
             if (code === 0) {
                 root.currentPath = root.pendingPath
                 root.opened = false
-            } else root.message = setError.text || "Wallpaper change failed"
+            } else {
+                root.message = setError.text || "Wallpaper change failed"
+                root.opened = true
+                Qt.callLater(() => stage.forceActiveFocus())
+            }
         }
     }
     Component.onCompleted: library.running = true
