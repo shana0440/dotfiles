@@ -308,6 +308,10 @@ make home
 
 Keep `home.stateVersion` unchanged when updating packages.
 
+Shared coding agents are managed in `agents.nix`. Pi uses the native
+[Pi-Bolt package](pi-bolt/README.md); its release URLs are pinned separately in
+`flake.nix` (see that guide to update the version).
+
 ## NixOS system configuration
 
 Edit `~/dotfiles/nixos/configuration.nix`, then rebuild explicitly from that file:

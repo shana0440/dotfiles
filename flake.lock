@@ -19,21 +19,63 @@
     },
     "nixpkgs": {
       "locked": {
-        "lastModified": 1793865203,
-        "narHash": "sha256-4D+5oPvxkOa6tTCWXi4jwRfmWhDXGRSrX4+eOTItLh0=",
-        "rev": "c56a87d8e41ce69bd2af57eb35dcc117a9dfca33",
+        "lastModified": 1794165970,
+        "narHash": "sha256-YqwBRaXgqn0+I8BCsZVLkzd746X/84fr1/FvZiocsYE=",
+        "rev": "ac588ef1c914865dad517b337ea0eb9694a4021c",
         "type": "tarball",
-        "url": "https://releases.nixos.org/nixos/26.05/nixos-26.05.13627.c56a87d8e41c/nixexprs.tar.xz"
+        "url": "https://releases.nixos.org/nixos/26.05/nixos-26.05.13936.ac588ef1c914/nixexprs.tar.xz"
       },
       "original": {
         "type": "tarball",
         "url": "https://channels.nixos.org/nixos-26.05/nixexprs.tar.xz"
       }
     },
+    "pi-bolt-darwin-arm64": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1794318538,
+        "narHash": "sha256-8N91NAPxI9qIkZ891KHsPmA3/VpTDZqnEBY8SP/gfrI=",
+        "type": "tarball",
+        "url": "https://github.com/opensec-git/Pi-Bolt/releases/download/bolt-v1.2.0/pi-bolt-darwin-arm64.tar.gz"
+      },
+      "original": {
+        "type": "tarball",
+        "url": "https://github.com/opensec-git/Pi-Bolt/releases/download/bolt-v1.2.0/pi-bolt-darwin-arm64.tar.gz"
+      }
+    },
+    "pi-bolt-linux-arm64": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1794318442,
+        "narHash": "sha256-qg+7XGXWRv/sLKN/KQXHHmwLIQ+jgMde7B6NMST8Veo=",
+        "type": "tarball",
+        "url": "https://github.com/opensec-git/Pi-Bolt/releases/download/bolt-v1.2.0/pi-bolt-linux-arm64.tar.gz"
+      },
+      "original": {
+        "type": "tarball",
+        "url": "https://github.com/opensec-git/Pi-Bolt/releases/download/bolt-v1.2.0/pi-bolt-linux-arm64.tar.gz"
+      }
+    },
+    "pi-bolt-linux-x64": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1794318613,
+        "narHash": "sha256-5ezOAtUK4qEzfZGy/AS//pdKFPEj8OdVKkMqhzUiBKE=",
+        "type": "tarball",
+        "url": "https://github.com/opensec-git/Pi-Bolt/releases/download/bolt-v1.2.0/pi-bolt-linux-x64-baseline.tar.gz"
+      },
+      "original": {
+        "type": "tarball",
+        "url": "https://github.com/opensec-git/Pi-Bolt/releases/download/bolt-v1.2.0/pi-bolt-linux-x64-baseline.tar.gz"
+      }
+    },
     "root": {
       "inputs": {
         "home-manager": "home-manager",
         "nixpkgs": "nixpkgs",
+        "pi-bolt-darwin-arm64": "pi-bolt-darwin-arm64",
+        "pi-bolt-linux-arm64": "pi-bolt-linux-arm64",
+        "pi-bolt-linux-x64": "pi-bolt-linux-x64",
         "zen-browser": "zen-browser"
       }
     },
