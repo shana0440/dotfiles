@@ -1,6 +1,49 @@
-{ config, pkgs, ... }:
+{ config, lib, pkgs, ... }:
 
 let
+  # Use the upstream CUDA wheel: building ONNX Runtime with CUDA from source
+  # is expensive, and the standard nixpkgs Python package is CPU-only.
+  cuda = pkgs.cudaPackages_12;
+  gpuRuntime = pkgs.python3Packages.buildPythonPackage {
+    pname = "onnxruntime-gpu";
+    version = "1.24.4";
+    format = "wheel";
+    src = pkgs.fetchurl {
+      url = "https://files.pythonhosted.org/packages/be/4e/56d11203d7a35e7d6a5ea735f5fecb8673537038c07323e8d3090a896547/onnxruntime_gpu-1.24.4-cp313-cp313-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl";
+      hash = "sha256-u9qnP5BV+yoXdCXtvtZRoYQ6Yjn51UMOKE9OX2VECjM=";
+    };
+    nativeBuildInputs = [ pkgs.autoPatchelfHook ];
+    buildInputs = [
+      pkgs.stdenv.cc.cc.lib pkgs.zlib
+      cuda.cuda_cudart cuda.libcublas cuda.libcurand cuda.libcufft
+      cuda.cudnn cuda.cuda_nvrtc
+    ];
+    # We only use CUDA, not the optional TensorRT execution provider.
+    postInstall = ''
+      rm -f "$out"/lib/python*/site-packages/onnxruntime/capi/libonnxruntime_providers_tensorrt.so
+    '';
+    autoPatchelfIgnoreMissingDeps = [ "libcuda.so.1" ];
+    pythonRemoveDeps = [ "flatbuffers" "protobuf" "sympy" ];
+    dependencies = with pkgs.python3Packages; [ coloredlogs numpy packaging ];
+    pythonImportsCheck = [ "onnxruntime" ];
+  };
+  outlinePython = pkgs.python3.withPackages (ps: [
+    gpuRuntime ps.numpy ps.pillow ps.opencv4
+  ]);
+  model = pkgs.fetchurl {
+    name = "birefnet-general-lite.onnx";
+    url = "https://github.com/danielgatis/rembg/releases/download/v0.0.0/BiRefNet-general-bb_swin_v1_tiny-epoch_232.onnx";
+    hash = "sha256-VgACQ3b1cqVXhwpesK+x5ZYWNr704eIhMgJUZ9DwMzM=";
+  };
+  outline = pkgs.writeShellApplication {
+    name = "wallpaper-outline";
+    text = ''
+      export WALLPAPER_MODEL=${model}
+      export WALLPAPER_DIR="''${WALLPAPER_DIR:-${config.home.homeDirectory}/Pictures/Wallpapers}"
+      export LD_LIBRARY_PATH="/run/opengl-driver/lib''${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+      exec ${outlinePython}/bin/python3 ${./outline.py} "$@"
+    '';
+  };
   library = pkgs.writeShellApplication {
     name = "wallpaper-library";
     runtimeInputs = [ pkgs.imagemagick ];
@@ -29,5 +72,6 @@ in
   # Hyprland explicitly starts it because this session does not activate
   # graphical-session.target (see hyprland/hyprland.lua).
   services.awww.enable = true;
-  home.packages = [ library setWallpaper check ];
+  home.packages = [ library setWallpaper check ]
+    ++ lib.optionals (pkgs.stdenv.hostPlatform.system == "x86_64-linux") [ outline ];
 }
