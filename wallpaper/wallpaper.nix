@@ -16,11 +16,18 @@ let
       exec ${pkgs.python3}/bin/python3 ${./library.py} set "$@"
     '';
   };
+  check = pkgs.writeShellApplication {
+    name = "wallpaper-check";
+    runtimeInputs = [ pkgs.imagemagick ];
+    text = ''
+      exec ${pkgs.python3}/bin/python3 ${./test_library.py} ${./library.py} "$@"
+    '';
+  };
 in
 {
   # Installs the client and runs the daemon as a user service.
   # Hyprland explicitly starts it because this session does not activate
   # graphical-session.target (see hyprland/hyprland.lua).
   services.awww.enable = true;
-  home.packages = [ library setWallpaper ];
+  home.packages = [ library setWallpaper check ];
 }
