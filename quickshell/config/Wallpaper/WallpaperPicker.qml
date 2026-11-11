@@ -25,7 +25,6 @@ Scope {
         preparing = true
         opened = true
         query.running = true
-        if (!outlineWarm.running) outlineWarm.running = true
     }
     function finishOpening() {
         if (!opened || !preparing || query.running || library.running) return
@@ -89,14 +88,6 @@ Scope {
             if (code !== 0) root.message = libraryError.text || "Could not load wallpapers"
             Qt.callLater(root.finishOpening)
         }
-    }
-    // GPU work happens in a separate process, never on the QML/UI thread.
-    // Cached maps are instant; cold/unsuitable images still switch with a fade.
-    Process {
-        id: outlineWarm
-        command: ["wallpaper-outline", "warm"]
-        stdout: StdioCollector {}
-        stderr: StdioCollector {}
     }
     Process {
         id: setter

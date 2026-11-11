@@ -3,6 +3,5 @@ import "Wallpaper"
 
 ShellRoot {
     Bar {}
-    WallpaperTransition {}
     WallpaperPicker {}
 }
