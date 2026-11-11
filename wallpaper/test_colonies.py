@@ -52,7 +52,7 @@ class ColonyTests(unittest.TestCase):
             path = Path(colonies.take())
             self.assertTrue(path.is_file())
             with Image.open(path) as image:
-            self.assertEqual(image.mode, "RGB")
+                self.assertEqual(image.mode, "RGB")
             with patch.object(colonies, "generate", side_effect=AssertionError("pool should be reused")):
                 self.assertEqual(colonies.take(), str(path))
 

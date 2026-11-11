@@ -25,6 +25,7 @@ Scope {
         preparing = true
         opened = true
         query.running = true
+        if (!colonyWarm.running) colonyWarm.running = true
     }
     function finishOpening() {
         if (!opened || !preparing || query.running || library.running) return
@@ -88,6 +89,11 @@ Scope {
             if (code !== 0) root.message = libraryError.text || "Could not load wallpapers"
             Qt.callLater(root.finishOpening)
         }
+    }
+    // Keeps the transition map pool full, off the UI thread (cheap when full).
+    Process {
+        id: colonyWarm
+        command: ["wallpaper-colonies", "warm"]
     }
     Process {
         id: setter

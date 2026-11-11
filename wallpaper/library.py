@@ -7,6 +7,7 @@ from pathlib import Path
 import subprocess
 import sys
 import tempfile
+import time
 
 EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp"}
 
@@ -53,9 +54,86 @@ def catalog(directory, cache):
     return {"items": items, "directory": str(directory), "errors": errors}
 
 
+def transition_ipc(action, *arguments):
+    config_home = Path(os.environ.get("XDG_CONFIG_HOME", str(Path.home() / ".config")))
+    shell = os.environ.get("WALLPAPER_SHELL", str(config_home / "quickshell"))
+    result = subprocess.run(["quickshell", "--path", shell, "ipc", "call",
+                             "wallpaperTransition", action, *arguments],
+                            check=True, capture_output=True, text=True, timeout=1)
+    return result.stdout.strip()
+
+
+def wait_transition(token, expected, seconds):
+    deadline = time.monotonic() + seconds
+    while time.monotonic() < deadline:
+        state = json.loads(transition_ipc("status", token))
+        if state["phase"] == expected:
+            return
+        if state["phase"] in {"error", "superseded", "idle"}:
+            raise RuntimeError(state.get("error") or "Transition stopped")
+        time.sleep(0.03)
+    raise TimeoutError("Colony transition timed out")
+
+
+def colonies(*arguments):
+    return subprocess.run(["wallpaper-colonies", *arguments], check=True,
+                          capture_output=True, text=True, timeout=10).stdout.strip()
+
+
+def colony_transition(image):
+    """Run the Quickshell colony transition; False means "use a fade instead"."""
+    token = None
+    complete = False
+    try:
+        result = subprocess.run(["awww", "query", "--json"], check=True,
+                                capture_output=True, text=True, timeout=2)
+        outputs = json.loads(result.stdout).get("", [])
+        if not outputs:
+            return False
+        if all(o.get("displaying", {}).get("image") == str(image) for o in outputs):
+            return False
+        colony_map = colonies("take")
+        request = {"image": str(image), "map": colony_map, "ember": colonies("accent", str(image)),
+                   "outputs": outputs}
+        token = transition_ipc("prepare", json.dumps(request))
+        if not token.isdigit():
+            token = None
+            return False
+        wait_transition(token, "ready", 3)
+        # The picker closes before the effect starts. A successful exit still
+        # means the whole hand-over to awww has finished.
+        print("transition-ready", flush=True)
+        time.sleep(0.15)
+        if transition_ipc("go", token) != "ok":
+            raise RuntimeError("Colony transition did not start")
+        wait_transition(token, "done", 8)
+        complete = True
+        # Replace the used map in the background so patterns never repeat.
+        subprocess.Popen(["wallpaper-colonies", "renew", colony_map], stdin=subprocess.DEVNULL,
+                         stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, start_new_session=True)
+        return True
+    except (OSError, ValueError, KeyError, RuntimeError, TimeoutError, subprocess.SubprocessError) as error:
+        print(f"Colony transition unavailable; using fade: {error}", file=sys.stderr)
+        return False
+    finally:
+        if token and not complete:
+            try:
+                transition_ipc("abort", token)
+            except (OSError, subprocess.SubprocessError):
+                pass
+
+
 def set_wallpaper(image):
-    subprocess.run(["awww", "img", str(image), "--transition-type", "fade",
-                    "--transition-duration", "0.35"], check=True, timeout=5)
+    import fcntl
+    cache = Path(os.environ.get("XDG_CACHE_HOME", str(Path.home() / ".cache"))) / "wallpaper"
+    cache.mkdir(parents=True, exist_ok=True)
+    # Serialize complete hand-overs so rapid selections never change awww
+    # underneath a running transition.
+    with (cache / "switch.lock").open("w") as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX)
+        if not colony_transition(image):
+            subprocess.run(["awww", "img", str(image), "--transition-type", "fade",
+                            "--transition-duration", "0.35"], check=True, timeout=5)
 
 
 def main():

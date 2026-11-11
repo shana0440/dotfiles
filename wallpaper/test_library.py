@@ -78,7 +78,9 @@ class LibraryTests(unittest.TestCase):
 
     def test_set_passes_filename_as_single_argument(self):
         image = self.image()
-        with patch.object(sys, "argv", ["library", "set", str(image)]), patch.object(library.subprocess, "run") as run:
+        with patch.object(sys, "argv", ["library", "set", str(image)]), patch.object(
+            library, "colony_transition", return_value=False
+        ), patch.dict(os.environ, {"XDG_CACHE_HOME": str(self.cache)}), patch.object(library.subprocess, "run") as run:
             library.main()
         self.assertEqual(run.call_args.args[0][:3], ["awww", "img", str(image)])
         self.assertTrue(run.call_args.kwargs["check"])
@@ -86,10 +88,62 @@ class LibraryTests(unittest.TestCase):
     def test_set_propagates_daemon_failure(self):
         image = self.image()
         with patch.object(sys, "argv", ["library", "set", str(image)]), patch.object(
+            library, "colony_transition", return_value=False
+        ), patch.dict(os.environ, {"XDG_CACHE_HOME": str(self.cache)}), patch.object(
             library.subprocess, "run", side_effect=subprocess.CalledProcessError(1, "awww")
         ):
             with self.assertRaises(subprocess.CalledProcessError):
                 library.main()
+
+
+    def query(self, displaying):
+        return subprocess.CompletedProcess([], 0, stdout=json.dumps({"": [{"name": "A", "displaying": displaying}]}))
+
+    def test_colony_transition_waits_for_ready_and_done_then_renews_map(self):
+        done = [self.query({"image": "/old.png"}), subprocess.CompletedProcess([], 0, stdout="/pool/map-3.png\n"),
+                subprocess.CompletedProcess([], 0, stdout="#ff8800\n")]
+        with patch.object(library.subprocess, "run", side_effect=done) as run, patch.object(
+            library, "transition_ipc", side_effect=["42", '{"phase":"ready"}', "ok", '{"phase":"done"}']
+        ) as ipc, patch.object(library.subprocess, "Popen") as popen, patch.object(library.time, "sleep"):
+            self.assertTrue(library.colony_transition(self.source / "new.png"))
+        self.assertEqual([c.args[0] for c in ipc.call_args_list], ["prepare", "status", "go", "status"])
+        request = json.loads(ipc.call_args_list[0].args[1])
+        self.assertEqual((request["map"], request["ember"]), ("/pool/map-3.png", "#ff8800"))
+        self.assertEqual(popen.call_args.args[0], ["wallpaper-colonies", "renew", "/pool/map-3.png"])
+        self.assertEqual(run.call_count, 3)
+
+    def test_solid_colour_start_still_uses_colonies(self):
+        done = [self.query({"color": [0, 0, 0]}), subprocess.CompletedProcess([], 0, stdout="/m.png"),
+                subprocess.CompletedProcess([], 0, stdout="#ffffff")]
+        with patch.object(library.subprocess, "run", side_effect=done), patch.object(
+            library, "transition_ipc", side_effect=["1", '{"phase":"ready"}', "ok", '{"phase":"done"}']
+        ), patch.object(library.subprocess, "Popen"), patch.object(library.time, "sleep"):
+            self.assertTrue(library.colony_transition(self.source / "new.png"))
+
+    def test_renderer_failure_is_aborted_and_falls_back(self):
+        done = [self.query({"image": "/old.png"}), subprocess.CompletedProcess([], 0, stdout="/m.png"),
+                subprocess.CompletedProcess([], 0, stdout="#ffffff")]
+        with patch.object(library.subprocess, "run", side_effect=done), patch.object(
+            library, "transition_ipc", side_effect=["42", '{"phase":"error","error":"bad shader"}', ""]
+        ) as ipc, patch.object(library.subprocess, "Popen") as popen:
+            self.assertFalse(library.colony_transition(self.source / "new.png"))
+        self.assertEqual(ipc.call_args.args, ("abort", "42"))
+        popen.assert_not_called()
+
+    def test_missing_shell_falls_back_to_fade(self):
+        done = [self.query({"image": "/old.png"}), subprocess.CompletedProcess([], 0, stdout="/m.png"),
+                subprocess.CompletedProcess([], 0, stdout="#ffffff")]
+        with patch.object(library.subprocess, "run", side_effect=done), patch.object(
+            library, "transition_ipc", side_effect=subprocess.CalledProcessError(255, "quickshell")
+        ):
+            self.assertFalse(library.colony_transition(self.source / "new.png"))
+
+    def test_successful_transition_does_not_also_fade(self):
+        with patch.object(library, "colony_transition", return_value=True), patch.dict(
+            os.environ, {"XDG_CACHE_HOME": str(self.cache)}
+        ), patch.object(library.subprocess, "run") as run:
+            library.set_wallpaper(self.source / "new.png")
+        run.assert_not_called()
 
 
 if __name__ == "__main__":

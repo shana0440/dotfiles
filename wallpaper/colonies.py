@@ -18,7 +18,6 @@ import json
 import os
 from pathlib import Path
 import random
-import subprocess
 import sys
 import tempfile
 import time
@@ -167,13 +166,6 @@ def take():
     return str(_slot(index))
 
 
-def renew_later(path):
-    """Replace a used map in a detached process, so patterns never repeat."""
-    subprocess.Popen([sys.executable, os.path.abspath(__file__), "renew", path],
-                     stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,
-                     stderr=subprocess.DEVNULL, start_new_session=True)
-
-
 def accent(image_path):
     """The image's most vivid colour, lifted so a burning edge reads on dark art."""
     import colorsys
@@ -200,9 +192,11 @@ def main():
     elif command == "take":
         print(take())
     elif command == "renew" and len(sys.argv) == 3:
-        time.sleep(3)                 # let the renderer finish with this file
-        index = int(Path(sys.argv[2]).stem.split("-")[1])
-        generate(index)
+        # Only pool slots are ever regenerated, whatever path is passed in.
+        path = Path(sys.argv[2])
+        if path.parent == pool_dir() and path.stem.startswith("map-"):
+            time.sleep(3)             # let the renderer release this file first
+            generate(int(path.stem.split("-")[1]) % POOL)
     elif command == "accent" and len(sys.argv) == 3:
         print(accent(sys.argv[2]))
     elif command == "time":
@@ -210,7 +204,7 @@ def main():
         make_map(1)
         print(json.dumps({"seconds": round(time.monotonic() - start, 3)}))
     else:
-        raise SystemExit("Usage: wallpaper-colonies warm|take|accent IMAGE|time")
+        raise SystemExit("Usage: wallpaper-colonies warm|take|renew MAP|accent IMAGE|time")
 
 
 if __name__ == "__main__":
