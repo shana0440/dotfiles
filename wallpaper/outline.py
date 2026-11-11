@@ -14,7 +14,7 @@ import sys
 import tempfile
 import time
 
-VERSION = "outline-v2-birefnet-lite-fp16-cuda512-173d6359"
+VERSION = "outline-v3-birefnet-lite-fp16-cuda512-173d6359"
 EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp"}
 SESSION = None
 
@@ -207,7 +207,7 @@ def warm(directory):
                 except Exception as error:
                     print(f"{image.name}: {error}", file=sys.stderr, flush=True)
                     # A CUDA failure must not retry the model for every image.
-                    if SESSION is None:
+                    if SESSION is None or type(error).__module__.startswith("onnxruntime"):
                         raise
 
 

@@ -95,6 +95,44 @@ class LibraryTests(unittest.TestCase):
             with self.assertRaises(subprocess.CalledProcessError):
                 library.main()
 
+    def test_cold_outline_cache_uses_fade_without_ipc(self):
+        response = subprocess.CompletedProcess([], 0, stdout='{"ready":false}')
+        with patch.object(library.subprocess, "run", return_value=response), patch.object(library, "transition_ipc") as ipc:
+            self.assertFalse(library.outline_transition(self.source / "new.png"))
+        ipc.assert_not_called()
+
+    def test_prepared_outline_waits_for_ready_and_completion(self):
+        field = subprocess.CompletedProcess([], 0, stdout='{"ready":true,"map":"/tmp/map.png"}')
+        outputs = subprocess.CompletedProcess([], 0, stdout=json.dumps({"": [{"name": "screen", "displaying": {"image": "/old.png"}}]}))
+        with patch.object(library.subprocess, "run", side_effect=[field, outputs]), patch.object(
+            library, "transition_ipc", side_effect=["42", '{"phase":"ready"}', "ok", '{"phase":"done"}']
+        ) as ipc, patch.object(library.time, "sleep"):
+            self.assertTrue(library.outline_transition(self.source / "new.png"))
+        self.assertEqual([c.args[0] for c in ipc.call_args_list], ["prepare", "status", "go", "status"])
+
+    def test_failed_renderer_is_aborted_before_fallback(self):
+        field = subprocess.CompletedProcess([], 0, stdout='{"ready":true,"map":"/tmp/map.png"}')
+        outputs = subprocess.CompletedProcess([], 0, stdout=json.dumps({"": [{"displaying": {"image": "/old.png"}}]}))
+        with patch.object(library.subprocess, "run", side_effect=[field, outputs]), patch.object(
+            library, "transition_ipc", side_effect=["42", '{"phase":"error","error":"bad shader"}', ""]
+        ) as ipc:
+            self.assertFalse(library.outline_transition(self.source / "new.png"))
+        self.assertEqual(ipc.call_args.args, ("abort", "42"))
+
+    def test_first_wallpaper_solid_background_uses_fade(self):
+        field = subprocess.CompletedProcess([], 0, stdout='{"ready":true,"map":"/tmp/map.png"}')
+        outputs = subprocess.CompletedProcess([], 0, stdout=json.dumps({"": [{"displaying": {"color": [0, 0, 0]}}]}))
+        with patch.object(library.subprocess, "run", side_effect=[field, outputs]), patch.object(library, "transition_ipc") as ipc:
+            self.assertFalse(library.outline_transition(self.source / "new.png"))
+        ipc.assert_not_called()
+
+    def test_successful_outline_does_not_apply_a_second_fade(self):
+        with patch.object(library, "outline_transition", return_value=True), patch.dict(
+            os.environ, {"XDG_CACHE_HOME": str(self.cache)}
+        ), patch.object(library.subprocess, "run") as run:
+            library.set_wallpaper(self.source / "new.png")
+        run.assert_not_called()
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -109,7 +109,11 @@ def convert(source, target):
     # ORT's CUDA GridSample kernel accepts FP32, not FP16; keep only these
     # nodes in FP32 so sampling does not silently get assigned to the CPU.
     model = float16.convert_float_to_float16(model, keep_io_types=True,
-        op_block_list=[*float16.DEFAULT_OP_BLOCK_LIST, "GridSample"])
+        op_block_list=[*float16.DEFAULT_OP_BLOCK_LIST, "GridSample"],
+        # Keep pixel coordinates in FP32 too: rounding normalized coordinates
+        # to FP16 can move sampling locations by a quarter pixel at 512px.
+        node_block_list=[n.name for n in model.graph.node
+                         if n.name.startswith("outline_deform_") and not n.name.endswith("_conv")])
     # This dynamic export contains explicit float Casts whose attributes are
     # not updated by onnxconverter-common alongside their value_info types.
     types = {v.name: v.type.tensor_type.elem_type for v in

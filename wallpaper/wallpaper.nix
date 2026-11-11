@@ -3,6 +3,7 @@
 let
   # Use the upstream CUDA wheel: building ONNX Runtime with CUDA from source
   # is expensive, and the standard nixpkgs Python package is CPU-only.
+  cudaSupported = pkgs.stdenv.hostPlatform.system == "x86_64-linux";
   cuda = pkgs.cudaPackages_12;
   gpuRuntime = pkgs.python3Packages.buildPythonPackage {
     pname = "onnxruntime-gpu";
@@ -26,6 +27,7 @@ let
     pythonRemoveDeps = [ "flatbuffers" "protobuf" "sympy" ];
     dependencies = with pkgs.python3Packages; [ coloredlogs numpy packaging ];
     pythonImportsCheck = [ "onnxruntime" ];
+    meta.license = lib.licenses.mit;
   };
   outlinePython = pkgs.python3.withPackages (ps: [
     gpuRuntime ps.numpy ps.pillow ps.opencv4
@@ -42,11 +44,14 @@ let
   '';
   outline = pkgs.writeShellApplication {
     name = "wallpaper-outline";
-    text = ''
+    text = if cudaSupported then ''
       export WALLPAPER_MODEL=${halfModel}
       export WALLPAPER_DIR="''${WALLPAPER_DIR:-${config.home.homeDirectory}/Pictures/Wallpapers}"
       export LD_LIBRARY_PATH="/run/opengl-driver/lib''${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
       exec ${outlinePython}/bin/python3 ${./outline.py} "$@"
+    '' else ''
+      echo "Wallpaper outline preprocessing requires x86_64 Linux and NVIDIA CUDA; using a fade." >&2
+      exit 1
     '';
   };
   shader = pkgs.runCommand "wallpaper-outline.frag.qsb" {
@@ -64,10 +69,16 @@ let
   };
   setWallpaper = pkgs.writeShellApplication {
     name = "wallpaper-set";
-    runtimeInputs = [ pkgs.awww pkgs.quickshell ]
-      ++ lib.optionals (pkgs.stdenv.hostPlatform.system == "x86_64-linux") [ outline ];
+    runtimeInputs = [ pkgs.awww pkgs.quickshell outline ];
     text = ''
       exec ${pkgs.python3}/bin/python3 ${./library.py} set "$@"
+    '';
+  };
+  outlineCheck = pkgs.writeShellApplication {
+    name = "wallpaper-outline-check";
+    text = ''
+      export LD_LIBRARY_PATH="/run/opengl-driver/lib''${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+      exec ${(pkgs.python3.withPackages (ps: [ gpuRuntime ps.numpy ps.pillow ps.opencv4 ps.onnx ps.onnxconverter-common ]))}/bin/python3 ${./test_outline.py} ${./outline.py} ${./convert_model.py} "$@"
     '';
   };
   check = pkgs.writeShellApplication {
@@ -84,6 +95,7 @@ in
   # graphical-session.target (see hyprland/hyprland.lua).
   services.awww.enable = true;
   xdg.configFile."wallpaper/outline.frag.qsb".source = shader;
-  home.packages = [ library setWallpaper check ]
-    ++ lib.optionals (pkgs.stdenv.hostPlatform.system == "x86_64-linux") [ outline ];
+  xdg.dataFile."wallpaper/BiRefNet-LICENSE".source = ./BiRefNet-LICENSE;
+  home.packages = [ library setWallpaper check outline ]
+    ++ lib.optionals cudaSupported [ outlineCheck ];
 }
