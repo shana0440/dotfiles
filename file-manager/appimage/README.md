@@ -29,7 +29,7 @@ launcher entries are left alone. Use one version of each app in the directory to
 avoid duplicate names. HinaCode's old hard-coded Downloads launcher is replaced by
 this integration.
 
-Run the unit tests with `python3 -m unittest discover -s appimage -p 'test_*.py'`.
+Run the unit tests with `python3 -m unittest discover -s file-manager/appimage -p 'test_*.py'`.
 
 ## Scaling
 

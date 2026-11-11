@@ -11,6 +11,7 @@ Standalone Home Manager for kwguo on Linux, macOS, and WSL, using release 26.05.
 - `hyprland/`: native Lua configuration, linked on desktop Linux only (not WSL)
 - `kitty/`: Kitty package and native configuration on Linux/macOS (not WSL)
 - `programs.nix`: portable command-line tools and direnv/nix-direnv
+- `file-manager/`: exports `nixos` (AppImage binfmt) and `homeManager` (Thunar, File Roller, [AppImage runner](file-manager/appimage/README.md)) modules, and sets them as the folder, archive, and AppImage handlers
 - `waydroid/`: Home Manager-managed XAPK double-click installer and tests (desktop Linux); the Android runtime stays in `nixos/waydroid.nix`
 - [`agent-workspace/`](agent-workspace/README.md): clean, on-demand X11 agent desktops, without a personal desktop shell (desktop Linux only)
 - `shell/shell.nix`: shell entry point, importing `shell/fish.nix` and retaining Bash as a fallback
