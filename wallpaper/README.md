@@ -8,7 +8,7 @@ Python, ImageMagick, and awww. The picker uses the existing Quickshell installat
 Put JPG/JPEG, PNG, or WebP images in `~/Pictures/Wallpapers` (capital W).
 Subdirectories are not scanned. The directory is not created or populated automatically.
 
-- **Super + W**: toggle the picker on the focused monitor.
+- **Super + Shift + W**: toggle the picker on the focused monitor.
 - **Left / Right**, mouse wheel, or click a card: select a wallpaper.
 - **Enter** or double-click a card: apply to all monitors with a short fade.
 - **Escape** or click outside: cancel without changing the wallpaper.

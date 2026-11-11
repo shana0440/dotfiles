@@ -366,7 +366,7 @@ hl.on("window.close", function(event)
     end
 end)
 hl.bind(mainMod .. " + SPACE", hl.dsp.exec_cmd(menu))
-hl.bind(mainMod .. " + W", hl.dsp.exec_cmd("quickshell --path ~/.config/quickshell ipc call wallpaper toggle"))
+hl.bind(mainMod .. " + SHIFT + W", hl.dsp.exec_cmd("quickshell --path ~/.config/quickshell ipc call wallpaper toggle"))
 
 -- Move focus with mainMod + arrow keys
 hl.bind(mainMod .. " + left",  hl.dsp.focus({ direction = "left" }))
