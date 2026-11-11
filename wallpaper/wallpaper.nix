@@ -31,14 +31,19 @@ let
     gpuRuntime ps.numpy ps.pillow ps.opencv4
   ]);
   model = pkgs.fetchurl {
-    name = "birefnet-general-lite.onnx";
-    url = "https://github.com/danielgatis/rembg/releases/download/v0.0.0/BiRefNet-general-bb_swin_v1_tiny-epoch_232.onnx";
-    hash = "sha256-VgACQ3b1cqVXhwpesK+x5ZYWNr704eIhMgJUZ9DwMzM=";
+    name = "birefnet-lite-dynamic.onnx";
+    url = "https://huggingface.co/senty-au/BiRefNet_lite-ONNX-dynamic/resolve/173d635935b93839608b9b9039da8d1d212471e9/onnx/model.onnx";
+    hash = "sha256-Hg2kLw/eAQ4y6Ti604hFfs7+NYBv3p2SNCGZeGGuk5E=";
   };
+  halfModel = pkgs.runCommand "birefnet-general-lite-fp16.onnx" {
+    nativeBuildInputs = [ (pkgs.python3.withPackages (ps: [ ps.onnx ps.onnxconverter-common ])) ];
+  } ''
+    python3 ${./convert_model.py} ${model} "$out"
+  '';
   outline = pkgs.writeShellApplication {
     name = "wallpaper-outline";
     text = ''
-      export WALLPAPER_MODEL=${model}
+      export WALLPAPER_MODEL=${halfModel}
       export WALLPAPER_DIR="''${WALLPAPER_DIR:-${config.home.homeDirectory}/Pictures/Wallpapers}"
       export LD_LIBRARY_PATH="/run/opengl-driver/lib''${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
       exec ${outlinePython}/bin/python3 ${./outline.py} "$@"
