@@ -49,6 +49,11 @@ let
       exec ${outlinePython}/bin/python3 ${./outline.py} "$@"
     '';
   };
+  shader = pkgs.runCommand "wallpaper-outline.frag.qsb" {
+    nativeBuildInputs = [ pkgs.qt6.qtshadertools ];
+  } ''
+    ${pkgs.qt6.qtshadertools}/bin/qsb --glsl "100 es,120,150" --hlsl 50 --msl 12 -o "$out" ${./outline.frag}
+  '';
   library = pkgs.writeShellApplication {
     name = "wallpaper-library";
     runtimeInputs = [ pkgs.imagemagick ];
@@ -77,6 +82,7 @@ in
   # Hyprland explicitly starts it because this session does not activate
   # graphical-session.target (see hyprland/hyprland.lua).
   services.awww.enable = true;
+  xdg.configFile."wallpaper/outline.frag.qsb".source = shader;
   home.packages = [ library setWallpaper check ]
     ++ lib.optionals (pkgs.stdenv.hostPlatform.system == "x86_64-linux") [ outline ];
 }
