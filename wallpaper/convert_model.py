@@ -106,7 +106,10 @@ def convert(source, target):
                                        name=prefix + "conv", kernel_shape=[1, 1]))
     del model.graph.node[:]
     model.graph.node.extend(output_nodes)
-    model = float16.convert_float_to_float16(model, keep_io_types=True)
+    # ORT's CUDA GridSample kernel accepts FP32, not FP16; keep only these
+    # nodes in FP32 so sampling does not silently get assigned to the CPU.
+    model = float16.convert_float_to_float16(model, keep_io_types=True,
+        op_block_list=[*float16.DEFAULT_OP_BLOCK_LIST, "GridSample"])
     # This dynamic export contains explicit float Casts whose attributes are
     # not updated by onnxconverter-common alongside their value_info types.
     types = {v.name: v.type.tensor_type.elem_type for v in

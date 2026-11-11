@@ -14,7 +14,7 @@ import sys
 import tempfile
 import time
 
-VERSION = "outline-v1-birefnet-lite-fp16-512-173d6359"
+VERSION = "outline-v2-birefnet-lite-fp16-cuda512-173d6359"
 EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp"}
 SESSION = None
 
