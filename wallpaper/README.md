@@ -16,8 +16,8 @@ Subdirectories are not scanned. The directory is not created or populated automa
 Cards use parallelogram frames with clipped, upright artwork: only the frame
 is sheared; an inverse transform keeps the image itself undistorted.
 
-Opening refreshes thumbnails asynchronously and selects the wallpaper currently
-shown by awww. Invalid images are skipped with a warning; application errors keep
+Opening refreshes thumbnails asynchronously and centers the wallpaper currently
+shown by awww before fading in, without an initial scroll from the first image. Invalid images are skipped with a warning; application errors keep
 the picker open. The picker does not change theme colours or run AI segmentation.
 
 Commands:

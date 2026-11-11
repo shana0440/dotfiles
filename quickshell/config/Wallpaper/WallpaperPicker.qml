@@ -8,24 +8,42 @@ import "../Theme" as Theme
 Scope {
     id: root
     property bool opened: false
+    property bool preparing: false
     property var items: []
     property string directory: ""
     property string message: ""
     property string currentPath: ""
     property string pendingPath: ""
     property var chosenScreen: Quickshell.screens[0] ?? null
-    readonly property bool busy: library.running || setter.running
+    readonly property bool busy: preparing || query.running || library.running || setter.running
 
     function show() {
         if (setter.running) return
         chosenScreen = Quickshell.screens.find(s => s.name === Hyprland.focusedMonitor?.name)
             ?? Quickshell.screens[0] ?? null
         message = ""
+        preparing = true
         opened = true
         query.running = true
-        stage.forceActiveFocus()
     }
-    function close() { if (!setter.running) opened = false }
+    function finishOpening() {
+        if (!opened || !preparing || query.running || library.running) return
+        const index = items.findIndex(i => i.path === currentPath)
+        carousel.cancelFlick()
+        carousel.currentIndex = items.length ? Math.max(0, index) : -1
+        carousel.forceLayout()
+        if (carousel.currentIndex >= 0)
+            carousel.positionViewAtIndex(carousel.currentIndex, ListView.Center)
+        // Keep the initial positioning out of the visible fade-in frame.
+        Qt.callLater(() => {
+            if (!opened || query.running || library.running) return
+            preparing = false
+            stage.forceActiveFocus()
+        })
+    }
+    function close() {
+        if (!setter.running) { opened = false; preparing = false }
+    }
     function move(step) {
         if (items.length && !busy)
             carousel.currentIndex = Math.max(0, Math.min(items.length - 1, carousel.currentIndex + step))
@@ -61,14 +79,15 @@ Scope {
                     const result = JSON.parse(text)
                     root.items = result.items
                     root.directory = result.directory
-                    const index = root.items.findIndex(i => i.path === root.currentPath)
-                    carousel.currentIndex = index >= 0 ? index : 0
                     root.message = result.errors.length ? result.errors.length + " image(s) could not be loaded" : ""
                 } catch (_) { root.message = "Could not read the wallpaper library" }
             }
         }
         stderr: StdioCollector { id: libraryError }
-        onExited: (code) => { if (code !== 0) root.message = libraryError.text || "Could not load wallpapers" }
+        onExited: (code) => {
+            if (code !== 0) root.message = libraryError.text || "Could not load wallpapers"
+            Qt.callLater(root.finishOpening)
+        }
     }
     Process {
         id: setter
@@ -112,7 +131,7 @@ Scope {
             id: stage
             anchors.fill: parent
             focus: true
-            opacity: root.opened ? 1 : 0
+            opacity: root.opened && !root.preparing ? 1 : 0
             Behavior on opacity { NumberAnimation { duration: 140; easing.type: Easing.OutCubic } }
             Keys.onEscapePressed: root.close()
             Keys.onLeftPressed: root.move(-1)
@@ -153,7 +172,7 @@ Scope {
                     preferredHighlightBegin: (width - slotWidth) / 2
                     preferredHighlightEnd: (width + slotWidth) / 2
                     highlightRangeMode: ListView.StrictlyEnforceRange
-                    highlightMoveDuration: 220
+                    highlightMoveDuration: root.preparing ? 0 : 220
                     snapMode: ListView.SnapToItem
                     boundsBehavior: Flickable.StopAtBounds
                     interactive: !root.busy
