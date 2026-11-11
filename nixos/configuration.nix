@@ -9,7 +9,6 @@
     (import ../file-manager/file-manager.nix).nixos
     ./desktop.nix
     ./iphone-webcam.nix
-    ./waydroid.nix
     ./user.nix
     ./nas.nix
   ];

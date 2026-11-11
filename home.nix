@@ -21,7 +21,6 @@
     ./gtk/gtk.nix
     ./vicinae/vicinae.nix
     (import ./file-manager/file-manager.nix).homeManager
-    ./waydroid/waydroid.nix
     ./hyprland/hyprland.nix
     ./wallpaper/wallpaper.nix
     ./quickshell/quickshell.nix
