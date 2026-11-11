@@ -23,6 +23,7 @@
     ./thunar/thunar.nix
     ./waydroid/waydroid.nix
     ./hyprland/hyprland.nix
+    ./wallpaper/wallpaper.nix
     ./quickshell/quickshell.nix
     ./screen-capture/screen-capture.nix
     ./agent-workspace/agent-workspace.nix

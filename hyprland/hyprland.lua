@@ -58,8 +58,8 @@ hl.on("hyprland.start", function ()
     hl.exec_cmd("vicinae server")
     hl.exec_cmd("quickshell")
     hl.exec_cmd("screen-capture --background")
-    -- This session does not start graphical-session.target; start the IME explicitly.
-    hl.exec_cmd("systemctl --user import-environment WAYLAND_DISPLAY DISPLAY XDG_CURRENT_DESKTOP && systemctl --user restart fcitx5-daemon.service")
+    -- This session does not start graphical-session.target; start these services explicitly.
+    hl.exec_cmd("systemctl --user import-environment WAYLAND_DISPLAY DISPLAY XDG_CURRENT_DESKTOP && systemctl --user restart fcitx5-daemon.service awww.service")
 end)
 
 -- Autostart necessary processes (like notifications daemons, status bars, etc.)
@@ -366,6 +366,7 @@ hl.on("window.close", function(event)
     end
 end)
 hl.bind(mainMod .. " + SPACE", hl.dsp.exec_cmd(menu))
+hl.bind(mainMod .. " + SHIFT + W", hl.dsp.exec_cmd("quickshell --path ~/.config/quickshell ipc call wallpaper toggle"))
 
 -- Move focus with mainMod + arrow keys
 hl.bind(mainMod .. " + left",  hl.dsp.focus({ direction = "left" }))
