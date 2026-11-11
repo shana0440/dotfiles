@@ -2,18 +2,18 @@
   description = "kwguo's standalone Home Manager configuration";
 
   inputs = {
-    # Upstream has no flake. Pin release archives as non-flake inputs.
-    # Update all three release URLs together, then run nix flake update.
+    # Upstream has no flake. Track latest release archives as non-flake inputs.
+    # flake.lock pins their content hashes; make update refreshes them.
     pi-bolt-linux-x64 = {
-      url = "https://github.com/opensec-git/Pi-Bolt/releases/download/bolt-v1.2.0/pi-bolt-linux-x64-baseline.tar.gz";
+      url = "https://github.com/opensec-git/Pi-Bolt/releases/latest/download/pi-bolt-linux-x64-baseline.tar.gz";
       flake = false;
     };
     pi-bolt-linux-arm64 = {
-      url = "https://github.com/opensec-git/Pi-Bolt/releases/download/bolt-v1.2.0/pi-bolt-linux-arm64.tar.gz";
+      url = "https://github.com/opensec-git/Pi-Bolt/releases/latest/download/pi-bolt-linux-arm64.tar.gz";
       flake = false;
     };
     pi-bolt-darwin-arm64 = {
-      url = "https://github.com/opensec-git/Pi-Bolt/releases/download/bolt-v1.2.0/pi-bolt-darwin-arm64.tar.gz";
+      url = "https://github.com/opensec-git/Pi-Bolt/releases/latest/download/pi-bolt-darwin-arm64.tar.gz";
       flake = false;
     };
     zen-browser = {

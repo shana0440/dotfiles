@@ -302,15 +302,20 @@ to remove their system-level declarations. Neither step is applied automatically
 
 ```sh
 cd ~/dotfiles
-nix flake update
+make update
 make home
 ```
 
+`make update` refreshes all flake inputs (including nixpkgs, Home Manager,
+Zen Browser, and the latest Pi-Bolt release), recording their pins in `flake.lock`. `make home` applies the
+updated packages. Packages from nixpkgs update to the versions available in the
+configured channel; this does not change pinned channel or release branches.
+
 Keep `home.stateVersion` unchanged when updating packages.
 
-Shared coding agents are managed in `agents.nix`. Pi uses the native
-[Pi-Bolt package](pi-bolt/README.md); its release URLs are pinned separately in
-`flake.nix` (see that guide to update the version).
+Shared coding agents are managed in `agents.nix`. Pi uses the native Pi-Bolt
+package; its latest-release archives are pinned in `flake.lock` and refreshed
+by `make update`.
 
 ## NixOS system configuration
 
