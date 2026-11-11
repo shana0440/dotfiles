@@ -295,11 +295,6 @@ end
 for _, key in ipairs({ "C", "V", "X", "A", "Z", "F", "S", "O", "L", "T", "W", "R" }) do
     hl.bind(mainMod .. " + " .. key, function()
         local window = hl.get_active_window()
-        -- Let Kitty handle native copy/paste, without synthetic key events
-        -- that can leave its key-repeat state stuck.
-        if window and window.class == "kitty" and (key == "C" or key == "V") then
-            return { ok = false }
-        end
         return sendShortcut("CTRL", key)
     end, { auto_consuming = true })
 end
@@ -310,9 +305,7 @@ end
 hl.bind(mainMod .. " + SHIFT + S", hl.dsp.exec_cmd("screen-capture --no-stop-toolbar"))
 
 -- Example binds, see https://wiki.hypr.land/Configuring/Basics/Binds/ for more
-hl.bind(mainMod .. " + Q", hl.dsp.exec_cmd(terminal))
-local closeWindowBind = hl.bind(mainMod .. " + SHIFT + C", hl.dsp.window.close())
--- closeWindowBind:set_enabled(false)
+hl.bind(mainMod .. " + Q", hl.dsp.window.close())
 hl.bind(mainMod .. " + M", hl.dsp.exec_cmd("command -v hyprshutdown >/dev/null 2>&1 && hyprshutdown || hyprctl dispatch 'hl.dsp.exit()'"))
 hl.bind(mainMod .. " + E", hl.dsp.exec_cmd(fileManager))
 -- Fullscreen on a floating window, restoring its previous layout on exit.
@@ -373,8 +366,6 @@ hl.on("window.close", function(event)
     end
 end)
 hl.bind(mainMod .. " + SPACE", hl.dsp.exec_cmd(menu))
-hl.bind(mainMod .. " + P", hl.dsp.window.pseudo())
-hl.bind(mainMod .. " + J", hl.dsp.layout("togglesplit"))    -- dwindle only
 
 -- Move focus with mainMod + arrow keys
 hl.bind(mainMod .. " + left",  hl.dsp.focus({ direction = "left" }))
