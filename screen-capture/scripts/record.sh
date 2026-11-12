@@ -29,6 +29,9 @@ recording_mode() {
 # detached: capture must work with no Quickshell running.
 notify_bar() {
     {
+        # A crash-restarted Quickshell exports __QUICKSHELL_CRASH_* to its
+        # children; an IPC client inheriting them aborts, so drop them.
+        unset "${!__QUICKSHELL_CRASH_@}"
         timeout 2s quickshell --path "${XDG_CONFIG_HOME:-$HOME/.config}/quickshell" \
             ipc call screenCapture changed
     } >/dev/null 2>&1 &

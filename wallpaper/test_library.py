@@ -130,6 +130,16 @@ class LibraryTests(unittest.TestCase):
         self.assertEqual(ipc.call_args.args, ("abort", "42"))
         popen.assert_not_called()
 
+    def test_ipc_client_does_not_inherit_quickshell_crash_state(self):
+        crashed = {"__QUICKSHELL_CRASH_INFO_FD": "85", "__QUICKSHELL_CRASH_SIGNAL": "11", "KEEP": "1"}
+        with patch.dict(os.environ, crashed), patch.object(
+            library.subprocess, "run", return_value=subprocess.CompletedProcess([], 0, stdout="7\n")
+        ) as run:
+            self.assertEqual(library.transition_ipc("status", "7"), "7")
+        env = run.call_args.kwargs["env"]
+        self.assertEqual(env["KEEP"], "1")
+        self.assertFalse([k for k in env if k.startswith("__QUICKSHELL_CRASH_")])
+
     def test_missing_shell_falls_back_to_fade(self):
         done = [self.query({"image": "/old.png"}), subprocess.CompletedProcess([], 0, stdout="/m.png"),
                 subprocess.CompletedProcess([], 0, stdout="#ffffff")]

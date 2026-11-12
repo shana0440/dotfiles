@@ -54,12 +54,20 @@ def catalog(directory, cache):
     return {"items": items, "directory": str(directory), "errors": errors}
 
 
+def ipc_environment():
+    # A Quickshell restarted after a crash exports __QUICKSHELL_CRASH_* to its
+    # children (e.g. the picker running wallpaper-set). An IPC client that
+    # inherits them treats itself as the crash relaunch and aborts.
+    return {k: v for k, v in os.environ.items() if not k.startswith("__QUICKSHELL_CRASH_")}
+
+
 def transition_ipc(action, *arguments):
     config_home = Path(os.environ.get("XDG_CONFIG_HOME", str(Path.home() / ".config")))
     shell = os.environ.get("WALLPAPER_SHELL", str(config_home / "quickshell"))
     result = subprocess.run(["quickshell", "--path", shell, "ipc", "call",
                              "wallpaperTransition", action, *arguments],
-                            check=True, capture_output=True, text=True, timeout=1)
+                            check=True, capture_output=True, text=True, timeout=1,
+                            env=ipc_environment())
     return result.stdout.strip()
 
 
