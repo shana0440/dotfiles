@@ -1,6 +1,7 @@
 import QtQuick
 import "../Components" as Components
 import "../Theme" as Theme
+import "../Services" as Services
 
 Rectangle {
     id: root
@@ -107,8 +108,8 @@ Rectangle {
                     activeFocusOnTab: true
                     Accessible.role: Accessible.Button
                     Accessible.name: modelData.text
-                    Keys.onReturnPressed: modelData.invoke()
-                    Keys.onSpacePressed: modelData.invoke()
+                    Keys.onReturnPressed: Services.Notifications.invokeAction(root.notification, modelData)
+                    Keys.onSpacePressed: Services.Notifications.invokeAction(root.notification, modelData)
 
                     Text {
                         id: actionText
@@ -124,7 +125,7 @@ Rectangle {
                     MouseArea {
                         anchors.fill: parent
                         cursorShape: Qt.PointingHandCursor
-                        onClicked: actionButton.modelData.invoke()
+                        onClicked: Services.Notifications.invokeAction(root.notification, actionButton.modelData)
                     }
                 }
             }
