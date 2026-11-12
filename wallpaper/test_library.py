@@ -130,6 +130,16 @@ class LibraryTests(unittest.TestCase):
         self.assertEqual(ipc.call_args.args, ("abort", "42"))
         popen.assert_not_called()
 
+    def test_change_already_heading_there_is_done_without_fade(self):
+        done = [self.query({"image": "/old.png"}), subprocess.CompletedProcess([], 0, stdout="/m.png"),
+                subprocess.CompletedProcess([], 0, stdout="#ffffff")]
+        with patch.object(library.subprocess, "run", side_effect=done), patch.object(
+            library, "transition_ipc", side_effect=["same"]
+        ) as ipc, patch.object(library.subprocess, "Popen") as popen:
+            self.assertTrue(library.colony_transition(self.source / "new.png"))
+        self.assertEqual(ipc.call_count, 1)     # no go, no abort
+        popen.assert_not_called()
+
     def test_ipc_client_does_not_inherit_quickshell_crash_state(self):
         crashed = {"__QUICKSHELL_CRASH_INFO_FD": "85", "__QUICKSHELL_CRASH_SIGNAL": "11", "KEEP": "1"}
         with patch.dict(os.environ, crashed), patch.object(

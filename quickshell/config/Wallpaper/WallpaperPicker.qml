@@ -13,19 +13,19 @@ Scope {
     property string directory: ""
     property string message: ""
     property string currentPath: ""
-    // A transition runs runningPath; one more choice may wait in queuedPath
-    // (the newest replaces it) and starts when the transition finishes.
-    property string runningPath: ""
-    property string queuedPath: ""
-    // Only the change applied from an idle picker closes it when it starts.
-    property bool closeOnReady: false
+    // One wallpaper-set per choice, oldest first. Changes overlap on screen:
+    // each starts at once over the ones still running.
+    property var setters: []
+    property int started: 0
+    property int finishedOrder: 0
     property var chosenScreen: Quickshell.screens[0] ?? null
     readonly property bool busy: preparing || query.running || library.running
     // The wallpaper the screen ends up on once all requested changes finish.
-    readonly property string targetPath: queuedPath || (setter.running ? runningPath : currentPath)
+    readonly property string targetPath: setters.length ? setters[setters.length - 1].path : currentPath
 
     function show() {
-        closeOnReady = false
+        // Reopened by hand: a change still starting must not close it again.
+        for (const setter of setters) setter.closeOnReady = false
         chosenScreen = Quickshell.screens.find(s => s.name === Hyprland.focusedMonitor?.name)
             ?? Quickshell.screens[0] ?? null
         message = ""
@@ -61,24 +61,28 @@ Scope {
         if (busy || carousel.currentIndex < 0 || !items.length) return
         const path = items[carousel.currentIndex].path
         message = ""
-        if (setter.running) {
-            // Choosing the wallpaper already on its way cancels the queue.
-            queuedPath = path === runningPath ? "" : path
-            close()
-            return
-        }
-        if (path === currentPath) { close(); return }
-        closeOnReady = true
-        start(path)
-    }
-    function start(path) {
-        runningPath = path
+        if (path === targetPath) { close(); return }
+        // Closes the picker once its transition is about to start.
+        const setter = setterComponent.createObject(root, { path: path, order: ++started })
+        setters = setters.concat([setter])
         setter.running = true
     }
+    function setterExited(setter, code, error) {
+        setters = setters.filter(s => s !== setter)
+        if (code === 0) {
+            if (setter.order > finishedOrder) { finishedOrder = setter.order; currentPath = setter.path }
+            if (setter.closeOnReady) close()
+        } else {
+            message = error || "Wallpaper change failed"
+            if (!setters.length) {
+                opened = true
+                Qt.callLater(() => stage.forceActiveFocus())
+            }
+        }
+        setter.destroy()
+    }
     function label(path) {
-        if (setter.running && path === runningPath) return "Applying  ·  "
-        if (path === queuedPath) return "Up next  ·  "
-        if (!setter.running && path === currentPath) return "Current wallpaper  ·  "
+        if (path === targetPath) return setters.length ? "Applying  ·  " : "Current wallpaper  ·  "
         return ""
     }
 
@@ -121,32 +125,24 @@ Scope {
         id: colonyWarm
         command: ["wallpaper-colonies", "warm"]
     }
-    Process {
-        id: setter
-        command: ["wallpaper-set", root.runningPath]
-        stdout: SplitParser {
-            onRead: data => {
-                if (data === "transition-ready" && root.closeOnReady) root.close()
-            }
-        }
-        stderr: StdioCollector { id: setError }
-        onExited: (code) => {
-            const closing = root.closeOnReady
-            root.closeOnReady = false
-            if (code === 0) {
-                root.currentPath = root.runningPath
-                if (closing) root.close()
-            } else {
-                root.message = setError.text || "Wallpaper change failed"
-                if (!root.queuedPath) {
-                    root.opened = true
-                    Qt.callLater(() => stage.forceActiveFocus())
+    Component {
+        id: setterComponent
+        Process {
+            id: setter
+            required property string path
+            required property int order
+            property bool closeOnReady: true
+            command: ["wallpaper-set", path]
+            stdout: SplitParser {
+                onRead: data => {
+                    if (data === "transition-ready" && setter.closeOnReady) {
+                        setter.closeOnReady = false
+                        root.close()
+                    }
                 }
             }
-            const next = root.queuedPath
-            root.queuedPath = ""
-            // Start after this handler so the process has fully stopped.
-            if (next && next !== root.currentPath) Qt.callLater(() => root.start(next))
+            stderr: StdioCollector { id: setError }
+            onExited: code => root.setterExited(setter, code, setError.text)
         }
     }
     Component.onCompleted: library.running = true
@@ -162,7 +158,7 @@ Scope {
         function state(): string {
             return JSON.stringify({open: root.opened, busy: root.busy, count: root.items.length,
                 selected: root.items[carousel.currentIndex]?.path ?? "", current: root.currentPath,
-                applying: setter.running ? root.runningPath : "", queued: root.queuedPath, error: root.message})
+                applying: root.setters.map(s => s.path), error: root.message})
         }
     }
 

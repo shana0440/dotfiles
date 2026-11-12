@@ -44,6 +44,9 @@ in
   # Hyprland explicitly starts it because this session does not activate
   # graphical-session.target (see hyprland/hyprland.lua).
   services.awww.enable = true;
-  xdg.configFile."wallpaper/colonies.frag.qsb".source = shader;
+  # Quickshell reads the shader's store path from here. Qt caches shaders by
+  # URL, so a stable path would keep the old shader after a rebuild; the store
+  # path changes with every shader change.
+  xdg.configFile."wallpaper/colonies-shader".text = "${shader}\n";
   home.packages = [ library colonies setWallpaper check ];
 }

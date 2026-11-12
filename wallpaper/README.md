@@ -20,14 +20,16 @@ wallpaper-check -v                   # run the tests
 `wallpaper-set` exits once the change is complete. If Quickshell isn't running or
 the transition fails, it falls back to a plain awww fade.
 
-The Quickshell picker (Super+Shift+W) stays usable during a transition: a
-wallpaper chosen meanwhile is queued (the latest choice wins) and gets its own
-transition once the current one finishes.
+Changes may overlap: choosing another wallpaper while a transition runs (the
+Quickshell picker, Super+Shift+W, stays usable) starts its transition at once,
+spreading over whatever is on screen.
 
 ## How the transition works
 
 Colonies land at random places and times and spread over the old wallpaper in
-small square cells, following a precomputed arrival map. `colonies.py` generates
+small square cells, following a precomputed arrival map. Each change is its own
+transparent layer above awww, newest on top; once a layer has covered the
+screen, awww is switched to its image underneath and the layer is removed. `colonies.py` generates
 the maps, and `colonies.frag` renders them. Maps don't depend on the image, so a
 small pool is kept and each map is replaced after use.
 

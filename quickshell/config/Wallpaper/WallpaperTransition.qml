@@ -1,11 +1,13 @@
-// Pixel-colony wallpaper transition.
+// Pixel-colony wallpaper transitions.
 //
-// awww remains the wallpaper. For the length of a change this draws a layer
-// above it (below windows): colonies of the new image spread over the old one
-// in crisp cells, following a precomputed arrival map (wallpaper-colonies).
-// Hand-over: fade in over awww while the shader still shows exactly the old
-// image, switch awww underneath with no transition, finish on exactly the new
-// image, fade out. Every step is invisible because both ends match awww.
+// awww remains the wallpaper. While changes run, one window per screen sits
+// above it (below windows) and holds one layer per change, newest on top.
+// Each layer draws only the cells of its new image that have already arrived
+// (wallpaper-colonies maps), so a new change starts at once and spreads over
+// whatever is on screen, including changes still running beneath it.
+// Hand-over: when a layer has fully covered the screen with its image, awww is
+// switched to that image underneath (no transition) and the layer is removed.
+// Both show the same pixels, so the removal is invisible.
 import QtQuick
 import Quickshell
 import Quickshell.Io
@@ -13,36 +15,16 @@ import Quickshell.Wayland
 
 Scope {
     id: root
-    property string phase: "idle"
-    property string error: ""
-    property var request: ({})
+    property var transitions: []        // running changes, oldest first
+    property var results: ({})          // token -> final {phase, error}
     property int generation: 0
-    property int swapGeneration: -1
-    property var loadedScreens: []
-    property real progress: 0
-    property real coverage: 0
-    property real seed: 0
-    property bool swapped: false
-    property int duration: 1800
-    readonly property bool active: ["loading", "ready", "running", "waiting", "fading"].includes(phase)
-    readonly property string shaderFile: Quickshell.env("WALLPAPER_SHADER")
-        || (Quickshell.env("XDG_CONFIG_HOME") || Quickshell.env("HOME") + "/.config") + "/wallpaper/colonies.frag.qsb"
+    property int swappedOrder: 0        // newest change awww already shows
+    property var swapQueue: []
+    readonly property int duration: 1800
+    readonly property int limit: 8      // overlapping changes at once
+    property string shaderFile: ""
 
     function fileUrl(path) { return path ? "file://" + path.split("/").map(encodeURIComponent).join("/") : "" }
-    function shown(name) {
-        const outputs = request.outputs ?? []
-        return (outputs.find(o => o.name === name) ?? outputs[0])?.displaying ?? {}
-    }
-    function oldImage(name) { return shown(name).image ?? "" }
-    // awww reports a solid colour (e.g. before the first wallpaper) instead of
-    // an image; the shader then starts from that colour.
-    function oldColor(name) {
-        const c = shown(name).color
-        if (Array.isArray(c)) return Qt.rgba(c[0] / 255, c[1] / 255, c[2] / 255, 1)
-        // awww prints the colour as an unpadded hex number, e.g. "#0" for black.
-        if (typeof c === "string") return "#" + c.replace(/^#|^0x/, "").padStart(6, "0").slice(-6)
-        return "black"
-    }
     function crop(image, width, height) {
         // awww's default "crop" resize: cover the output, centred.
         if (!image.sourceSize.width || !image.sourceSize.height || !width || !height)
@@ -53,181 +35,215 @@ Scope {
         const sy = Math.min(1, imageRatio / screenRatio)
         return Qt.vector4d((1 - sx) / 2, (1 - sy) / 2, sx, sy)
     }
-    function ready(name) {
-        if (phase !== "loading" || loadedScreens.includes(name)) return
-        loadedScreens = loadedScreens.concat([name])
-        if (loadedScreens.length === windows.instances.length) phase = "ready"
+    function loadShader() {
+        // Re-read per change: a rebuild installs the shader under a new path.
+        if (Quickshell.env("WALLPAPER_SHADER")) return Quickshell.env("WALLPAPER_SHADER")
+        shaderPath.reload()
+        return shaderPath.text().trim()
     }
+    function find(token) { return transitions.find(t => t.token === token) ?? null }
+
     function prepare(data) {
-        if (active) return "busy"
         let parsed
         try { parsed = JSON.parse(data) } catch (_) { return "invalid request" }
         if (!parsed.image || !parsed.map || !parsed.outputs?.length) return "invalid request"
-        request = parsed
-        error = ""
+        // Where the screen is heading: the newest change, else what awww shows.
+        const heading = transitions.length ? [transitions[transitions.length - 1].image]
+            : parsed.outputs.map(o => o.displaying?.image ?? "")
+        if (heading.every(image => image === parsed.image)) return "same"
+        if (transitions.length >= limit) return "busy"
+        const shader = loadShader()
+        if (!shader) return "no shader"
+        // Layers already running keep the shader they started with.
+        if (shader !== shaderFile && !transitions.length) shaderFile = shader
         generation++
-        progress = 0
-        coverage = 0
-        seed = Math.random() * 100
-        swapped = false
-        loadedScreens = []
-        phase = "loading"
-        watchdog.restart()
-        return String(generation)
+        const t = transitionComponent.createObject(root, {
+            token: String(generation), order: generation, image: parsed.image, map: parsed.map,
+            ember: parsed.ember ?? "#ff9a5c", seed: Math.random() * 100
+        })
+        // Created after the older layers, so it stacks above them.
+        t.layers = windows.instances.map(window => layerComponent.createObject(window.contentItem,
+            { transition: t, screenName: window.modelData.name }))
+        transitions = transitions.concat([t])
+        return t.token
+    }
+    function ready(t, screenName) {
+        if (t.phase !== "loading" || t.loaded.includes(screenName)) return
+        t.loaded = t.loaded.concat([screenName])
+        if (t.loaded.length >= t.layers.length) t.phase = "ready"
     }
     function go(token) {
-        if (token !== String(generation) || phase !== "ready") return "not ready"
-        phase = "running"
-        animation.restart()
-        cover.restart()
+        const t = find(token)
+        if (!t || t.phase !== "ready") return "not ready"
+        t.phase = "running"
+        t.animation.start()
         return "ok"
     }
-    function fail(reason) {
-        error = reason
-        animation.stop(); cover.stop(); uncover.stop(); settle.stop(); watchdog.stop()
-        phase = "error"
-        coverage = 0
+    function covered(t) {
+        // Fully drawn: switch awww beneath it, one switch at a time, in order.
+        t.phase = "swapping"
+        swapQueue = swapQueue.concat([t])
+        nextSwap()
     }
-    function finishIfReady() {
-        if (animation.running) return
-        if (!swapped) { phase = "waiting"; return }
-        phase = "fading"
-        uncover.restart()
+    function nextSwap() {
+        if (swap.running || !swapQueue.length) return
+        const t = swapQueue[0]
+        swapQueue = swapQueue.slice(1)
+        if (t.order < swappedOrder) { t.settle.restart(); return }   // a newer image is already set
+        swap.current = t
+        swap.command = ["awww", "img", t.image, "--transition-type", "none"]
+        swap.running = true
     }
-    function abort(token) {
-        if (token !== String(generation)) return
-        swapGeneration = -1
-        swap.running = false
-        fail("Transition cancelled")
+    function finish(t, phase, error) {
+        if (!transitions.includes(t)) return
+        t.animation.stop(); t.watchdog.stop(); t.settle.stop()
+        const done = Object.assign({}, results)
+        done[t.token] = { phase: phase, error: error }
+        // Keep only recent results; callers poll right after their change.
+        for (const key of Object.keys(done)) if (Number(key) < generation - 32) delete done[key]
+        results = done
+        transitions = transitions.filter(x => x !== t)
+        swapQueue = swapQueue.filter(x => x !== t)
+        for (const layer of t.layers) layer.destroy()
+        t.destroy(1000)     // after its layers, which still bind to it
+    }
+    function fail(t, reason) { if (t.phase !== "swapping") finish(t, "error", reason) }
+    function abort(token) { const t = find(token); if (t) fail(t, "Transition cancelled") }
+    function status(token) {
+        const t = find(token)
+        if (t) return JSON.stringify({ phase: t.phase, error: "" })
+        return JSON.stringify(results[token] ?? { phase: "superseded", error: "" })
     }
 
+    FileView {
+        id: shaderPath
+        path: (Quickshell.env("XDG_CONFIG_HOME") || Quickshell.env("HOME") + "/.config") + "/wallpaper/colonies-shader"
+        blockLoading: true
+    }
     IpcHandler {
         target: "wallpaperTransition"
         function prepare(data: string): string { return root.prepare(data) }
         function go(token: string): string { return root.go(token) }
         function abort(token: string): void { root.abort(token) }
-        function status(token: string): string {
-            return JSON.stringify({phase: token === String(root.generation) ? root.phase : "superseded", error: root.error})
-        }
-    }
-    // Linear time; the shader eases its own area curve.
-    NumberAnimation {
-        id: animation
-        target: root; property: "progress"; from: 0; to: 1; duration: root.duration
-        easing.type: Easing.Linear
-        onFinished: root.finishIfReady()
-    }
-    NumberAnimation {
-        id: cover
-        target: root; property: "coverage"; from: 0; to: 1; duration: 90
-        onFinished: {
-            if (!root.active) return
-            root.swapGeneration = root.generation
-            swap.command = ["awww", "img", root.request.image, "--transition-type", "none"]
-            swap.running = true
-        }
+        function status(token: string): string { return root.status(token) }
     }
     Process {
         id: swap
+        property var current: null
         onExited: code => {
-            if (root.swapGeneration !== root.generation) return
-            if (code !== 0) { root.fail("awww could not update the wallpaper"); return }
-            settle.restart()
+            const t = current
+            current = null
+            if (t && root.transitions.includes(t)) {
+                if (code === 0) {
+                    root.swappedOrder = Math.max(root.swappedOrder, t.order)
+                    t.settle.restart()
+                } else root.finish(t, "error", "awww could not update the wallpaper")
+            }
+            root.nextSwap()
         }
     }
-    // Give awww a couple of frames to present the new image before uncovering.
-    Timer { id: settle; interval: 50; onTriggered: { root.swapped = true; root.finishIfReady() } }
-    NumberAnimation {
-        id: uncover
-        target: root; property: "coverage"; from: 1; to: 0; duration: 100
-        onFinished: { watchdog.stop(); root.phase = "done" }
-    }
-    Timer { id: watchdog; interval: root.duration + 5000; onTriggered: root.fail("Transition timed out") }
 
-    Variants {
-        id: windows
-        model: Quickshell.screens
-        PanelWindow {
-            id: window
-            required property var modelData
-            readonly property bool fromColor: root.active && !root.oldImage(modelData.name)
-            screen: modelData
-            visible: root.active
-            anchors { top: true; bottom: true; left: true; right: true }
-            color: "transparent"
-            // Paint the entire output, including space reserved by the bar.
-            // A zero exclusiveZone reserves nothing but still obeys others'
-            // reservations, exposing the new awww image above the animation.
-            exclusionMode: ExclusionMode.Ignore
-            // Same layer as awww (Background) so the bar, which idles on the
-            // Bottom layer, stays visible above the transition. The surface is
-            // mapped per change, after awww's, so it stacks above the wallpaper.
-            WlrLayershell.layer: WlrLayer.Background
-            WlrLayershell.namespace: "quickshell-wallpaper-transition"
-            WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
-            mask: Region {}
+    Component {
+        id: transitionComponent
+        QtObject {
+            id: t
+            property string token
+            property int order
+            property string image
+            property string map
+            property color ember
+            property real seed
+            property string phase: "loading"   // loading, ready, running, swapping
+            property var loaded: []
+            property var layers: []
+            property real progress: 0
+            // Linear time; the shader eases its own area curve.
+            property NumberAnimation animation: NumberAnimation {
+                target: t; property: "progress"; from: 0; to: 1; duration: root.duration
+                easing.type: Easing.Linear
+                onFinished: root.covered(t)
+            }
+            // Give awww a couple of frames to present the image before removing the layer.
+            property Timer settle: Timer { interval: 50; onTriggered: root.finish(t, "done", "") }
+            property Timer watchdog: Timer {
+                interval: root.duration + 5000; running: true
+                onTriggered: root.finish(t, "error", "Transition timed out")
+            }
+        }
+    }
+
+    Component {
+        id: layerComponent
+        Item {
+            id: layer
+            required property var transition
+            required property string screenName
+            anchors.fill: parent
 
             function checkReady() {
-                if ((!fromColor && oldImage.status === Image.Error) || newImage.status === Image.Error
-                        || colonyMap.status === Image.Error) {
-                    if (root.active) root.fail("Could not load transition images")
-                    return
-                }
-                if ((fromColor || oldImage.status === Image.Ready) && newImage.status === Image.Ready
-                        && colonyMap.status === Image.Ready)
-                    root.ready(window.modelData.name)
-            }
-            Connections {
-                target: root
-                function onGenerationChanged() { Qt.callLater(window.checkReady) }
-            }
-            Image {
-                id: oldImage
-                visible: false
-                source: root.active && !window.fromColor ? root.fileUrl(root.oldImage(window.modelData.name)) : ""
-                asynchronous: true
-                cache: false
-                onStatusChanged: Qt.callLater(window.checkReady)
+                if (!transition) return
+                if (newImage.status === Image.Error || colonyMap.status === Image.Error)
+                    root.fail(transition, "Could not load transition images")
+                else if (newImage.status === Image.Ready && colonyMap.status === Image.Ready)
+                    root.ready(transition, screenName)
             }
             Image {
                 id: newImage
                 visible: false
-                source: root.active ? root.fileUrl(root.request.image) : ""
+                source: root.fileUrl(layer.transition.image)
                 asynchronous: true
                 cache: false
-                onStatusChanged: Qt.callLater(window.checkReady)
+                onStatusChanged: Qt.callLater(layer.checkReady)
             }
             Image {
                 id: colonyMap
                 visible: false
-                source: root.active ? root.fileUrl(root.request.map) : ""
+                source: root.fileUrl(layer.transition.map)
                 asynchronous: true
                 cache: false
                 smooth: false       // packed 16-bit values must not be interpolated
-                onStatusChanged: Qt.callLater(window.checkReady)
+                onStatusChanged: Qt.callLater(layer.checkReady)
             }
             ShaderEffect {
                 anchors.fill: parent
-                opacity: root.coverage
-                readonly property real progress: root.progress
+                readonly property real progress: layer.transition.progress
                 readonly property real cellPx: 5
                 readonly property real screenW: width
                 readonly property real screenH: height
                 readonly property real mapW: Math.max(1, colonyMap.sourceSize.width)
                 readonly property real mapH: Math.max(1, colonyMap.sourceSize.height)
-                readonly property real seed: root.seed
-                readonly property real fromColor: window.fromColor ? 1 : 0
-                readonly property vector4d oldCrop: root.crop(oldImage, width, height)
+                readonly property real seed: layer.transition.seed
                 readonly property vector4d newCrop: root.crop(newImage, width, height)
-                readonly property color ember: root.request.ember ?? "#ff9a5c"
-                readonly property color oldColor: root.oldColor(window.modelData.name)
-                // A sampler needs a texture even when starting from a colour.
-                readonly property var oldTexture: window.fromColor ? newImage : oldImage
+                readonly property color ember: layer.transition.ember
                 readonly property var newTexture: newImage
                 readonly property var mapTexture: colonyMap
                 fragmentShader: root.fileUrl(root.shaderFile)
-                onStatusChanged: if (status === ShaderEffect.Error && root.active) root.fail("Colony shader failed")
+                onStatusChanged: if (status === ShaderEffect.Error) root.fail(layer.transition, "Colony shader failed")
             }
+            Component.onCompleted: Qt.callLater(checkReady)
+        }
+    }
+
+    Variants {
+        id: windows
+        model: Quickshell.screens
+        PanelWindow {
+            required property var modelData
+            screen: modelData
+            visible: root.transitions.length > 0
+            anchors { top: true; bottom: true; left: true; right: true }
+            color: "transparent"
+            // Paint the entire output, including space reserved by the bar.
+            // A zero exclusiveZone reserves nothing but still obeys others'
+            // reservations, exposing awww above the animation.
+            exclusionMode: ExclusionMode.Ignore
+            // Same layer as awww (Background) so the bar, which idles on the
+            // Bottom layer, stays visible above the transitions. The surface
+            // is mapped when changes start, after awww's, so it stacks above.
+            WlrLayershell.layer: WlrLayer.Background
+            WlrLayershell.namespace: "quickshell-wallpaper-transition"
+            WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
+            mask: Region {}
         }
     }
 }
