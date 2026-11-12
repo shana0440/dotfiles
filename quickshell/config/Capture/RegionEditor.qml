@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Shapes
 import "RegionGeometry.js" as Geometry
+import "../Theme" as Theme
 
 Item {
     id: root
@@ -49,7 +50,7 @@ Item {
     Rectangle {
         anchors.fill: parent
         visible: !root.hasRegion
-        color: "#88000000"
+        color: Theme.Colors.scrim
     }
 
     Repeater {
@@ -68,7 +69,7 @@ Item {
             y: modelData.y
             width: modelData.width
             height: modelData.height
-            color: "#88000000"
+            color: Theme.Colors.scrim
         }
     }
 
@@ -81,12 +82,12 @@ Item {
         height: root.clearRegion.height + 2
 
         ShapePath {
-            strokeColor: "white"
+            strokeColor: Theme.Colors.foreground
             strokeWidth: 1
             strokeStyle: ShapePath.DashLine
             dashPattern: [3, 3]
             capStyle: ShapePath.FlatCap
-            fillColor: "transparent"
+            fillColor: Theme.Colors.transparent
             startX: 0.5
             startY: 0.5
             PathLine { x: outline.width - 0.5; y: 0.5 }
@@ -141,8 +142,8 @@ Item {
             height: 8
             radius: width / 2
             antialiasing: true
-            color: "white"
-            border.color: "#404040"
+            color: Theme.Colors.foreground
+            border.color: Theme.Colors.activeWorkspace
 
             MouseArea {
                 anchors.fill: parent

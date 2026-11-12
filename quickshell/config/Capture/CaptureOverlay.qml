@@ -2,6 +2,7 @@ import QtQuick
 import Quickshell
 import Quickshell.Wayland
 import "RegionGeometry.js" as Geometry
+import "../Theme" as Theme
 import "../Services" as Services
 
 Scope {
@@ -19,7 +20,7 @@ Scope {
             visible: Services.Capture.capturing || Services.Capture.previewActive || Services.Capture.selectingRegion || Services.Capture.startingRecordingGeometry.length > 0
                 || (Services.Capture.recordingMode === "region" && Services.Capture.recordingGeometry.length > 0)
                 || (Services.Capture.recordingMode === "window" && Services.Capture.windowGeometry.length > 0)
-            color: "transparent"
+            color: Theme.Colors.transparent
             exclusionMode: ExclusionMode.Ignore
             WlrLayershell.namespace: "quickshell-capture-region"
             // One layer below the toolbar and the recording bar (both Overlay), so the
@@ -82,7 +83,7 @@ Scope {
                 anchors.fill: parent
                 visible: Services.Capture.previewActive && !Services.Capture.selectingRegion
                     && !Services.Capture.selectingWindow
-                color: "#88000000"
+                color: Theme.Colors.scrim
             }
 
             RegionEditor {

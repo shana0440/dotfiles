@@ -1,10 +1,10 @@
 import QtQuick
-import QtQuick.Controls.Basic
 import QtQuick.Layouts
 import Quickshell
 import Quickshell.Io
 import Quickshell.Wayland
 import "../Services" as Services
+import "../Theme" as Theme
 
 // Capture toolbar and selectors. Recording state and Stop live in the bar.
 Scope {
@@ -178,9 +178,10 @@ Scope {
         screen: root.outputScreen
         anchors.bottom: true
         margins.bottom: 36
-        implicitWidth: Math.min(actions.implicitWidth + 24, (root.outputScreen?.width ?? 1280) - 24)
-        implicitHeight: 70 + (root.message ? 48 : 0)
-        color: "transparent"
+        implicitWidth: Math.min(content.implicitWidth + 2 * content.anchors.margins + 2 * surface.anchors.margins,
+            (root.outputScreen?.width ?? 1280) - 24)
+        implicitHeight: content.implicitHeight + 2 * content.anchors.margins + 2 * surface.anchors.margins
+        color: Theme.Colors.transparent
         exclusionMode: ExclusionMode.Ignore
         WlrLayershell.namespace: "quickshell-capture-toolbar"
         WlrLayershell.layer: WlrLayer.Overlay
@@ -193,22 +194,26 @@ Scope {
             id: surface
             anchors.fill: parent
             anchors.margins: 4
-            radius: 13
-            color: "#f238383f"
-            border.color: "#777780"
+            radius: 12
+            color: Theme.Colors.panel
+            border.color: Theme.Colors.activeWorkspace
             border.width: 1
 
             ColumnLayout {
+                id: content
                 anchors.fill: parent
                 anchors.margins: 8
                 spacing: 8
 
-                Label {
+                Text {
                     visible: root.message.length > 0
                     text: root.message
-                    color: "#dddde2"
+                    textFormat: Text.PlainText
+                    color: Theme.Colors.foreground
+                    font.pixelSize: 12
                     elide: Text.ElideMiddle
                     Layout.fillWidth: true
+                    Layout.maximumWidth: actions.implicitWidth
                 }
 
                 RowLayout {
@@ -227,15 +232,16 @@ Scope {
                             Rectangle {
                                 visible: modeGroup.index === 3
                                 Layout.preferredWidth: 1
-                                Layout.preferredHeight: 34
-                                color: "#74747c"
+                                Layout.preferredHeight: 28
+                                Layout.leftMargin: 4
+                                Layout.rightMargin: 4
+                                color: Theme.Colors.activeWorkspace
                             }
                             ModeButton {
-                                text: modeGroup.modelData.label
-                                region: modeGroup.modelData.region
-                                windowMode: modeGroup.modelData.window
+                                icon: modeGroup.modelData.region ? "region" : modeGroup.modelData.window ? "window" : "screen"
+                                tooltip: modeGroup.modelData.label
                                 recording: modeGroup.modelData.recording
-                                checked: root.mode === modeGroup.index
+                                highlighted: root.mode === modeGroup.index
                                 enabled: !Services.Capture.recording && Services.Capture.previewActive
                                 onClicked: root.chooseMode(modeGroup.index)
                                 Shortcut {
@@ -247,26 +253,38 @@ Scope {
                             }
                         }
                     }
-                    Button {
+                    Rectangle {
                         id: captureButton
-                        hoverEnabled: true
-                        text: Services.Capture.recording ? "Stop · " + Services.Capture.recordingElapsedSeconds + "s"
+                        readonly property string label: Services.Capture.recording
+                            ? "Stop · " + Services.Capture.recordingElapsedSeconds + "s"
                             : root.recordingMode ? "Record" : "Capture"
                         enabled: !Services.Capture.recordingCommandRunning
                             && (Services.Capture.recording || (Services.Capture.previewActive
                                 && (!root.windowMode || Services.Capture.selectedWindow !== null)))
-                        palette.buttonText: "#eeeef2"
-                        background: Rectangle {
-                            radius: 7
-                            color: captureButton.down ? "#64646e"
-                                : captureButton.hovered ? "#52525a" : "transparent"
-                            border.width: captureButton.visualFocus ? 1 : 0
-                            border.color: "#c4b5fd"
-                            Behavior on color { ColorAnimation { duration: 100 } }
+                        Layout.leftMargin: 4
+                        Layout.preferredWidth: 96
+                        Layout.preferredHeight: 40
+                        radius: 8
+                        color: Theme.Colors.accent
+                        opacity: !enabled ? 0.4 : captureMouse.pressed ? 0.75 : captureMouse.containsMouse ? 0.88 : 1
+                        Accessible.role: Accessible.Button
+                        Accessible.name: label
+
+                        Text {
+                            anchors.centerIn: parent
+                            text: captureButton.label
+                            color: Theme.Colors.background
+                            font.pixelSize: 13
+                            font.weight: Font.DemiBold
                         }
-                        implicitHeight: 42
-                        Layout.preferredWidth: 98
-                        onClicked: root.capture()
+
+                        MouseArea {
+                            id: captureMouse
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: root.capture()
+                        }
                     }
                 }
             }
