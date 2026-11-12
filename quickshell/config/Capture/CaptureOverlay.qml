@@ -1,9 +1,9 @@
 import QtQuick
 import Quickshell
 import Quickshell.Wayland
-import "Capture" as CaptureComponents
-import "Capture/RegionGeometry.js" as Geometry
-import "Services" as Services
+import "RegionGeometry.js" as Geometry
+import "../Theme" as Theme
+import "../Services" as Services
 
 Scope {
     id: root
@@ -20,14 +20,12 @@ Scope {
             visible: Services.Capture.capturing || Services.Capture.previewActive || Services.Capture.selectingRegion || Services.Capture.startingRecordingGeometry.length > 0
                 || (Services.Capture.recordingMode === "region" && Services.Capture.recordingGeometry.length > 0)
                 || (Services.Capture.recordingMode === "window" && Services.Capture.windowGeometry.length > 0)
-            color: "transparent"
+            color: Theme.Colors.transparent
             exclusionMode: ExclusionMode.Ignore
-            WlrLayershell.namespace: "screen-capture-region"
-            // The window outline appears after the Stop control; keep it one layer lower so
-            // its dimming never covers Stop (or the bar's recording indicator).
-            WlrLayershell.layer: Services.Capture.capturing || Services.Capture.previewActive
-                || Services.Capture.recordingMode === "window" || Services.Capture.startingWindow
-                ? WlrLayer.Top : WlrLayer.Overlay
+            WlrLayershell.namespace: "quickshell-capture-region"
+            // One layer below the toolbar and the recording bar (both Overlay), so the
+            // recording shade never covers the bar's Stop.
+            WlrLayershell.layer: WlrLayer.Top
             // Hyprland routes pointer input only to exclusive layer surfaces while
             // an exclusive toolbar is open. Include the selector in that group.
             // Among exclusive surfaces Hyprland prefers the one that became
@@ -85,10 +83,10 @@ Scope {
                 anchors.fill: parent
                 visible: Services.Capture.previewActive && !Services.Capture.selectingRegion
                     && !Services.Capture.selectingWindow
-                color: "#88000000"
+                color: Theme.Colors.scrim
             }
 
-            CaptureComponents.RegionEditor {
+            RegionEditor {
                 id: editor
                 anchors.fill: parent
                 // Hidden while capturing: its own dim would be photographed into the frozen frame.
@@ -112,7 +110,7 @@ Scope {
                 onCancelled: root.cancelled()
             }
 
-            CaptureComponents.WindowSelector {
+            WindowSelector {
                 anchors.fill: parent
                 screenInfo: overlay.modelData
                 visible: Services.Capture.selectingWindow

@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Shapes
 import "../Services" as Services
+import "../Theme" as Theme
 
 Item {
     id: root
@@ -54,7 +55,7 @@ Item {
             y: modelData.y
             width: modelData.width
             height: modelData.height
-            color: "#88000000"
+            color: Theme.Colors.scrim
         }
     }
 
@@ -67,12 +68,12 @@ Item {
         height: root.clearBottom - root.clearY + 2
 
         ShapePath {
-            strokeColor: "white"
+            strokeColor: Theme.Colors.foreground
             strokeWidth: 1
             strokeStyle: ShapePath.DashLine
             dashPattern: [3, 3]
             capStyle: ShapePath.FlatCap
-            fillColor: "transparent"
+            fillColor: Theme.Colors.transparent
             startX: 0.5
             startY: 0.5
             PathLine { x: outline.width - 0.5; y: 0.5 }
@@ -89,7 +90,7 @@ Item {
         x: Math.max(12, Math.min(root.width - width - 12, root.clearX))
         y: Math.max(12, Math.min(root.height - height - 120, root.clearY - height - 12))
         radius: 7
-        color: "#ed121212"
+        color: Theme.Colors.panel
         Text {
             id: label
             anchors.centerIn: parent
@@ -100,7 +101,7 @@ Item {
                 : (Services.Capture.preview === null ? "Loading windows…"
                     : Services.Capture.preview.windowError || "Point at a window and click to select it")
             textFormat: Text.PlainText
-            color: "white"
+            color: Theme.Colors.foreground
             font.pixelSize: 12
             elide: Text.ElideRight
         }

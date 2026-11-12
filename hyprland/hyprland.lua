@@ -57,7 +57,6 @@ local menu        = "vicinae toggle"
 hl.on("hyprland.start", function ()
     hl.exec_cmd("vicinae server")
     hl.exec_cmd("quickshell")
-    hl.exec_cmd("screen-capture --background")
     -- This session does not start graphical-session.target; start these services explicitly.
     hl.exec_cmd("systemctl --user import-environment WAYLAND_DISPLAY DISPLAY XDG_CURRENT_DESKTOP && systemctl --user restart fcitx5-daemon.service awww.service")
 end)
@@ -302,7 +301,7 @@ for _, key in ipairs({ "Z", "T", "R" }) do
     hl.bind(mainMod .. " + SHIFT + " .. key, function() return sendShortcut("CTRL SHIFT", key) end)
 end
 
-hl.bind(mainMod .. " + SHIFT + S", hl.dsp.exec_cmd("screen-capture --no-stop-toolbar"))
+hl.bind(mainMod .. " + SHIFT + S", hl.dsp.exec_cmd("quickshell --path ~/.config/quickshell ipc call capture open"))
 
 -- Example binds, see https://wiki.hypr.land/Configuring/Basics/Binds/ for more
 hl.bind(mainMod .. " + Q", hl.dsp.window.close())

@@ -24,8 +24,9 @@ recording_mode() {
     printf 'none\n'
 }
 
-# Tell the bar immediately so it need not wait for its polling fallback.
-# Best effort and detached: capture must work with no bar running.
+# Tell the Quickshell capture UI immediately (e.g. for recordings started from
+# the CLI) so it need not wait for its polling fallback. Best effort and
+# detached: capture must work with no Quickshell running.
 notify_bar() {
     {
         timeout 2s quickshell --path "${XDG_CONFIG_HOME:-$HOME/.config}/quickshell" \
@@ -109,10 +110,6 @@ geometry=""
 if [[ "$mode" == region ]]; then
     geometry="${3:-}"
     if [[ -z "$geometry" ]]; then
-        if timeout 1s quickshell --path "${XDG_CONFIG_HOME:-$HOME/.config}/screen-capture" \
-            ipc call capture selectRegion recording >/dev/null 2>&1; then
-            exit 0
-        fi
         # slurp reads piped stdin as rectangle suggestions; GUI launches supply none.
         if ! geometry=$(slurp </dev/null); then
             exit 0

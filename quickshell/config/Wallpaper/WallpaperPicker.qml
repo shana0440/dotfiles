@@ -168,7 +168,7 @@ Scope {
                 anchors.centerIn: parent
                 width: Math.max(1, Math.min(parent.width - 32, 1100))
                 height: Math.max(1, Math.min(parent.height - 48, 620))
-                color: "#ed121212"
+                color: Theme.Colors.panel
                 radius: 20
                 border.color: Theme.Colors.activeWorkspace
                 clip: true
@@ -269,7 +269,7 @@ Scope {
                         horizontalAlignment: Text.AlignHCenter
                         text: root.message || (root.items[carousel.currentIndex]?.path === root.currentPath
                             ? "Current wallpaper  ·  " : "") + "← → Browse   ·   Enter Apply to all monitors   ·   Esc Close"
-                        color: root.message ? "#fca5a5" : Theme.Colors.accent
+                        color: root.message ? Theme.Colors.error : Theme.Colors.accent
                         font.pixelSize: 13
                         elide: Text.ElideRight
                     }
