@@ -13,12 +13,19 @@ Scope {
     property string directory: ""
     property string message: ""
     property string currentPath: ""
-    property string pendingPath: ""
+    // A transition runs runningPath; one more choice may wait in queuedPath
+    // (the newest replaces it) and starts when the transition finishes.
+    property string runningPath: ""
+    property string queuedPath: ""
+    // Only the change applied from an idle picker closes it when it starts.
+    property bool closeOnReady: false
     property var chosenScreen: Quickshell.screens[0] ?? null
-    readonly property bool busy: preparing || query.running || library.running || setter.running
+    readonly property bool busy: preparing || query.running || library.running
+    // The wallpaper the screen ends up on once all requested changes finish.
+    readonly property string targetPath: queuedPath || (setter.running ? runningPath : currentPath)
 
     function show() {
-        if (setter.running) return
+        closeOnReady = false
         chosenScreen = Quickshell.screens.find(s => s.name === Hyprland.focusedMonitor?.name)
             ?? Quickshell.screens[0] ?? null
         message = ""
@@ -29,7 +36,7 @@ Scope {
     }
     function finishOpening() {
         if (!opened || !preparing || query.running || library.running) return
-        const index = items.findIndex(i => i.path === currentPath)
+        const index = items.findIndex(i => i.path === targetPath)
         carousel.cancelFlick()
         carousel.currentIndex = items.length ? Math.max(0, index) : -1
         carousel.forceLayout()
@@ -43,7 +50,8 @@ Scope {
         })
     }
     function close() {
-        if (!setter.running) { opened = false; preparing = false }
+        opened = false
+        preparing = false
     }
     function move(step) {
         if (items.length && !busy)
@@ -51,9 +59,27 @@ Scope {
     }
     function apply() {
         if (busy || carousel.currentIndex < 0 || !items.length) return
-        pendingPath = items[carousel.currentIndex].path
+        const path = items[carousel.currentIndex].path
         message = ""
+        if (setter.running) {
+            // Choosing the wallpaper already on its way cancels the queue.
+            queuedPath = path === runningPath ? "" : path
+            close()
+            return
+        }
+        if (path === currentPath) { close(); return }
+        closeOnReady = true
+        start(path)
+    }
+    function start(path) {
+        runningPath = path
         setter.running = true
+    }
+    function label(path) {
+        if (setter.running && path === runningPath) return "Applying  ·  "
+        if (path === queuedPath) return "Up next  ·  "
+        if (!setter.running && path === currentPath) return "Current wallpaper  ·  "
+        return ""
     }
 
     Process {
@@ -97,25 +123,30 @@ Scope {
     }
     Process {
         id: setter
-        command: ["wallpaper-set", root.pendingPath]
+        command: ["wallpaper-set", root.runningPath]
         stdout: SplitParser {
             onRead: data => {
-                if (data === "transition-ready") {
-                    root.opened = false
-                    root.preparing = false
-                }
+                if (data === "transition-ready" && root.closeOnReady) root.close()
             }
         }
         stderr: StdioCollector { id: setError }
         onExited: (code) => {
+            const closing = root.closeOnReady
+            root.closeOnReady = false
             if (code === 0) {
-                root.currentPath = root.pendingPath
-                root.opened = false
+                root.currentPath = root.runningPath
+                if (closing) root.close()
             } else {
                 root.message = setError.text || "Wallpaper change failed"
-                root.opened = true
-                Qt.callLater(() => stage.forceActiveFocus())
+                if (!root.queuedPath) {
+                    root.opened = true
+                    Qt.callLater(() => stage.forceActiveFocus())
+                }
             }
+            const next = root.queuedPath
+            root.queuedPath = ""
+            // Start after this handler so the process has fully stopped.
+            if (next && next !== root.currentPath) Qt.callLater(() => root.start(next))
         }
     }
     Component.onCompleted: library.running = true
@@ -130,7 +161,8 @@ Scope {
         function apply(): void { if (root.opened) root.apply() }
         function state(): string {
             return JSON.stringify({open: root.opened, busy: root.busy, count: root.items.length,
-                selected: root.items[carousel.currentIndex]?.path ?? "", current: root.currentPath, error: root.message})
+                selected: root.items[carousel.currentIndex]?.path ?? "", current: root.currentPath,
+                applying: setter.running ? root.runningPath : "", queued: root.queuedPath, error: root.message})
         }
     }
 
@@ -257,7 +289,7 @@ Scope {
                     Text {
                         width: parent.width
                         horizontalAlignment: Text.AlignHCenter
-                        text: root.busy ? (setter.running ? "Applying wallpaper…" : "Loading thumbnails…")
+                        text: root.busy ? "Loading thumbnails…"
                             : root.items.length ? root.items[carousel.currentIndex]?.name ?? ""
                             : "Add JPG, PNG, or WebP images to " + root.directory
                         color: Theme.Colors.foreground
@@ -267,8 +299,7 @@ Scope {
                     Text {
                         width: parent.width
                         horizontalAlignment: Text.AlignHCenter
-                        text: root.message || (root.items[carousel.currentIndex]?.path === root.currentPath
-                            ? "Current wallpaper  ·  " : "") + "← → Browse   ·   Enter Apply to all monitors   ·   Esc Close"
+                        text: root.message || root.label(root.items[carousel.currentIndex]?.path ?? "") + "← → Browse   ·   Enter Apply to all monitors   ·   Esc Close"
                         color: root.message ? Theme.Colors.error : Theme.Colors.accent
                         font.pixelSize: 13
                         elide: Text.ElideRight

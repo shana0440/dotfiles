@@ -20,6 +20,10 @@ wallpaper-check -v                   # run the tests
 `wallpaper-set` exits once the change is complete. If Quickshell isn't running or
 the transition fails, it falls back to a plain awww fade.
 
+The Quickshell picker (Super+Shift+W) stays usable during a transition: a
+wallpaper chosen meanwhile is queued (the latest choice wins) and gets its own
+transition once the current one finishes.
+
 ## How the transition works
 
 Colonies land at random places and times and spread over the old wallpaper in
