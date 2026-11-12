@@ -21,6 +21,11 @@ PanelWindow {
         rightIsland.close()
     }
 
+    Connections {
+        target: Services.Notifications
+        function onActionInvoked() { root.closeMenus() }
+    }
+
     IpcHandler {
         target: "inputMenu"
         function close() {
