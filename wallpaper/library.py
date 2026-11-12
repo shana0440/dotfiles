@@ -98,12 +98,16 @@ def colony_transition(image):
         outputs = json.loads(result.stdout).get("", [])
         if not outputs:
             return False
-        if all(o.get("displaying", {}).get("image") == str(image) for o in outputs):
-            return False
         colony_map = colonies("take")
         request = {"image": str(image), "map": colony_map, "ember": colonies("accent", str(image)),
                    "outputs": outputs}
         token = transition_ipc("prepare", json.dumps(request))
+        if token == "same":
+            # Already shown, or the newest running change already heads there.
+            token = None
+            complete = True
+            print("transition-ready", flush=True)
+            return True
         if not token.isdigit():
             token = None
             return False
@@ -132,16 +136,11 @@ def colony_transition(image):
 
 
 def set_wallpaper(image):
-    import fcntl
-    cache = Path(os.environ.get("XDG_CACHE_HOME", str(Path.home() / ".cache"))) / "wallpaper"
-    cache.mkdir(parents=True, exist_ok=True)
-    # Serialize complete hand-overs so rapid selections never change awww
-    # underneath a running transition.
-    with (cache / "switch.lock").open("w") as lock:
-        fcntl.flock(lock, fcntl.LOCK_EX)
-        if not colony_transition(image):
-            subprocess.run(["awww", "img", str(image), "--transition-type", "fade",
-                            "--transition-duration", "0.35"], check=True, timeout=5)
+    # Changes may overlap: Quickshell stacks each transition above the ones
+    # still running and switches awww in order as each one completes.
+    if not colony_transition(image):
+        subprocess.run(["awww", "img", str(image), "--transition-type", "fade",
+                        "--transition-duration", "0.35"], check=True, timeout=5)
 
 
 def main():

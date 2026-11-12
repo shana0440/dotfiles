@@ -13,12 +13,19 @@ Scope {
     property string directory: ""
     property string message: ""
     property string currentPath: ""
-    property string pendingPath: ""
+    // One wallpaper-set per choice, oldest first. Changes overlap on screen:
+    // each starts at once over the ones still running.
+    property var setters: []
+    property int started: 0
+    property int finishedOrder: 0
     property var chosenScreen: Quickshell.screens[0] ?? null
-    readonly property bool busy: preparing || query.running || library.running || setter.running
+    readonly property bool busy: preparing || query.running || library.running
+    // The wallpaper the screen ends up on once all requested changes finish.
+    readonly property string targetPath: setters.length ? setters[setters.length - 1].path : currentPath
 
     function show() {
-        if (setter.running) return
+        // Reopened by hand: a change still starting must not close it again.
+        for (const setter of setters) setter.closeOnReady = false
         chosenScreen = Quickshell.screens.find(s => s.name === Hyprland.focusedMonitor?.name)
             ?? Quickshell.screens[0] ?? null
         message = ""
@@ -29,7 +36,7 @@ Scope {
     }
     function finishOpening() {
         if (!opened || !preparing || query.running || library.running) return
-        const index = items.findIndex(i => i.path === currentPath)
+        const index = items.findIndex(i => i.path === targetPath)
         carousel.cancelFlick()
         carousel.currentIndex = items.length ? Math.max(0, index) : -1
         carousel.forceLayout()
@@ -43,7 +50,8 @@ Scope {
         })
     }
     function close() {
-        if (!setter.running) { opened = false; preparing = false }
+        opened = false
+        preparing = false
     }
     function move(step) {
         if (items.length && !busy)
@@ -51,9 +59,31 @@ Scope {
     }
     function apply() {
         if (busy || carousel.currentIndex < 0 || !items.length) return
-        pendingPath = items[carousel.currentIndex].path
+        const path = items[carousel.currentIndex].path
         message = ""
+        if (path === targetPath) { close(); return }
+        // Closes the picker once its transition is about to start.
+        const setter = setterComponent.createObject(root, { path: path, order: ++started })
+        setters = setters.concat([setter])
         setter.running = true
+    }
+    function setterExited(setter, code, error) {
+        setters = setters.filter(s => s !== setter)
+        if (code === 0) {
+            if (setter.order > finishedOrder) { finishedOrder = setter.order; currentPath = setter.path }
+            if (setter.closeOnReady) close()
+        } else {
+            message = error || "Wallpaper change failed"
+            if (!setters.length) {
+                opened = true
+                Qt.callLater(() => stage.forceActiveFocus())
+            }
+        }
+        setter.destroy()
+    }
+    function label(path) {
+        if (path === targetPath) return setters.length ? "Applying  ·  " : "Current wallpaper  ·  "
+        return ""
     }
 
     Process {
@@ -95,27 +125,24 @@ Scope {
         id: colonyWarm
         command: ["wallpaper-colonies", "warm"]
     }
-    Process {
-        id: setter
-        command: ["wallpaper-set", root.pendingPath]
-        stdout: SplitParser {
-            onRead: data => {
-                if (data === "transition-ready") {
-                    root.opened = false
-                    root.preparing = false
+    Component {
+        id: setterComponent
+        Process {
+            id: setter
+            required property string path
+            required property int order
+            property bool closeOnReady: true
+            command: ["wallpaper-set", path]
+            stdout: SplitParser {
+                onRead: data => {
+                    if (data === "transition-ready" && setter.closeOnReady) {
+                        setter.closeOnReady = false
+                        root.close()
+                    }
                 }
             }
-        }
-        stderr: StdioCollector { id: setError }
-        onExited: (code) => {
-            if (code === 0) {
-                root.currentPath = root.pendingPath
-                root.opened = false
-            } else {
-                root.message = setError.text || "Wallpaper change failed"
-                root.opened = true
-                Qt.callLater(() => stage.forceActiveFocus())
-            }
+            stderr: StdioCollector { id: setError }
+            onExited: code => root.setterExited(setter, code, setError.text)
         }
     }
     Component.onCompleted: library.running = true
@@ -130,7 +157,8 @@ Scope {
         function apply(): void { if (root.opened) root.apply() }
         function state(): string {
             return JSON.stringify({open: root.opened, busy: root.busy, count: root.items.length,
-                selected: root.items[carousel.currentIndex]?.path ?? "", current: root.currentPath, error: root.message})
+                selected: root.items[carousel.currentIndex]?.path ?? "", current: root.currentPath,
+                applying: root.setters.map(s => s.path), error: root.message})
         }
     }
 
@@ -257,7 +285,7 @@ Scope {
                     Text {
                         width: parent.width
                         horizontalAlignment: Text.AlignHCenter
-                        text: root.busy ? (setter.running ? "Applying wallpaper…" : "Loading thumbnails…")
+                        text: root.busy ? "Loading thumbnails…"
                             : root.items.length ? root.items[carousel.currentIndex]?.name ?? ""
                             : "Add JPG, PNG, or WebP images to " + root.directory
                         color: Theme.Colors.foreground
@@ -267,8 +295,7 @@ Scope {
                     Text {
                         width: parent.width
                         horizontalAlignment: Text.AlignHCenter
-                        text: root.message || (root.items[carousel.currentIndex]?.path === root.currentPath
-                            ? "Current wallpaper  ·  " : "") + "← → Browse   ·   Enter Apply to all monitors   ·   Esc Close"
+                        text: root.message || root.label(root.items[carousel.currentIndex]?.path ?? "") + "← → Browse   ·   Enter Apply to all monitors   ·   Esc Close"
                         color: root.message ? Theme.Colors.error : Theme.Colors.accent
                         font.pixelSize: 13
                         elide: Text.ElideRight
