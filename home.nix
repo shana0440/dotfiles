@@ -20,8 +20,7 @@
     ./fonts/fonts.nix
     ./gtk/gtk.nix
     ./vicinae/vicinae.nix
-    ./thunar/thunar.nix
-    ./waydroid/waydroid.nix
+    (import ./file-manager/file-manager.nix).homeManager
     ./hyprland/hyprland.nix
     ./wallpaper/wallpaper.nix
     ./quickshell/quickshell.nix

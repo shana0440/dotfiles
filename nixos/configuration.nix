@@ -6,9 +6,9 @@
     ./hardware-configuration.nix
     (import ../applications.nix).nixos
     (import ../vpn/vpn.nix).nixos
+    (import ../file-manager/file-manager.nix).nixos
     ./desktop.nix
     ./iphone-webcam.nix
-    ./waydroid.nix
     ./user.nix
     ./nas.nix
   ];

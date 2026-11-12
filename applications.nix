@@ -16,18 +16,11 @@
     };
     networking.firewall.allowedTCPPorts = [ 7000 7001 7100 ];
     networking.firewall.allowedUDPPorts = [ 6000 6001 7011 ];
-
-    programs.appimage = {
-      enable = true;
-      binfmt = true;
-      package = import ./appimage/package.nix { inherit pkgs; };
-    };
   };
 
   homeManager = { lib, pkgs, ... }:
     let
       applications = with pkgs; [
-        file-roller
         discord
         bitwarden-desktop
         telegram-desktop
@@ -38,29 +31,11 @@
         (import ./nexon/package.nix { inherit pkgs; })
       ];
       supported = pkg: lib.meta.availableOn pkgs.stdenv.hostPlatform pkg;
-      appimageRun = import ./appimage/package.nix { inherit pkgs; };
     in {
-      imports = [ ./appimage/home.nix ];
-
       # Required for proprietary applications such as Discord.
       nixpkgs.config.allowUnfree = true;
 
-      home.packages = builtins.filter supported applications
-        ++ lib.optional pkgs.stdenv.hostPlatform.isLinux appimageRun;
-
-      # Open archives in the graphical archive manager.
-      home.activation.archiveDefaultHandler = lib.mkIf pkgs.stdenv.hostPlatform.isLinux
-        (lib.hm.dag.entryAfter [ "linkGeneration" ] ''
-          run ${pkgs.xdg-utils}/bin/xdg-mime default org.gnome.FileRoller.desktop application/zip
-          run ${pkgs.xdg-utils}/bin/xdg-mime default org.gnome.FileRoller.desktop application/x-zip-compressed
-          run ${pkgs.xdg-utils}/bin/xdg-mime default org.gnome.FileRoller.desktop application/x-7z-compressed
-        '');
-
-      home.activation.appimageDefaultRunner = lib.mkIf pkgs.stdenv.hostPlatform.isLinux
-        (lib.hm.dag.entryAfter [ "linkGeneration" ] ''
-          run ${pkgs.xdg-utils}/bin/xdg-mime default appimage-run.desktop application/vnd.appimage
-          run ${pkgs.xdg-utils}/bin/xdg-mime default appimage-run.desktop application/x-iso9660-appimage
-        '');
+      home.packages = builtins.filter supported applications;
 
       warnings = map
         (pkg: "Skipping ${pkg.pname}: unavailable on ${pkgs.stdenv.hostPlatform.system}.")
