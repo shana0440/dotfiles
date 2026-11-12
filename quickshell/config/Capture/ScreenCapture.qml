@@ -4,16 +4,13 @@ import QtQuick.Layouts
 import Quickshell
 import Quickshell.Io
 import Quickshell.Wayland
-import "Capture" as CaptureComponents
-import "Services" as Services
+import "../Services" as Services
 
-ShellRoot {
+// Capture toolbar and selectors. Recording state and Stop live in the bar.
+Scope {
     id: root
 
     property bool menuOpen: false
-    // Set per invocation by `screen-capture --no-stop-toolbar` when another UI (the
-    // bar) offers Stop. The environment value only covers a fresh start.
-    property bool hideStopToolbar: Quickshell.env("SCREEN_CAPTURE_HIDE_STOP_TOOLBAR") === "1"
     property string message: ""
     property int mode: 0
     property string outputName: Quickshell.screens[0]?.name ?? ""
@@ -106,10 +103,6 @@ ShellRoot {
         }
     }
 
-    Component.onCompleted: {
-        if (Quickshell.env("SCREEN_CAPTURE_BACKGROUND") !== "1")
-            openMenu()
-    }
     Component.onDestruction: Services.Capture.cleanupPreview()
 
     Timer {
@@ -133,14 +126,8 @@ ShellRoot {
 
     IpcHandler {
         target: "capture"
-        function openMenu(hideStopToolbar: bool): void {
-            root.hideStopToolbar = hideStopToolbar
-            root.openMenu()
-        }
-        function selectRegion(kind: string): void {
-            root.mode = kind === "recording" ? 5 : 2
-            root.openMenu()
-        }
+        function open(): void { root.openMenu() }
+        function close(): void { if (root.menuOpen) root.dismiss() }
         function stop(): void { Services.Capture.stopRecording() }
         function status(): string {
             return JSON.stringify({
@@ -186,8 +173,8 @@ ShellRoot {
 
     PanelWindow {
         id: panel
-        // Keep Stop reachable while recording, unless another UI provides it.
-        visible: root.menuOpen || (Services.Capture.recording && !root.hideStopToolbar)
+        // While recording, the bar shows elapsed time and Stop.
+        visible: root.menuOpen
         screen: root.outputScreen
         anchors.bottom: true
         margins.bottom: 36
@@ -195,12 +182,9 @@ ShellRoot {
         implicitHeight: 70 + (root.message ? 48 : 0)
         color: "transparent"
         exclusionMode: ExclusionMode.Ignore
-        WlrLayershell.namespace: "screen-capture-toolbar"
+        WlrLayershell.namespace: "quickshell-capture-toolbar"
         WlrLayershell.layer: WlrLayer.Overlay
-        // The idle recording control must not steal desktop keyboard focus, but a
-        // menu the user reopened must receive Escape/Enter.
-        WlrLayershell.keyboardFocus: Services.Capture.recording && !root.menuOpen
-            ? WlrKeyboardFocus.None : WlrKeyboardFocus.Exclusive
+        WlrLayershell.keyboardFocus: WlrKeyboardFocus.Exclusive
 
         // Only the rounded toolbar accepts pointer input.
         mask: Region { item: surface }
@@ -246,7 +230,7 @@ ShellRoot {
                                 Layout.preferredHeight: 34
                                 color: "#74747c"
                             }
-                            CaptureComponents.ModeButton {
+                            ModeButton {
                                 text: modeGroup.modelData.label
                                 region: modeGroup.modelData.region
                                 windowMode: modeGroup.modelData.window
