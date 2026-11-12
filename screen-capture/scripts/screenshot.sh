@@ -1,12 +1,5 @@
 set -euo pipefail
 
-notify_screenshot_event() {
-    local shell_config="${XDG_CONFIG_HOME:-$HOME/.config}/screen-capture"
-    # Saving and clipboard delivery must work while Quickshell is unavailable.
-    timeout 1s quickshell --path "$shell_config" \
-        ipc call screenshots "$@" >/dev/null 2>&1 || true
-}
-
 capture_args=()
 case "${1:-}" in
     full)
@@ -14,10 +7,7 @@ case "${1:-}" in
     region)
         geometry="${2:-}"
         if [[ -z "$geometry" ]]; then
-            if timeout 1s quickshell --path "${XDG_CONFIG_HOME:-$HOME/.config}/screen-capture" \
-                ipc call capture selectRegion screenshot >/dev/null 2>&1; then
-                exit 0
-            fi
+            # slurp reads piped stdin as rectangle suggestions; GUI launches supply none.
             if ! geometry=$(slurp </dev/null); then
                 exit 0
             fi
@@ -40,19 +30,16 @@ mkdir -p -- "$screenshot_directory"
 screenshot_path=$(mktemp --suffix=.png "$screenshot_directory/Screenshot-$(date +%Y-%m-%d_%H-%M-%S)-XXXXXX")
 screenshot_saved=false
 
-finish_screenshot() {
-    notify_screenshot_event finished "$screenshot_path"
+remove_unsaved() {
     if [[ "$screenshot_saved" == false ]]; then
         rm -f -- "$screenshot_path"
     fi
 }
-trap finish_screenshot EXIT
-notify_screenshot_event startedByProcess "$screenshot_path" "$$"
+trap remove_unsaved EXIT
 
 # Favor capture latency over PNG file size; compression remains lossless.
 grim -l 1 "${capture_args[@]}" "$screenshot_path"
 screenshot_saved=true
 printf '%s\n' "$screenshot_path"
-notify_screenshot_event captured "$screenshot_path"
 screen-capture-notify screenshot "$screenshot_path" >/dev/null 2>&1 &
 wl-copy --type image/png < "$screenshot_path"

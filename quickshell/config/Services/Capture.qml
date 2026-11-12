@@ -233,13 +233,12 @@ Singleton {
         }
     }
 
-    property var activeScreenshots: []
     property bool screenshotPending: false
     property var screenshotQueue: []
     property var currentScreenshot: null
     property bool screenshotCommandSaved: false
     readonly property bool takingScreenshot: screenshotPending || screenshotQueue.length > 0
-        || (currentScreenshot !== null && !screenshotCommandSaved) || activeScreenshots.length > 0
+        || (currentScreenshot !== null && !screenshotCommandSaved)
     signal screenshotSaved(string filePath)
     signal errorOccurred(string message)
 
@@ -264,52 +263,6 @@ Singleton {
     readonly property bool recordingCommandRunning: recordingCommand.running
     readonly property int recordingElapsedSeconds: recording && recordingStartedAtMs > 0
         ? Math.max(0, Math.floor((recordingClock.date.getTime() - recordingStartedAtMs) / 1000)) : 0
-
-    function screenshotStarted(filePath, processId) {
-        if (!filePath || !Number.isInteger(processId) || processId <= 0)
-            return
-        activeScreenshots = activeScreenshots.filter(capture => capture.path !== filePath).concat([{
-            path: filePath, processId: processId
-        }])
-    }
-
-    function screenshotFinished(filePath) {
-        activeScreenshots = activeScreenshots.filter(capture => capture.path !== filePath)
-    }
-
-    // A helper that dies without reporting `finished` must not block captures forever.
-    Timer {
-        interval: 1000
-        running: root.activeScreenshots.length > 0
-        repeat: true
-        onTriggered: {
-            const processIds = root.activeScreenshots.map(capture => String(capture.processId))
-            if (!screenshotLiveness.running)
-                screenshotLiveness.exec(["sh", "-c",
-                    'for pid do kill -0 "$pid" 2>/dev/null || printf "%s\\n" "$pid"; done',
-                    "screenshot-liveness"].concat(processIds))
-        }
-    }
-
-    Process {
-        id: screenshotLiveness
-        stdout: SplitParser {
-            onRead: data => {
-                const processId = Number(data)
-                root.activeScreenshots = root.activeScreenshots.filter(capture => capture.processId !== processId)
-            }
-        }
-    }
-
-    IpcHandler {
-        target: "screenshots"
-        function startedByProcess(filePath: string, processId: int) { root.screenshotStarted(filePath, processId) }
-        function finished(filePath: string) { root.screenshotFinished(filePath) }
-        function captured(filePath: string) {
-            root.screenshotFinished(filePath)
-            root.screenshotSaved(filePath)
-        }
-    }
 
     function takeScreenshot(mode, outputName) {
         if (mode === "region")
@@ -477,9 +430,9 @@ Singleton {
         stdout: SplitParser {
             onRead: data => {
                 if (data.length > 0) {
+                    // Both capture commands print the saved path once the file is written.
                     root.screenshotCommandSaved = true
-                    if (root.currentScreenshot !== null && root.currentScreenshot[0] === "screen-capture-snapshot")
-                        root.screenshotSaved(data)
+                    root.screenshotSaved(data)
                 }
             }
         }

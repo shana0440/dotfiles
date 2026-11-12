@@ -15,7 +15,7 @@ let
   };
   screenshot = pkgs.writeShellApplication {
     name = "screen-capture-screenshot";
-    runtimeInputs = with pkgs; [ coreutils grim slurp wl-clipboard quickshell captureNotification ];
+    runtimeInputs = with pkgs; [ coreutils grim slurp wl-clipboard captureNotification ];
     text = builtins.readFile ./scripts/screenshot.sh;
   };
   recordingFinished = pkgs.writeShellApplication {
