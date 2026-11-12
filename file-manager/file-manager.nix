@@ -1,8 +1,12 @@
-# File manager and the handlers it opens files with: Thunar for folders,
-# File Roller for archives, and appimage-run for AppImages.
+# File manager and the handlers it opens files with: Thunar for folders
+# (Tumbler thumbnails), File Roller for archives, and appimage-run for AppImages.
 # Import the appropriate module for NixOS or standalone Home Manager.
 {
   nixos = { pkgs, ... }: {
+    # Thunar asks Tumbler over D-Bus for image, video, and PDF thumbnails.
+    # A system service: dbus-broker activates it through its systemd unit.
+    services.tumbler.enable = true;
+
     programs.appimage = {
       enable = true;
       binfmt = true;
