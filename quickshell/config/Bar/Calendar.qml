@@ -22,10 +22,8 @@ Item {
     implicitWidth: 280
     implicitHeight: 300
 
-    Rectangle {
+    Item {
         anchors.fill: parent
-        radius: 8
-        color: Theme.Colors.background
 
         Column {
             anchors.fill: parent

@@ -40,6 +40,8 @@ Item {
         recordRegion: "square-dashed",
         stop: "square",
         notifications: "bell",
+        calendar: "calendar",
+        disc: "disc-3",
         clearNotifications: "list-x"
     })[action] ?? "power"
     readonly property string themedSvg: {

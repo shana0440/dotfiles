@@ -12,16 +12,12 @@ Components.Island {
     property bool volumeVisible: false
     property int availableHeight: 560
     readonly property bool notificationVisible: Services.Notifications.previewVisible
-    readonly property bool showingMedia: expanded && expandedView === "media"
     readonly property bool showingRecording: activeView === recordingView
     readonly property bool sideIslandsMerged: expanded || notificationVisible || Services.Capture.recording
 
     activeView: {
-        if (expanded) {
-            if (expandedView === "notifications")
-                return notificationList
-            return showingMedia ? mediaView : calendar
-        }
+        if (expanded)
+            return dashboard
         if (Services.Notifications.previewVisible)
             return toast
         if (volumeVisible)
@@ -73,8 +69,8 @@ Components.Island {
     }
 
     onExpandedChanged: {
-        if (expanded && expandedView === "calendar")
-            calendar.displayedMonth = new Date(clock.date.getFullYear(), clock.date.getMonth(), 1)
+        if (expanded)
+            dashboard.calendar.displayedMonth = new Date(clock.date.getFullYear(), clock.date.getMonth(), 1)
     }
 
     SystemClock {
@@ -110,26 +106,20 @@ Components.Island {
             height: 32
             onAdjusted: root.showVolume()
         },
-        Calendar {
-            id: calendar
+        Dashboard {
+            id: dashboard
+            tab: root.expandedView
+            active: root.expanded
             today: clock.date
-            onCloseRequested: root.expanded = false
-        },
-        MediaView {
-            id: mediaView
-            active: root.showingMedia
-            onCloseRequested: root.expanded = false
+            maximumHeight: root.availableHeight
+            onTabRequested: tab => root.open(tab)
+            onCloseRequested: root.close()
         },
         RecordingView {
             id: recordingView
             elapsedSeconds: Services.Capture.recordingElapsedSeconds
             stopping: Services.Capture.recordingCommandRunning
             onStopRequested: Services.Capture.stopRecording()
-        },
-        NotificationView {
-            id: notificationList
-            maximumHeight: root.availableHeight
-            onCloseRequested: root.close()
         },
         DingToast {
             id: toast
