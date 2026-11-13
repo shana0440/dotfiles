@@ -245,7 +245,9 @@ hl.config({
         kb_options = "",
         kb_rules   = "",
 
-        follow_mouse = 1,
+        -- 2: hovering doesn't steal keyboard focus; click to focus.
+        -- Scroll still goes to the window under the cursor.
+        follow_mouse = 2,
 
         sensitivity = 0, -- -1.0 - 1.0, 0 means no modification.
 
