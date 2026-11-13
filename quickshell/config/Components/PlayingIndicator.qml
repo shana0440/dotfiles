@@ -12,7 +12,7 @@ Rectangle {
     implicitWidth: 28
     implicitHeight: 28
     radius: 8
-    color: mouse.containsMouse || activeFocus ? Theme.Colors.activeWorkspace : Theme.Colors.transparent
+    color: mouse.containsMouse || activeFocus ? Theme.Colors.highlight : Theme.Colors.transparent
     activeFocusOnTab: true
     Accessible.role: Accessible.Button
     Accessible.name: tooltip
@@ -35,7 +35,7 @@ Rectangle {
                 width: 3
                 height: root.playing ? Math.max(3, 20 * (root.levels[index] ?? 0)) : 3
                 radius: 1.5
-                color: Theme.Colors.accent
+                color: Theme.Colors.foreground
 
                 Behavior on height {
                     SmoothedAnimation { velocity: 160 }

@@ -143,7 +143,7 @@ Item {
             radius: width / 2
             antialiasing: true
             color: Theme.Colors.foreground
-            border.color: Theme.Colors.activeWorkspace
+            border.color: Theme.Colors.track
 
             MouseArea {
                 anchors.fill: parent

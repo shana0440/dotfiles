@@ -172,7 +172,7 @@ Item {
         implicitWidth: buttonText.implicitWidth + 20
         implicitHeight: 30
         radius: 6
-        color: buttonMouse.containsMouse ? Theme.Colors.activeWorkspace : Theme.Colors.transparent
+        color: buttonMouse.containsMouse ? Theme.Colors.highlight : Theme.Colors.transparent
         opacity: enabled ? 1 : 0.4
         Accessible.role: Accessible.Button
         Accessible.name: label
@@ -265,7 +265,7 @@ Item {
                     width: networkList.width
                     height: 48
                     radius: 6
-                    color: active || networkMouse.containsMouse ? Theme.Colors.activeWorkspace : Theme.Colors.transparent
+                    color: active || networkMouse.containsMouse ? Theme.Colors.highlight : Theme.Colors.transparent
 
                     Components.Icon {
                         x: 8
@@ -348,7 +348,7 @@ Item {
                     width: parent.width
                     height: 34
                     radius: 6
-                    color: Theme.Colors.activeWorkspace
+                    color: Theme.Colors.surface
 
                     TextInput {
                         id: password

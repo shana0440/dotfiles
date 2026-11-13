@@ -5,7 +5,7 @@ import "../Theme" as Theme
 import "../Components" as Components
 import "../Services" as Services
 
-Rectangle {
+Components.Surface {
     id: root
 
     property real availableWidth: 0
@@ -23,7 +23,6 @@ Rectangle {
     visible: windows.count > 0 && availableWidth >= buttonSize + padding * 2
     width: visible ? Math.min(appRow.width + padding * 2, availableWidth) : 0
     radius: 8
-    color: Theme.Colors.background
 
     Flickable {
         id: appList
@@ -76,7 +75,7 @@ Rectangle {
                     height: appList.height
                     radius: 4
                     color: modelData.activated || mouse.containsMouse
-                        ? Theme.Colors.activeWorkspace : Theme.Colors.transparent
+                        ? Theme.Colors.highlight : Theme.Colors.transparent
 
                     Image {
                         id: appIcon
@@ -102,7 +101,7 @@ Rectangle {
                         width: 10
                         height: 2
                         radius: 1
-                        color: Theme.Colors.accent
+                        color: Theme.Colors.foreground
                         visible: button.modelData.activated
                     }
 
@@ -113,7 +112,7 @@ Rectangle {
                         width: 7
                         height: 7
                         radius: width / 2
-                        color: Theme.Colors.accent
+                        color: Theme.Colors.info
                         border.color: Theme.Colors.background
                         border.width: 1
                         visible: Services.LauncherBadges.hasUnread(

@@ -3,7 +3,7 @@ import "../Theme" as Theme
 
 // A side dot that slides under its neighbour while merged and pops back out on a
 // spring, arriving from half size like a Ding toast.
-Rectangle {
+Surface {
     id: root
 
     property bool merged: false
@@ -17,7 +17,6 @@ Rectangle {
     width: 32
     height: 32
     radius: height / 2
-    color: Theme.Colors.background
     opacity: Math.max(0, Math.min(1, appearSpring.value * 2))
     scale: 0.5 + 0.5 * appearSpring.value
     visible: opacity > 0

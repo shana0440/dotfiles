@@ -62,7 +62,7 @@ Item {
                 height: 40
                 radius: 6
                 color: buttonMouse.containsMouse || activeFocus
-                    ? Theme.Colors.activeWorkspace : Theme.Colors.transparent
+                    ? Theme.Colors.highlight : Theme.Colors.transparent
                 activeFocusOnTab: true
                 Keys.onReturnPressed: root.choose(modelData.action)
                 Keys.onSpacePressed: root.choose(modelData.action)
@@ -135,7 +135,7 @@ Item {
                     width: (confirmation.width - 8) / 2
                     height: 32
                     radius: 6
-                    color: confirmMouse.containsMouse ? Theme.Colors.activeWorkspace : Theme.Colors.transparent
+                    color: confirmMouse.containsMouse ? Theme.Colors.highlight : Theme.Colors.transparent
 
                     Text {
                         anchors.centerIn: parent

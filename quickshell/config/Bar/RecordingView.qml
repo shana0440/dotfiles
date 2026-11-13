@@ -38,14 +38,14 @@ Item {
                 width: 6
                 height: 6
                 radius: width / 2
-                color: Theme.Colors.accent
+                color: Theme.Colors.error
             }
 
             Text {
                 id: elapsedTime
                 height: parent.height
                 text: root.elapsedText
-                color: Theme.Colors.accent
+                color: Theme.Colors.error
                 font.family: "monospace"
                 font.pixelSize: 13
                 verticalAlignment: Text.AlignVCenter
@@ -76,7 +76,7 @@ Item {
         icon: "stop"
         iconSize: 14
         iconFilled: true
-        iconColor: Theme.Colors.accent
+        iconColor: Theme.Colors.error
         tooltip: root.stopping ? "Finishing recording…" : "Stop recording"
         enabled: !root.stopping
         onClicked: root.stopRequested()

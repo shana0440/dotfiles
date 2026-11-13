@@ -15,8 +15,10 @@ Rectangle {
     implicitWidth: 36
     implicitHeight: 36
     radius: 8
-    color: highlighted ? Theme.Colors.accent
-        : mouse.containsMouse || activeFocus ? Theme.Colors.activeWorkspace : Theme.Colors.transparent
+    // Highlighted is Ding's primary action: the foreground fills it and the glyph inverts.
+    color: highlighted
+        ? (mouse.containsMouse ? Qt.tint(Theme.Colors.foreground, "#2e0c0c0d") : Theme.Colors.foreground)
+        : mouse.containsMouse || activeFocus ? Theme.Colors.highlight : Theme.Colors.transparent
     opacity: enabled ? 1 : 0.4
     activeFocusOnTab: true
     Accessible.role: Accessible.Button
@@ -29,7 +31,7 @@ Rectangle {
         width: root.iconSize
         height: root.iconSize
         action: root.icon
-        iconColor: root.iconColor
+        iconColor: root.highlighted ? Theme.Colors.background : root.iconColor
         filled: root.iconFilled
     }
 

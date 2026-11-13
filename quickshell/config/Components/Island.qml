@@ -3,7 +3,7 @@ import QtQuick.Effects
 import "../Theme" as Theme
 
 // Keep views instantiated so subscriptions and pending requests survive view switches.
-Rectangle {
+Surface {
     id: root
 
     property list<Item> views
@@ -18,7 +18,6 @@ Rectangle {
     width: widthSpring.value
     height: heightSpring.value
     radius: Math.min(radiusSpring.value, height / 2)
-    color: Theme.Colors.background
 
     // Ding's morph: growing squeezes in a little and springs open; shrinking swells
     // first and settles on a firmer spring without overshoot. Small changes (a clock

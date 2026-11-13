@@ -19,7 +19,7 @@ Item {
     implicitHeight: Math.min(content.implicitHeight + 78, maximumHeight)
     readonly property var memory: snapshot ? snapshot.memory : null
     readonly property var temperature: snapshot ? snapshot.temperature : null
-    readonly property color muted: "#9c9ca8"
+    readonly property color muted: Theme.Colors.muted
 
     onActiveChanged: {
         if (active) {
@@ -133,10 +133,10 @@ Item {
     component Meter: Rectangle {
         id: meter
         property real fraction: 0
-        property color fillColor: Theme.Colors.accent
+        property color fillColor: Theme.Colors.foreground
         height: 4
         radius: 2
-        color: Theme.Colors.activeWorkspace
+        color: Theme.Colors.track
 
         Rectangle {
             width: fillSpring.value
@@ -162,7 +162,7 @@ Item {
         width: (content.width - 10) / 2
         height: 108
         radius: 10
-        color: "#202024"
+        color: Theme.Colors.surface
 
         Column {
             x: 12
@@ -176,7 +176,7 @@ Item {
             }
             Text {
                 text: value
-                color: warning ? "#fbbf24" : Theme.Colors.foreground
+                color: warning ? Theme.Colors.warning : Theme.Colors.foreground
                 font.pixelSize: 24
                 font.weight: Font.DemiBold
             }
@@ -192,7 +192,7 @@ Item {
                 width: parent.width
                 fraction: parent.parent.fraction
                 visible: parent.parent.fraction >= 0
-                fillColor: warning ? "#fbbf24" : Theme.Colors.accent
+                fillColor: warning ? Theme.Colors.warning : Theme.Colors.foreground
             }
         }
     }
@@ -206,7 +206,7 @@ Item {
         width: content.width
         height: 62
         radius: 10
-        color: "#202024"
+        color: Theme.Colors.surface
 
         Column {
             x: 12
@@ -250,7 +250,7 @@ Item {
         Components.Icon {
             anchors.verticalCenter: parent.verticalCenter
             action: "systemStatus"
-            iconColor: Theme.Colors.accent
+            iconColor: Theme.Colors.foreground
         }
         Column {
             width: parent.width - 72
@@ -263,7 +263,7 @@ Item {
             }
             Text {
                 text: root.failed ? "Unable to read system metrics" : "Live host metrics · every 2 seconds"
-                color: root.failed ? "#fbbf24" : root.muted
+                color: root.failed ? Theme.Colors.warning : root.muted
                 font.pixelSize: 10
             }
         }
@@ -466,7 +466,7 @@ Item {
                         Meter {
                             width: parent.width
                             fraction: modelData.percent
-                            fillColor: modelData.percent >= 0.9 ? "#fbbf24" : Theme.Colors.accent
+                            fillColor: modelData.percent >= 0.9 ? Theme.Colors.warning : Theme.Colors.foreground
                         }
                         Text {
                             text: root.bytes(modelData.used) + " used · " + root.bytes(modelData.free) + " available"
@@ -480,7 +480,7 @@ Item {
             Rectangle {
                 width: parent.width
                 height: 1
-                color: Theme.Colors.activeWorkspace
+                color: Theme.Colors.track
             }
             Text {
                 width: parent.width

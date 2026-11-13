@@ -26,7 +26,7 @@ Item {
             width: 64
             height: contentRow.height
             radius: 6
-            color: Theme.Colors.activeWorkspace
+            color: Theme.Colors.surface
 
             Image {
                 id: preview

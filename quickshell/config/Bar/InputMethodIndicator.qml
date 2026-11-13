@@ -30,7 +30,7 @@ Rectangle {
     width: Math.max(40, inputLabel.implicitWidth + 16)
     height: 32
     radius: 8
-    color: mouse.containsMouse || activeFocus ? Theme.Colors.activeWorkspace : Theme.Colors.transparent
+    color: mouse.containsMouse || activeFocus ? Theme.Colors.highlight : Theme.Colors.transparent
     opacity: inputItem ? 1 : 0.5
     activeFocusOnTab: true
     Accessible.role: Accessible.Button

@@ -50,7 +50,7 @@ Item {
                 width: 72
                 height: 72
                 radius: 8
-                color: Theme.Colors.activeWorkspace
+                color: Theme.Colors.surface
 
                 Image {
                     id: artwork
@@ -67,7 +67,7 @@ Item {
                     width: 32
                     height: 32
                     action: "audio"
-                    iconColor: Theme.Colors.accent
+                    iconColor: Theme.Colors.muted
                     visible: artwork.status !== Image.Ready
                 }
             }
@@ -134,7 +134,7 @@ Item {
                     width: (spectrum.width - (Services.Cava.barCount - 1) * spectrum.spacing) / Services.Cava.barCount
                     height: Math.max(3, spectrum.height * (Services.Cava.bars[index] ?? 0))
                     radius: width / 2
-                    color: Theme.Colors.accent
+                    color: Theme.Colors.foreground
                     opacity: 0.8
 
                     Behavior on height {
@@ -153,14 +153,14 @@ Item {
                 width: parent.width
                 height: 4
                 radius: 2
-                color: Theme.Colors.activeWorkspace
+                color: Theme.Colors.track
 
                 Rectangle {
                     width: root.duration > 0 ? parent.width * Math.min(1,
                         (seekMouse.pressed ? root.previewPosition : root.position) / root.duration) : 0
                     height: parent.height
                     radius: 2
-                    color: Theme.Colors.accent
+                    color: Theme.Colors.foreground
                 }
             }
 

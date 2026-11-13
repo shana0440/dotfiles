@@ -18,7 +18,7 @@ Rectangle {
     width: 40
     height: 32
     radius: 8
-    color: mouse.containsMouse ? Theme.Colors.activeWorkspace : Theme.Colors.transparent
+    color: mouse.containsMouse ? Theme.Colors.highlight : Theme.Colors.transparent
     Accessible.role: Accessible.Button
     Accessible.name: statusText
 

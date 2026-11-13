@@ -9,7 +9,7 @@ Rectangle {
     required property var notification
     implicitHeight: content.implicitHeight + 24
     radius: 8
-    color: Theme.Colors.activeWorkspace
+    color: Theme.Colors.surface
 
     Components.IconButton {
         anchors.right: parent.right
