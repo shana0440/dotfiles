@@ -33,14 +33,14 @@ PanelWindow {
         }
     }
 
-    // The expanded center island; it reopens on the last tab.
+    // The expanded center island; toggling opens it on the calendar.
     IpcHandler {
         target: "dashboard"
         function toggle(): void {
             if (centerIsland.expanded)
                 root.closeMenus()
             else
-                root.openDashboard(centerIsland.expandedView)
+                root.openDashboard("calendar")
         }
         function open(tab: string): void { root.openDashboard(tab) }
         function close(): void { centerIsland.close() }
