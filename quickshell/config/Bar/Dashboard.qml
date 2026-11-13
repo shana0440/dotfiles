@@ -107,7 +107,6 @@ Item {
                 id: mediaView
                 width: root.pageWidth
                 active: root.active && root.tab === "media"
-                onCloseRequested: root.closeRequested()
             },
             NotificationView {
                 id: notificationList

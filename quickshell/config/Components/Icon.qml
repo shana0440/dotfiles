@@ -42,6 +42,8 @@ Item {
         notifications: "bell",
         calendar: "calendar",
         disc: "disc-3",
+        album: "disc-album",
+        radio: "radio",
         clearNotifications: "list-x"
     })[action] ?? "power"
     readonly property string themedSvg: {
