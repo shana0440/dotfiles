@@ -51,6 +51,16 @@ PanelWindow {
         centerIsland.open(["calendar", "media", "audio", "notifications", "network", "bluetooth", "system", "usage"].includes(tab) ? tab : "calendar")
     }
 
+    // Pairing prompts can arrive while the dashboard is closed, e.g. from a remote
+    // device; the Bluetooth tab shows them.
+    Connections {
+        target: Services.Bluetooth
+        function onRequestChanged() {
+            if (Services.Bluetooth.request)
+                root.openDashboard("bluetooth")
+        }
+    }
+
     IpcHandler {
         target: "inputMenu"
         function close() {

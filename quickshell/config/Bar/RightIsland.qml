@@ -1,7 +1,6 @@
 import QtQuick
 import "../Theme" as Theme
 import "../Components" as Components
-import "../Services" as Services
 
 Components.Island {
     id: root
@@ -14,22 +13,13 @@ Components.Island {
     readonly property bool keyboardFocusRequired: expanded && mode !== "input"
     readonly property bool confirming: mode === "power" && menu.confirming
 
-    activeView: mode === "input" ? inputMenu : mode === "bluetooth" ? bluetoothMenu : mode === "power" ? menu : defaultContent
+    activeView: mode === "input" ? inputMenu : mode === "power" ? menu : defaultContent
     alignment: Qt.AlignRight
     overflowView: defaultContent
 
     function close() {
         mode = "default"
         menu.cancel()
-    }
-
-    // Pairing prompts can arrive while the menu is closed, e.g. from a remote device.
-    Connections {
-        target: Services.Bluetooth
-        function onRequestChanged() {
-            if (Services.Bluetooth.request)
-                root.mode = "bluetooth"
-        }
     }
 
     views: [
@@ -40,10 +30,6 @@ Components.Island {
             InputMethodIndicator {
                 id: inputIndicator
                 onClicked: root.mode = "input"
-            }
-
-            BluetoothIndicator {
-                onClicked: root.mode = "bluetooth"
             }
 
             Rectangle {
@@ -73,12 +59,6 @@ Components.Island {
         },
         PowerMenu {
             id: menu
-            onCloseRequested: root.close()
-        },
-        BluetoothMenu {
-            id: bluetoothMenu
-            active: root.mode === "bluetooth"
-            maximumHeight: root.availableHeight
             onCloseRequested: root.close()
         },
         InputMethodMenu {
