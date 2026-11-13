@@ -1,6 +1,5 @@
 import QtQuick
 import Quickshell
-import Quickshell.Io
 import "../Theme" as Theme
 import "../Components" as Components
 
@@ -11,9 +10,7 @@ Item {
     signal closeRequested()
     signal connectionChanged()
     property string selectedSsid: ""
-    property string message: ""
-    property string pendingPassword: ""
-    readonly property bool busy: connectProcess.running || disconnectProcess.running
+    readonly property bool busy: wifi.busy
 
     implicitWidth: 340
     implicitHeight: content.implicitHeight + 24
@@ -21,66 +18,13 @@ Item {
 
     onActiveChanged: {
         password.text = ""
-        pendingPassword = ""
         selectedSsid = ""
-        if (active)
-            refresh()
-    }
-
-    function refresh() {
-        if (scan.running || busy)
-            return
-        message = ""
-        scan.running = true
-    }
-
-    function fields(line) {
-        const result = []
-        let field = ""
-        let escaped = false
-        for (const char of line) {
-            if (escaped) {
-                field += char
-                escaped = false
-            } else if (char === "\\") {
-                escaped = true
-            } else if (char === ":") {
-                result.push(field)
-                field = ""
-            } else {
-                field += char
-            }
-        }
-        result.push(field)
-        return result
-    }
-
-    function loadNetworks(output) {
-        const unique = new Map()
-        for (const line of output.trim().split("\n")) {
-            const parts = fields(line)
-            if (parts.length < 4 || !parts[1])
-                continue
-            const network = {
-                ssid: parts[1], active: parts[0] === "yes",
-                strength: Number(parts[2]) || 0, security: parts[3], device: parts[4] || ""
-            }
-            const previous = unique.get(network.ssid)
-            if (!previous || network.active || (!previous.active && network.strength > previous.strength))
-                unique.set(network.ssid, network)
-        }
-        const sorted = Array.from(unique.values()).sort((a, b) => Number(b.active) - Number(a.active) || b.strength - a.strength)
-        networks.clear()
-        for (const network of sorted)
-            networks.append(network)
-        if (!networks.count)
-            message = "No networks found. Check that Wi-Fi is enabled."
     }
 
     function selectNetwork(ssid, security) {
         selectedSsid = ssid
         password.text = ""
-        message = ""
+        wifi.message = ""
         if (!security || security === "--")
             connectSelected()
         else
@@ -90,12 +34,8 @@ Item {
     function connectSelected() {
         if (!selectedSsid || busy)
             return
-        pendingPassword = password.text
+        wifi.connect(selectedSsid, password.text)
         password.text = ""
-        message = "Connecting to " + selectedSsid + "…"
-        connectProcess.stdinEnabled = true
-        connectProcess.command = ["nmcli", "--ask", "--wait", "30", "device", "wifi", "connect", selectedSsid]
-        connectProcess.running = true
     }
 
     function disconnectNetwork(device) {
@@ -103,66 +43,15 @@ Item {
             return
         selectedSsid = ""
         password.text = ""
-        message = "Disconnecting…"
-        disconnectProcess.command = ["nmcli", "--wait", "15", "device", "disconnect", device]
-        disconnectProcess.running = true
+        wifi.disconnect(device)
     }
 
-    ListModel { id: networks }
-
-    Process {
-        id: scan
-        environment: ({ LC_ALL: "C" })
-        command: ["nmcli", "-t", "-e", "yes", "-f", "ACTIVE,SSID,SIGNAL,SECURITY,DEVICE", "device", "wifi", "list", "--rescan", "auto"]
-        stdout: StdioCollector { id: scanOutput }
-        stderr: StdioCollector {}
-        onExited: code => {
-            if (code === 0)
-                root.loadNetworks(scanOutput.text)
-            else
-                root.message = "Unable to list Wi-Fi networks. Try refreshing."
-        }
-    }
-
-    Process {
-        id: connectProcess
-        environment: ({ LC_ALL: "C" })
-        stdinEnabled: true
-        // Pass passwords through stdin to keep them out of process listings.
-        onStarted: {
-            if (root.pendingPassword)
-                write(root.pendingPassword + "\n")
-            root.pendingPassword = ""
-            stdinEnabled = false
-        }
-        stdout: StdioCollector {}
-        stderr: StdioCollector {}
-        onExited: code => {
-            root.pendingPassword = ""
-            if (code === 0) {
-                root.selectedSsid = ""
-                root.message = "Connected."
-                root.connectionChanged()
-                Qt.callLater(() => root.refresh())
-            } else {
-                root.message = "Connection failed. Check the password or use advanced settings."
-            }
-        }
-    }
-
-    Process {
-        id: disconnectProcess
-        environment: ({ LC_ALL: "C" })
-        stdout: StdioCollector {}
-        stderr: StdioCollector {}
-        onExited: code => {
-            if (code === 0) {
-                root.message = "Disconnected."
-                root.connectionChanged()
-                Qt.callLater(() => root.refresh())
-            } else {
-                root.message = "Unable to disconnect. Try refreshing or use advanced settings."
-            }
+    WifiController {
+        id: wifi
+        active: root.active
+        onConnectionChanged: {
+            root.selectedSsid = ""
+            root.connectionChanged()
         }
     }
 
@@ -227,9 +116,9 @@ Item {
                 }
                 Button {
                     id: refreshButton
-                    label: scan.running ? "Scanning…" : "Refresh"
-                    enabled: !scan.running && !root.busy
-                    onClicked: root.refresh()
+                    label: wifi.scanning ? "Scanning…" : "Refresh"
+                    enabled: !wifi.scanning && !root.busy
+                    onClicked: wifi.refresh()
                 }
                 Button {
                     id: closeButton
@@ -242,7 +131,7 @@ Item {
                 font.family: Theme.Fonts.family
                 font.weight: Theme.Fonts.weight
                 width: parent.width
-                text: root.message
+                text: wifi.message
                 textFormat: Text.PlainText
                 visible: text.length > 0
                 wrapMode: Text.Wrap
@@ -257,7 +146,7 @@ Item {
                 height: 220
                 clip: true
                 spacing: 4
-                model: networks
+                model: wifi.networks
                 enabled: !root.busy
 
                 delegate: Rectangle {
@@ -397,7 +286,7 @@ Item {
                         }
                     }
                     Button {
-                        label: connectProcess.running ? "Connecting…" : "Connect"
+                        label: wifi.connecting ? "Connecting…" : "Connect"
                         enabled: !root.busy
                         onClicked: root.connectSelected()
                     }

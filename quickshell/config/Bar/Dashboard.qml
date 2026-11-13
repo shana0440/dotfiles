@@ -14,6 +14,7 @@ Item {
     readonly property alias calendar: calendar
     readonly property Item currentPage: tab === "media" ? mediaView
         : tab === "notifications" ? notificationList
+        : tab === "network" ? networkView
         : tab === "system" ? systemView : calendarPage
     signal tabRequested(string tab)
     signal closeRequested()
@@ -37,6 +38,7 @@ Item {
                 { tab: "calendar", icon: "calendar", tooltip: "Calendar" },
                 { tab: "media", icon: "disc", tooltip: "Now playing" },
                 { tab: "notifications", icon: "notifications", tooltip: "Notifications" },
+                { tab: "network", icon: "wifi", tooltip: "Network" },
                 { tab: "system", icon: "systemStatus", tooltip: "System" }
             ]
 
@@ -114,6 +116,13 @@ Item {
                 id: notificationList
                 width: root.pageWidth
                 maximumHeight: root.maximumHeight
+            },
+            NetworkView {
+                id: networkView
+                width: root.pageWidth
+                maximumHeight: root.maximumHeight
+                active: root.active && root.tab === "network"
+                onCloseRequested: root.closeRequested()
             },
             SystemView {
                 id: systemView
