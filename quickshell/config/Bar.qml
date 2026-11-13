@@ -1,6 +1,7 @@
 import QtQuick
 import Quickshell
 import Quickshell.Io
+import Quickshell.Hyprland
 import Quickshell.Wayland
 import "Bar" as BarComponents
 import "Theme" as Theme
@@ -49,6 +50,58 @@ PanelWindow {
         function close() {
             if (rightIsland.mode === "input")
                 rightIsland.close()
+        }
+    }
+
+    // When a layer drops exclusive keyboard focus without unmapping, Hyprland clears
+    // the focused surface but keeps the focused window, so its refocus of that window
+    // is a no-op and the keyboard goes nowhere. Unmapping an exclusive layer takes the
+    // working path, so a throwaway one hands focus back to the previous window.
+    onMenuNeedsKeyboardFocusChanged: {
+        if (!menuNeedsKeyboardFocus)
+            focusCheck.restart()
+    }
+
+    // An empty activewindowv2 means no window has the keyboard.
+    property bool keyboardUnfocused: false
+    Connections {
+        target: Hyprland
+        function onRawEvent(event) {
+            if (event.name === "activewindowv2")
+                root.keyboardUnfocused = event.data.length === 0
+        }
+    }
+
+    Timer {
+        id: focusCheck
+        interval: 50
+        onTriggered: {
+            if (!root.menuNeedsKeyboardFocus && root.keyboardUnfocused)
+                focusRelay.visible = true
+        }
+    }
+
+    PanelWindow {
+        id: focusRelay
+        screen: root.screen
+        visible: false
+        anchors.top: true
+        anchors.left: true
+        implicitWidth: 1
+        implicitHeight: 1
+        color: Theme.Colors.transparent
+        exclusionMode: ExclusionMode.Ignore
+        WlrLayershell.layer: WlrLayer.Overlay
+        WlrLayershell.keyboardFocus: WlrKeyboardFocus.Exclusive
+        WlrLayershell.namespace: "quickshell-focus-relay"
+        mask: Region {}
+
+        onVisibleChanged: if (visible) relayRelease.restart()
+
+        Timer {
+            id: relayRelease
+            interval: 50
+            onTriggered: focusRelay.visible = false
         }
     }
 

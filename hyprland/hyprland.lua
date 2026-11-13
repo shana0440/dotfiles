@@ -381,7 +381,7 @@ hl.bind(mainMod .. " + Super_L", function()
         hl.exec_cmd("quickshell --path ~/.config/quickshell ipc call dashboard toggle")
     end
     superTap.held = false
-end, { release = true })
+end, { release = true, non_consuming = true })
 
 local comboKeys = {
     "Return", "Tab", "space", "Escape", "BackSpace", "Delete", "Insert", "Home", "End",
