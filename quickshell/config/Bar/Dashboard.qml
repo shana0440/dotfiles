@@ -13,6 +13,7 @@ Item {
     property int maximumHeight: 560
     readonly property alias calendar: calendar
     readonly property Item currentPage: tab === "media" ? mediaView
+        : tab === "audio" ? audioView
         : tab === "notifications" ? notificationList
         : tab === "network" ? networkView
         : tab === "system" ? systemView
@@ -38,6 +39,7 @@ Item {
             model: [
                 { tab: "calendar", icon: "calendar", tooltip: "Calendar" },
                 { tab: "media", icon: "disc", tooltip: "Now playing" },
+                { tab: "audio", icon: "speaker", tooltip: "Audio" },
                 { tab: "notifications", icon: "notifications", tooltip: "Notifications" },
                 { tab: "network", icon: "wifi", tooltip: "Network" },
                 { tab: "system", icon: "systemStatus", tooltip: "System" },
@@ -113,6 +115,11 @@ Item {
                 id: mediaView
                 width: root.pageWidth
                 active: root.active && root.tab === "media"
+            },
+            AudioView {
+                id: audioView
+                width: root.pageWidth
+                maximumHeight: root.maximumHeight
             },
             NotificationView {
                 id: notificationList

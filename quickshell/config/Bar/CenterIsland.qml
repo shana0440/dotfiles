@@ -52,6 +52,9 @@ Components.Island {
     }
 
     function showVolume() {
+        // The audio tab shows the change itself; collapsing would close it mid-drag.
+        if (expanded && expandedView === "audio")
+            return
         expanded = false
         volumeVisible = true
         volumeTimeout.restart()

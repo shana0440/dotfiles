@@ -48,6 +48,10 @@ Item {
         back: "chevron-left",
         forward: "chevron-right",
         usage: "gauge",
+        speaker: "volume-2",
+        speakerMuted: "volume-x",
+        microphoneMuted: "mic-off",
+        check: "check",
         clearNotifications: "list-x"
     })[action] ?? "power"
     readonly property string themedSvg: {
