@@ -24,7 +24,13 @@ PanelWindow {
 
     Connections {
         target: Services.Notifications
-        function onActionInvoked() { root.closeMenus() }
+        function onActionInvoked() {
+            // Hyprland refuses window focus while an exclusive layer exists, so the
+            // sender waits until the menu has handed the keyboard back.
+            if (root.menuNeedsKeyboardFocus)
+                Services.Notifications.focusBlocked = true
+            root.closeMenus()
+        }
     }
 
     // The expanded center island; it reopens on the last tab.
@@ -78,6 +84,15 @@ PanelWindow {
         onTriggered: {
             if (!root.menuNeedsKeyboardFocus && root.keyboardUnfocused)
                 focusRelay.visible = true
+            else
+                root.focusHandedBack()
+        }
+    }
+
+    function focusHandedBack() {
+        if (Services.Notifications.focusBlocked) {
+            Services.Notifications.focusBlocked = false
+            Services.Notifications.flushFocus()
         }
     }
 
@@ -101,7 +116,10 @@ PanelWindow {
         Timer {
             id: relayRelease
             interval: 50
-            onTriggered: focusRelay.visible = false
+            onTriggered: {
+                focusRelay.visible = false
+                Qt.callLater(root.focusHandedBack)
+            }
         }
     }
 
