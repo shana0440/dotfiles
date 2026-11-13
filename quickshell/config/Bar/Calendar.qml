@@ -127,7 +127,7 @@ Item {
                         width: days.width / 7
                         height: 32
                         radius: 4
-                        color: isToday ? Theme.Colors.activeWorkspace : Theme.Colors.transparent
+                        color: isToday ? Theme.Colors.highlight : Theme.Colors.transparent
 
                         Text {
                             anchors.centerIn: parent

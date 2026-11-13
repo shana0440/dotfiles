@@ -1,10 +1,9 @@
 import QtQuick
-import "../Theme" as Theme
+import "../Components" as Components
 
-Rectangle {
+Components.Surface {
     width: workspaceRow.width + 16
     radius: 8
-    color: Theme.Colors.background
 
     Row {
         id: workspaceRow

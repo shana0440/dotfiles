@@ -74,7 +74,7 @@ Item {
                 width: parent.width
                 height: 4
                 radius: 2
-                color: Theme.Colors.activeWorkspace
+                color: Theme.Colors.track
 
                 Rectangle {
                     width: parent.width * Math.max(0, Math.min(1, root.audio?.volume ?? 0))

@@ -18,7 +18,7 @@ Components.MergeableCircle {
         action: "notifications"
         width: 18
         height: 18
-        iconColor: Services.Notifications.count > 0 ? Theme.Colors.accent : Theme.Colors.foreground
+        iconColor: Services.Notifications.count > 0 ? Theme.Colors.foreground : Theme.Colors.foreground
     }
 
     Rectangle {
@@ -27,7 +27,7 @@ Components.MergeableCircle {
         width: 7
         height: 7
         radius: 4
-        color: Theme.Colors.accent
+        color: Theme.Colors.info
         visible: Services.Notifications.count > 0
     }
 

@@ -50,7 +50,7 @@ Item {
         WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
         mask: Region {}
 
-        Rectangle {
+        Surface {
             // mapToItem is not reactive; depending on `eligible` re-reads the
             // position each time the tooltip is shown, after layout has settled.
             readonly property point local: root.eligible && root.target && root.ownerWindow
@@ -68,7 +68,6 @@ Item {
             width: Math.min(label.implicitWidth + 16, parent.width)
             height: 26
             radius: 6
-            color: Theme.Colors.background
 
             Text {
                 id: label

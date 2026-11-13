@@ -85,7 +85,7 @@ Item {
         enabled: root.available && (entry?.enabled ?? false)
         opacity: enabled ? 1 : 0.4
         color: entry?.checkState === Qt.Checked || mouse.containsMouse || activeFocus
-            ? Theme.Colors.activeWorkspace : Theme.Colors.transparent
+            ? Theme.Colors.highlight : Theme.Colors.transparent
         activeFocusOnTab: true
         Accessible.role: Accessible.Button
         Accessible.name: description

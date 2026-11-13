@@ -79,7 +79,7 @@ Components.Island {
                 width: 40
                 height: 32
                 radius: 8
-                color: powerMouse.containsMouse ? Theme.Colors.activeWorkspace : Theme.Colors.transparent
+                color: powerMouse.containsMouse ? Theme.Colors.highlight : Theme.Colors.transparent
 
                 Components.Icon {
                     anchors.centerIn: parent

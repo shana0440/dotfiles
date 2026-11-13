@@ -5,6 +5,7 @@ import Quickshell.Io
 import Quickshell.Wayland
 import "../Services" as Services
 import "../Theme" as Theme
+import "../Components" as Components
 
 // Capture toolbar and selectors. Recording state and Stop live in the bar.
 Scope {
@@ -190,13 +191,13 @@ Scope {
         // Only the rounded toolbar accepts pointer input.
         mask: Region { item: surface }
 
-        Rectangle {
+        Components.Surface {
             id: surface
             anchors.fill: parent
             anchors.margins: 4
             radius: 12
             color: Theme.Colors.panel
-            border.color: Theme.Colors.activeWorkspace
+            border.color: Theme.Colors.ring
             border.width: 1
 
             ColumnLayout {
@@ -235,7 +236,7 @@ Scope {
                                 Layout.preferredHeight: 28
                                 Layout.leftMargin: 4
                                 Layout.rightMargin: 4
-                                color: Theme.Colors.activeWorkspace
+                                color: Theme.Colors.track
                             }
                             ModeButton {
                                 icon: modeGroup.modelData.region ? "region" : modeGroup.modelData.window ? "window" : "screen"
@@ -265,7 +266,7 @@ Scope {
                         Layout.preferredWidth: 96
                         Layout.preferredHeight: 40
                         radius: 8
-                        color: Theme.Colors.accent
+                        color: Theme.Colors.foreground
                         opacity: !enabled ? 0.4 : captureMouse.pressed ? 0.75 : captureMouse.containsMouse ? 0.88 : 1
                         Accessible.role: Accessible.Button
                         Accessible.name: label

@@ -13,7 +13,7 @@ Rectangle {
     height: 24
     radius: 4
     color: Hyprland.focusedWorkspace?.id === workspaceId
-        ? Theme.Colors.activeWorkspace : Theme.Colors.transparent
+        ? Theme.Colors.highlight : Theme.Colors.transparent
 
     Text {
         anchors.centerIn: parent
@@ -30,7 +30,7 @@ Rectangle {
         width: 3
         height: 3
         radius: width / 2
-        color: Theme.Colors.accent
+        color: Theme.Colors.muted
         visible: root.hasWindows
     }
 

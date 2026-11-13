@@ -4,6 +4,7 @@ import Quickshell.Io
 import Quickshell.Wayland
 import Quickshell.Hyprland
 import "../Theme" as Theme
+import "../Components" as Components
 
 Scope {
     id: root
@@ -192,13 +193,13 @@ Scope {
                 }
             }
 
-            Rectangle {
+            Components.Surface {
                 anchors.centerIn: parent
                 width: Math.max(1, Math.min(parent.width - 32, 1100))
                 height: Math.max(1, Math.min(parent.height - 48, 620))
                 color: Theme.Colors.panel
                 radius: 20
-                border.color: Theme.Colors.activeWorkspace
+                border.color: Theme.Colors.ring
                 clip: true
 
                 Text {
@@ -240,7 +241,7 @@ Scope {
                             height: carousel.cardHeight
                             scale: Math.max(0.5, 1 - slot.distance * 0.26)
                             color: Theme.Colors.background
-                            border { width: 3; color: slot.index === carousel.currentIndex ? Theme.Colors.accent : Theme.Colors.activeWorkspace }
+                            border { width: 3; color: slot.index === carousel.currentIndex ? Theme.Colors.foreground : Theme.Colors.ring }
                             transform: Matrix4x4 {
                                 matrix: Qt.matrix4x4(1, cardFrame.skew, 0, -cardFrame.height * cardFrame.skew / 2, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1)
                             }
@@ -296,7 +297,7 @@ Scope {
                         width: parent.width
                         horizontalAlignment: Text.AlignHCenter
                         text: root.message || root.label(root.items[carousel.currentIndex]?.path ?? "") + "← → Browse   ·   Enter Apply to all monitors   ·   Esc Close"
-                        color: root.message ? Theme.Colors.error : Theme.Colors.accent
+                        color: root.message ? Theme.Colors.error : Theme.Colors.muted
                         font.pixelSize: 13
                         elide: Text.ElideRight
                     }

@@ -6,24 +6,33 @@ import "../Theme" as Theme
 Item {
     id: root
 
-    property bool preview: false
     property int maximumHeight: 560
-    readonly property var entries: preview
-        ? (Services.Notifications.preview ? [Services.Notifications.preview] : [])
-        : Services.Notifications.notifications.slice().reverse()
+    readonly property var entries: Services.Notifications.notifications.slice().reverse()
     signal closeRequested()
-    signal listRequested()
 
     width: 420
     height: Math.min(maximumHeight, Math.max(144, cards.contentHeight + 64))
 
-    Text {
+    Row {
         x: 16
         y: 15
-        text: root.preview ? "New notification" : "Notifications · " + Services.Notifications.count
-        color: Theme.Colors.foreground
-        font.pixelSize: 14
-        font.bold: true
+        spacing: 6
+
+        Text {
+            id: heading
+            text: "Notifications"
+            color: Theme.Colors.foreground
+            font.pixelSize: 14
+            font.weight: Font.DemiBold
+        }
+        Text {
+            anchors.baseline: heading.baseline
+            text: Services.Notifications.count
+            color: Theme.Colors.foreground
+            opacity: 0.7
+            font.pixelSize: 12
+            font.features: ({ "tnum": 1 })
+        }
     }
 
     Row {
@@ -35,19 +44,18 @@ Item {
         Components.IconButton {
             width: 28
             height: 28
+            radius: 14
             iconSize: 16
-            icon: root.preview ? "notifications" : "clearNotifications"
-            tooltip: root.preview ? "All notifications" : "Clear all notifications"
-            enabled: root.preview || Services.Notifications.count > 0
-            onClicked: {
-                if (root.preview) root.listRequested()
-                else Services.Notifications.dismissAll()
-            }
+            icon: "clearNotifications"
+            tooltip: "Clear all notifications"
+            enabled: Services.Notifications.count > 0
+            onClicked: Services.Notifications.dismissAll()
         }
 
         Components.IconButton {
             width: 28
             height: 28
+            radius: 14
             iconSize: 16
             icon: "close"
             tooltip: "Close notifications"

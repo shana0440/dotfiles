@@ -20,6 +20,6 @@ Components.IconButton {
         width: 8
         height: 8
         radius: 4
-        color: root.highlighted ? Theme.Colors.foreground : Theme.Colors.accent
+        color: Theme.Colors.error
     }
 }

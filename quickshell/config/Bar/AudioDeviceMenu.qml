@@ -85,7 +85,7 @@ Item {
                     width: choices.width
                     height: 44
                     radius: 8
-                    color: selected || mouse.containsMouse || activeFocus ? Theme.Colors.activeWorkspace : Theme.Colors.transparent
+                    color: selected || mouse.containsMouse || activeFocus ? Theme.Colors.highlight : Theme.Colors.transparent
                     activeFocusOnTab: true
                     Accessible.role: Accessible.RadioButton
                     Accessible.name: label
@@ -110,7 +110,7 @@ Item {
                         anchors.verticalCenter: parent.verticalCenter
                         visible: choice.selected
                         text: "✓"
-                        color: Theme.Colors.accent
+                        color: Theme.Colors.foreground
                     }
                     MouseArea {
                         id: mouse

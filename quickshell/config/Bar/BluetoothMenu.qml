@@ -114,8 +114,8 @@ Item {
         implicitWidth: buttonText.implicitWidth + 20
         implicitHeight: 30
         radius: 6
-        color: primary ? Theme.Colors.accent
-            : buttonMouse.containsMouse || activeFocus ? Theme.Colors.activeWorkspace : Theme.Colors.transparent
+        color: primary ? Theme.Colors.foreground
+            : buttonMouse.containsMouse || activeFocus ? Theme.Colors.highlight : Theme.Colors.transparent
         opacity: enabled ? (primary && buttonMouse.containsMouse ? 0.85 : 1) : 0.4
         activeFocusOnTab: true
         Accessible.role: Accessible.Button
@@ -147,7 +147,7 @@ Item {
         implicitWidth: 40
         implicitHeight: 22
         radius: height / 2
-        color: checked ? Theme.Colors.accent : Theme.Colors.activeWorkspace
+        color: checked ? Theme.Colors.foreground : Theme.Colors.track
         opacity: enabled ? 1 : 0.4
         activeFocusOnTab: true
         border.width: activeFocus ? 2 : 0
@@ -163,9 +163,15 @@ Item {
             height: 16
             radius: 8
             y: 3
-            x: switchRoot.checked ? switchRoot.width - width - 3 : 3
+            x: knobSpring.value
             color: switchRoot.checked ? Theme.Colors.background : Theme.Colors.foreground
-            Behavior on x { NumberAnimation { duration: 120; easing.type: Easing.OutCubic } }
+
+            Components.Spring {
+                id: knobSpring
+                to: switchRoot.checked ? switchRoot.width - 16 - 3 : 3
+                stiffness: Theme.Motion.enterStiffness
+                damping: Theme.Motion.enterDamping
+            }
         }
         MouseArea {
             id: switchMouse
@@ -198,11 +204,17 @@ Item {
             || device.state === BluetoothDeviceState.Disconnecting
 
         width: parent.width
-        height: 48 + (expanded ? actions.height + 8 : 0)
+        height: heightSpring.value
         radius: 6
-        color: device.connected || expanded || rowMouse.containsMouse ? Theme.Colors.activeWorkspace : Theme.Colors.transparent
+        color: device.connected || expanded || rowMouse.containsMouse ? Theme.Colors.highlight : Theme.Colors.transparent
         clip: true
-        Behavior on height { NumberAnimation { duration: 140; easing.type: Easing.OutCubic } }
+
+        Components.Spring {
+            id: heightSpring
+            to: 48 + (row.expanded ? actions.height + 8 : 0)
+            stiffness: row.expanded ? Theme.Motion.morphStiffness : Theme.Motion.closeStiffness
+            damping: row.expanded ? Theme.Motion.morphDamping : Theme.Motion.closeDamping
+        }
 
         Connections {
             target: row.device
@@ -232,7 +244,7 @@ Item {
             x: 8
             y: 14
             action: row.device.connected ? "bluetoothConnected" : "bluetooth"
-            iconColor: row.device.connected ? Theme.Colors.accent : Theme.Colors.foreground
+            iconColor: row.device.connected ? Theme.Colors.success : Theme.Colors.foreground
         }
 
         Column {
@@ -417,9 +429,9 @@ Item {
                 height: prompt.implicitHeight + 24
                 radius: 8
                 visible: root.request !== null
-                color: Theme.Colors.activeWorkspace
+                color: Theme.Colors.surface
                 border.width: 1
-                border.color: Theme.Colors.accent
+                border.color: Theme.Colors.info
 
                 Column {
                     id: prompt
@@ -456,7 +468,7 @@ Item {
                         visible: text.length > 0
                         text: root.request?.passkey ?? ""
                         horizontalAlignment: Text.AlignHCenter
-                        color: Theme.Colors.accent
+                        color: Theme.Colors.foreground
                         font.pixelSize: 28
                         font.bold: true
                         font.letterSpacing: 4
