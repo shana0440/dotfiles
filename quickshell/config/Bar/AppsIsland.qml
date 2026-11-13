@@ -22,7 +22,7 @@ Components.Surface {
 
     visible: windows.count > 0 && availableWidth >= buttonSize + padding * 2
     width: visible ? Math.min(appRow.width + padding * 2, availableWidth) : 0
-    radius: 8
+    radius: height / 2
 
     Flickable {
         id: appList

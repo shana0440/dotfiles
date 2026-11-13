@@ -9,7 +9,7 @@ Surface {
     property Item activeView: null
     property Item overflowView: null
     property int alignment: Qt.AlignHCenter
-    property real targetRadius: 8
+    property real targetRadius: Math.min(16, targetHeight / 2)
     readonly property real targetWidth: activeView ? activeView.width : 0
     readonly property real targetHeight: activeView ? activeView.height : 0
     readonly property bool moving: widthSpring.moving || heightSpring.moving

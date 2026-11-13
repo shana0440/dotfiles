@@ -27,9 +27,10 @@ Components.Island {
         return clockView
     }
 
-    // Pills: the recording indicator, and the toast (Ding's 22 px radius caps tall ones).
+    // Compact views are pills; cap rounding on the taller dashboard and toast.
     targetRadius: showingRecording ? recordingView.height / 2
-        : activeView === toast ? Math.min(22, toast.height / 2) : 8
+        : activeView === toast ? Math.min(22, toast.height / 2)
+        : Math.min(16, targetHeight / 2)
 
     function close() {
         expanded = false
