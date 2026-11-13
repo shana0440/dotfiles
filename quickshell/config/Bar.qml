@@ -270,11 +270,12 @@ PanelWindow {
 
         BarComponents.AppsIsland {
             id: appsIsland
-            anchors.left: workspaceIsland.right
-            anchors.leftMargin: root.islandSpacing
+            anchors.right: rightIsland.left
+            anchors.rightMargin: root.islandSpacing
             height: root.compactIslandHeight
-            availableWidth: Math.max(0, (mediaIsland.visible ? mediaIsland.x : centerIsland.x)
-                - x - root.islandSpacing)
+            availableWidth: Math.max(0, rightIsland.x - root.islandSpacing
+                - (notificationIsland.visible ? notificationIsland.x + notificationIsland.width
+                    : centerIsland.x + centerIsland.width) - root.islandSpacing)
         }
 
         // Declared first so it paints beneath the islands it draws.
