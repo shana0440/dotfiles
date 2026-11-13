@@ -1,5 +1,4 @@
 import QtQuick
-import Quickshell.Io
 import "../Theme" as Theme
 import "../Components" as Components
 
@@ -7,33 +6,28 @@ Item {
     id: root
 
     property bool active: false
-    property var snapshot: null
-    property var cpuUsage: null
-    property var networkRates: []
-    property var diskRates: []
     property real maximumHeight: 720
-    property bool failed: false
     signal closeRequested
 
     implicitWidth: 380
     implicitHeight: Math.min(content.implicitHeight + 78, maximumHeight)
-    readonly property var memory: snapshot ? snapshot.memory : null
-    readonly property var temperature: snapshot ? snapshot.temperature : null
+    readonly property var snapshot: sampler.snapshot
+    readonly property var cpuUsage: sampler.cpuUsage
+    readonly property var networkRates: sampler.networkRates
+    readonly property var diskRates: sampler.diskRates
+    readonly property bool failed: sampler.failed
+    readonly property var memory: sampler.memory
+    readonly property var temperature: sampler.temperature
     readonly property color muted: Theme.Colors.muted
 
     onActiveChanged: {
-        if (active) {
-            clearReadings()
-            failed = false
+        if (active)
             viewport.contentY = 0
-        }
     }
 
-    function clearReadings() {
-        snapshot = null
-        cpuUsage = null
-        networkRates = []
-        diskRates = []
+    SystemSampler {
+        id: sampler
+        active: root.active
     }
 
     function bytes(value) {
@@ -53,18 +47,6 @@ Item {
         return value.toFixed(unit ? 1 : 0) + " " + units[unit]
     }
 
-    function rates(current, previous, seconds, incomingKey, outgoingKey) {
-        return current.map(device => {
-            const old = previous.find(item => item.id === device.id)
-            const perSecond = key => old && seconds > 0 && device[key] >= old[key] ? (device[key] - old[key]) / seconds : null
-            return {
-                label: device.label,
-                incoming: perSecond(incomingKey),
-                outgoing: perSecond(outgoingKey)
-            }
-        })
-    }
-
     function percent(value) {
         return Math.round(value * 100) + "%"
     }
@@ -74,60 +56,6 @@ Item {
         const hours = Math.floor(seconds / 3600) % 24
         const minutes = Math.floor(seconds / 60) % 60
         return (days ? days + "d " : "") + hours + "h " + minutes + "m"
-    }
-
-    Timer {
-        interval: 2000
-        running: root.active
-        repeat: true
-        triggeredOnStart: true
-        onTriggered: {
-            if (!sample.running) {
-                sample.startedSuccessfully = false
-                sample.running = true
-            }
-        }
-    }
-
-    Process {
-        id: sample
-        property bool startedSuccessfully: false
-        command: ["system-status-snapshot"]
-        onStarted: startedSuccessfully = true
-        stdout: StdioCollector {
-            id: output
-        }
-        onExited: code => {
-            if (!root.active)
-                return
-            root.failed = code !== 0
-            if (!root.failed) {
-                try {
-                    const next = JSON.parse(output.text)
-                    const previous = root.snapshot
-                    const delta = previous ? next.cpu.total - previous.cpu.total : 0
-                    const seconds = previous ? next.monotonic - previous.monotonic : 0
-                    root.cpuUsage = delta > 0 ? Math.max(0, Math.min(1, 1 - (next.cpu.idle - previous.cpu.idle) / delta)) : null
-                    root.networkRates = root.rates(next.network || [], previous ? previous.network || [] : [], seconds, "rx", "tx")
-                    root.diskRates = root.rates(next.disks || [], previous ? previous.disks || [] : [], seconds, "read", "write")
-                    root.snapshot = next
-                } catch (error) {
-                    // Invalidate the UI at the subprocess boundary, then report the bad snapshot.
-                    root.failed = true
-                    root.clearReadings()
-                    throw new Error("Invalid system-status snapshot: " + error)
-                }
-            }
-            if (root.failed)
-                root.clearReadings()
-        }
-        onRunningChanged: {
-            // FailedToStart emits runningChanged but not exited; old stdout is irrelevant.
-            if (!running && !startedSuccessfully && root.active) {
-                root.failed = true
-                root.clearReadings()
-            }
-        }
     }
 
     component Meter: Rectangle {

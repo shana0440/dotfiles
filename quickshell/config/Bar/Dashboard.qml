@@ -13,7 +13,8 @@ Item {
     property int maximumHeight: 560
     readonly property alias calendar: calendar
     readonly property Item currentPage: tab === "media" ? mediaView
-        : tab === "notifications" ? notificationList : calendarPage
+        : tab === "notifications" ? notificationList
+        : tab === "system" ? systemView : calendarPage
     signal tabRequested(string tab)
     signal closeRequested()
 
@@ -35,7 +36,8 @@ Item {
             model: [
                 { tab: "calendar", icon: "calendar", tooltip: "Calendar" },
                 { tab: "media", icon: "disc", tooltip: "Now playing" },
-                { tab: "notifications", icon: "notifications", tooltip: "Notifications" }
+                { tab: "notifications", icon: "notifications", tooltip: "Notifications" },
+                { tab: "system", icon: "systemStatus", tooltip: "System" }
             ]
 
             Components.IconButton {
@@ -112,6 +114,11 @@ Item {
                 id: notificationList
                 width: root.pageWidth
                 maximumHeight: root.maximumHeight
+            },
+            SystemView {
+                id: systemView
+                width: root.pageWidth
+                active: root.active && root.tab === "system"
             }
         ]
     }

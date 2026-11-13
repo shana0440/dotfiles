@@ -48,7 +48,7 @@ PanelWindow {
 
     function openDashboard(tab) {
         rightIsland.close()
-        centerIsland.open(["calendar", "media", "notifications"].includes(tab) ? tab : "calendar")
+        centerIsland.open(["calendar", "media", "notifications", "system"].includes(tab) ? tab : "calendar")
     }
 
     IpcHandler {
