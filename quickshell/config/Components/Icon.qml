@@ -45,6 +45,8 @@ Item {
         album: "disc-album",
         radio: "radio",
         ethernet: "ethernet-port",
+        back: "chevron-left",
+        forward: "chevron-right",
         clearNotifications: "list-x"
     })[action] ?? "power"
     readonly property string themedSvg: {

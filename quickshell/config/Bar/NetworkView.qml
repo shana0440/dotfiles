@@ -3,8 +3,9 @@ import Quickshell
 import "../Theme" as Theme
 import "../Components" as Components
 
-// The dashboard's network tab: Wi-Fi networks to join or leave, then live traffic
-// for each interface.
+// The dashboard's network tab, read like a router's front panel: the connection
+// carrying the default route with its recent traffic, the other live links, then
+// Wi-Fi networks to join or leave.
 Item {
     id: root
 
@@ -13,9 +14,12 @@ Item {
     property string selectedSsid: ""
     signal closeRequested()
 
-    readonly property int rowHeight: 48
-    readonly property int rowSpacing: 4
-    readonly property var connectedNetwork: {
+    readonly property var primary: devices.primary
+    readonly property var primaryRates: primary ? sampler.networkRates.find(rate => rate.label === primary.device) ?? null : null
+    // Live links besides the primary one, then wired ports with nothing plugged in.
+    readonly property var others: devices.devices.filter(device => device.connected && device !== primary)
+    readonly property var unplugged: devices.devices.filter(device => device.type === "ethernet" && !device.connected)
+    readonly property var activeNetwork: {
         for (let i = 0; i < wifi.networks.count; i++) {
             const network = wifi.networks.get(i)
             if (network.active)
@@ -24,10 +28,37 @@ Item {
         return null
     }
 
-    implicitWidth: 480
-    implicitHeight: content.implicitHeight + 40
+    // Two minutes of primary traffic at the sampler's 2-second step.
+    readonly property int historyLength: 60
+    property var history: []
+    property string historyDevice: ""
 
-    onActiveChanged: clearSelection()
+    readonly property int rowHeight: 40
+    readonly property int rowSpacing: 2
+
+    // The Wi-Fi list is a page of its own, so status reads without it.
+    property bool wifiOpen: false
+
+    implicitWidth: 480
+    implicitHeight: (wifiOpen ? wifiPage.implicitHeight : content.implicitHeight) + 40
+    // The pages shift a little as they cross; keep that inside the tab.
+    clip: true
+
+    onActiveChanged: {
+        clearSelection()
+        history = []
+        wifiOpen = false
+    }
+
+    function openWifi() {
+        wifiOpen = true
+        wifi.refresh()
+    }
+
+    function closeWifi() {
+        clearSelection()
+        wifiOpen = false
+    }
 
     function clearSelection() {
         selectedSsid = ""
@@ -38,7 +69,7 @@ Item {
         selectedSsid = ssid
         password.text = ""
         wifi.message = ""
-        if (!security || security === "--")
+        if (!secured(security))
             connectSelected()
         else
             Qt.callLater(() => password.forceActiveFocus())
@@ -51,8 +82,12 @@ Item {
         password.text = ""
     }
 
+    function secured(security) {
+        return security && security !== "--"
+    }
+
     function rate(value) {
-        if (value === null)
+        if (value === null || value === undefined)
             return "—"
         const units = ["B/s", "KiB/s", "MiB/s", "GiB/s"]
         let unit = 0
@@ -61,6 +96,23 @@ Item {
             unit++
         }
         return value.toFixed(unit ? 1 : 0) + " " + units[unit]
+    }
+
+    function linkSpeed(megabits) {
+        return megabits >= 1000 ? (megabits / 1000) + " Gb/s" : megabits + " Mb/s"
+    }
+
+    // What follows the kind: the Wi-Fi network, or the port and its speed.
+    function detailOf(device) {
+        if (device.type === "wifi")
+            return device.connection + (activeNetwork ? " · " + activeNetwork.strength + "%" : "")
+        if (device.type === "ethernet")
+            return device.device + (device.speed > 0 ? " · " + linkSpeed(device.speed) : "")
+        return device.kind === "VPN" ? device.device : ""
+    }
+
+    function ratesOf(device) {
+        return sampler.networkRates.find(rate => rate.label === device.device) ?? null
     }
 
     WifiController {
@@ -79,18 +131,47 @@ Item {
         active: root.active
     }
 
-    readonly property bool wiredConnected: devices.wired.some(device => device.connected)
-
-    function linkSpeed(megabits) {
-        return megabits >= 1000 ? (megabits / 1000) + " Gb/s" : megabits + " Mb/s"
+    Connections {
+        target: sampler
+        function onNetworkRatesChanged() {
+            const rates = root.primaryRates
+            if (!root.primary || !rates || rates.incoming === null)
+                return
+            const next = root.historyDevice === root.primary.device ? root.history.slice() : []
+            next.push({ down: rates.incoming, up: rates.outgoing ?? 0 })
+            root.historyDevice = root.primary.device
+            root.history = next.slice(-root.historyLength)
+        }
     }
 
-    function wiredStatus(device) {
-        if (device.connected)
-            return "Connected" + (device.speed > 0 ? " · " + linkSpeed(device.speed) : "")
-        if (!device.carrier)
-            return "Cable unplugged"
-        return device.state.charAt(0).toUpperCase() + device.state.slice(1)
+    // A port light: lit while the link is up.
+    component LinkLight: Rectangle {
+        property bool lit: false
+        width: 8
+        height: 8
+        radius: 4
+        color: lit ? Theme.Colors.success : Theme.Colors.track
+    }
+
+    component SignalBars: Item {
+        property int strength: 0
+        property bool emphasized: false
+        width: 16
+        height: 14
+
+        Repeater {
+            model: 4
+
+            Rectangle {
+                required property int index
+                x: index * 4
+                y: parent.height - height
+                width: 3
+                height: 5 + index * 3
+                radius: 1
+                color: parent.strength > index * 25 ? (parent.emphasized ? Theme.Colors.foreground : Theme.Colors.muted) : Theme.Colors.track
+            }
+        }
     }
 
     component TextButton: Rectangle {
@@ -100,8 +181,8 @@ Item {
         signal clicked()
 
         implicitWidth: buttonText.implicitWidth + 24
-        implicitHeight: 30
-        radius: 15
+        implicitHeight: 28
+        radius: 8
         color: primary ? (buttonMouse.containsMouse ? Qt.tint(Theme.Colors.foreground, "#2e0c0c0d") : Theme.Colors.foreground)
             : buttonMouse.containsMouse ? Theme.Colors.highlight : Theme.Colors.transparent
         border.width: primary ? 0 : 1
@@ -128,40 +209,73 @@ Item {
         }
     }
 
+    component SectionLabel: Text {
+        color: Theme.Colors.muted
+        font.family: Theme.Fonts.family
+        font.weight: Theme.Fonts.weight
+        font.pixelSize: 12
+    }
+
+    // A rate right-aligned in mono; the arrow comes from the UI face, which has the glyph.
+    component Rate: Item {
+        id: rateItem
+        property bool upload: false
+        property var value: null
+        property int size: 12
+        readonly property color tone: upload ? Theme.Colors.muted : Theme.Colors.foreground
+
+        height: rateValue.implicitHeight
+
+        Text {
+            id: rateValue
+            anchors.right: parent.right
+            text: root.rate(rateItem.value)
+            color: rateItem.tone
+            font.family: Theme.Fonts.mono
+            font.pixelSize: rateItem.size
+        }
+        Text {
+            anchors.right: rateValue.left
+            anchors.rightMargin: 4
+            anchors.verticalCenter: rateValue.verticalCenter
+            text: rateItem.upload ? "↑" : "↓"
+            color: Theme.Colors.muted
+            font.family: Theme.Fonts.family
+            font.pixelSize: rateItem.size
+        }
+    }
+
+    // 0 shows status, 1 the Wi-Fi page; each fades and shifts toward where it lives.
+    Components.Spring {
+        id: pageSpring
+        to: root.wifiOpen ? 1 : 0
+        stiffness: Theme.Motion.stackStiffness
+        damping: Theme.Motion.stackDamping
+        precision: 0.002
+    }
+
     Column {
         id: content
-        x: 20
+        x: 20 - 24 * pageSpring.value
         y: 20
         width: parent.width - 40
         spacing: 16
+        opacity: 1 - pageSpring.value
+        visible: opacity > 0
+        enabled: !root.wifiOpen
 
         Item {
             id: header
             width: parent.width
             height: 32
 
-            Column {
+            Text {
                 anchors.verticalCenter: parent.verticalCenter
-                spacing: 2
-
-                Text {
-                    text: "Network"
-                    color: Theme.Colors.foreground
-                    font.family: Theme.Fonts.family
-                    font.pixelSize: 16
-                    font.bold: true
-                }
-                Text {
-                    readonly property var links: (root.wiredConnected ? ["Ethernet"] : [])
-                        .concat(root.connectedNetwork ? ["Wi-Fi " + root.connectedNetwork.ssid] : [])
-                    text: links.length > 0 ? "Connected via " + links.join(" and ")
-                        : !devices.loaded || (wifi.scanning && wifi.networks.count === 0) ? "Checking…" : "Not connected"
-                    textFormat: Text.PlainText
-                    color: Theme.Colors.muted
-                    font.family: Theme.Fonts.family
-                    font.weight: Theme.Fonts.weight
-                    font.pixelSize: 11
-                }
+                text: "Network"
+                color: Theme.Colors.foreground
+                font.family: Theme.Fonts.family
+                font.pixelSize: 16
+                font.bold: true
             }
             Row {
                 anchors.right: parent.right
@@ -171,17 +285,6 @@ Item {
                 Components.IconButton {
                     width: 32
                     height: 32
-                    radius: 16
-                    iconSize: 16
-                    icon: "reboot"
-                    tooltip: wifi.scanning ? "Scanning…" : "Scan for networks"
-                    enabled: !wifi.scanning && !wifi.busy
-                    onClicked: wifi.refresh()
-                }
-                Components.IconButton {
-                    width: 32
-                    height: 32
-                    radius: 16
                     iconSize: 16
                     icon: "settings"
                     tooltip: "Advanced settings"
@@ -194,431 +297,585 @@ Item {
             }
         }
 
+        // The connection carrying the default route, and its last two minutes.
         Rectangle {
-            id: ethernetCard
+            id: hero
             width: parent.width
-            height: wired.implicitHeight + 24
+            height: heroContent.implicitHeight + 32
             radius: 12
             color: Theme.Colors.surface
-            visible: devices.wired.length > 0
 
             Column {
-                id: wired
-                x: 12
-                y: 12
-                width: parent.width - 24
-                spacing: 4
+                id: heroContent
+                x: 16
+                y: 16
+                width: parent.width - 32
+                spacing: 12
 
-                Text {
-                    leftPadding: 2
-                    bottomPadding: 4
-                    text: "Ethernet"
-                    color: Theme.Colors.muted
-                    font.family: Theme.Fonts.family
-                    font.weight: Theme.Fonts.weight
-                    font.pixelSize: 12
-                }
+                Item {
+                    width: parent.width
+                    height: 40
 
-                Repeater {
-                    // A count model keeps the rows across polls.
-                    model: devices.wired.length
+                    LinkLight {
+                        y: 6
+                        lit: root.primary !== null
+                    }
+                    Column {
+                        x: 16
+                        width: parent.width - x - heroRates.width - 12
+                        spacing: 4
 
-                    Rectangle {
-                        id: port
-                        required property int index
-                        readonly property var device: devices.wired[index] ?? { device: "", connection: "", state: "", connected: false, carrier: false, speed: 0, address: "", gateway: "", dns: "" }
+                        Row {
+                            width: parent.width
+                            spacing: 8
 
-                        width: wired.width
-                        height: portText.implicitHeight + 20
-                        radius: 8
-                        color: device.connected ? Theme.Colors.highlight : Theme.Colors.transparent
-
-                        Components.Icon {
-                            x: 10
-                            y: 12
-                            width: 18
-                            height: 18
-                            action: "ethernet"
-                            iconColor: port.device.connected ? Theme.Colors.foreground : Theme.Colors.muted
-                        }
-
-                        Column {
-                            id: portText
-                            x: 40
-                            y: 10
-                            width: parent.width - x - address.width - 22
-                            spacing: 2
-
-                            Row {
-                                width: parent.width
-                                spacing: 6
-
-                                Text {
-                                    id: portName
-                                    text: port.device.connection || port.device.device
-                                    textFormat: Text.PlainText
-                                    elide: Text.ElideRight
-                                    width: Math.min(implicitWidth, parent.width - deviceName.implicitWidth - parent.spacing)
-                                    color: Theme.Colors.foreground
-                                    font.family: Theme.Fonts.family
-                                    font.weight: Theme.Fonts.weight
-                                    font.pixelSize: 13
-                                }
-                                Text {
-                                    id: deviceName
-                                    anchors.baseline: portName.baseline
-                                    visible: port.device.connection.length > 0
-                                    text: port.device.device
-                                    textFormat: Text.PlainText
-                                    color: Theme.Colors.muted
-                                    font.family: Theme.Fonts.family
-                                    font.weight: Theme.Fonts.weight
-                                    font.pixelSize: 11
-                                }
-                            }
                             Text {
-                                text: root.wiredStatus(port.device)
-                                color: port.device.connected ? Theme.Colors.success : Theme.Colors.muted
+                                id: heroKind
+                                text: root.primary ? root.primary.kind : devices.loaded ? "Offline" : "Checking"
+                                color: Theme.Colors.foreground
                                 font.family: Theme.Fonts.family
                                 font.weight: Theme.Fonts.weight
-                                font.pixelSize: 11
+                                font.pixelSize: 15
                             }
                             Text {
-                                width: parent.width
-                                visible: port.device.connected && (port.device.gateway || port.device.dns)
-                                text: [port.device.gateway ? "Gateway " + port.device.gateway : "",
-                                    port.device.dns ? "DNS " + port.device.dns : ""].filter(part => part).join(" · ")
+                                anchors.baseline: heroKind.baseline
+                                width: parent.width - heroKind.width - parent.spacing
+                                text: root.primary ? root.detailOf(root.primary) : devices.loaded ? "No connection carries the default route" : ""
                                 textFormat: Text.PlainText
                                 elide: Text.ElideRight
                                 color: Theme.Colors.muted
                                 font.family: Theme.Fonts.family
                                 font.weight: Theme.Fonts.weight
-                                font.pixelSize: 11
+                                font.pixelSize: 12
                             }
                         }
-
                         Text {
-                            id: address
-                            anchors.right: parent.right
-                            anchors.rightMargin: 12
-                            y: 12
-                            visible: port.device.address.length > 0
-                            text: port.device.address.replace(/\/\d+$/, "")
-                            color: Theme.Colors.foreground
-                            font.family: Theme.Fonts.family
-                            font.weight: Theme.Fonts.weight
+                            visible: root.primary !== null && root.primary.address.length > 0
+                            text: root.primary ? root.primary.address + (root.primary.gateway ? "  via " + root.primary.gateway : "") : ""
+                            color: Theme.Colors.muted
+                            font.family: Theme.Fonts.mono
                             font.pixelSize: 12
-                            font.features: ({ "tnum": 1 })
                         }
+                    }
+                    Column {
+                        id: heroRates
+                        anchors.right: parent.right
+                        width: 112
+                        spacing: 4
+                        visible: root.primary !== null
+
+                        Rate {
+                            width: parent.width
+                            value: root.primaryRates?.incoming
+                            size: 13
+                        }
+                        Rate {
+                            width: parent.width
+                            upload: true
+                            value: root.primaryRates?.outgoing
+                            size: 13
+                        }
+                    }
+                }
+
+                Item {
+                    width: parent.width
+                    height: 64
+                    visible: root.primary !== null
+
+                    Rectangle {
+                        anchors.bottom: parent.bottom
+                        width: parent.width
+                        height: 1
+                        color: Theme.Colors.track
+                    }
+
+                    Canvas {
+                        id: chart
+                        anchors.fill: parent
+                        readonly property var samples: root.history
+                        readonly property real peak: Math.max(1024, ...samples.map(sample => Math.max(sample.down, sample.up)))
+                        onSamplesChanged: requestPaint()
+                        onWidthChanged: requestPaint()
+
+                        onPaint: {
+                            const context = getContext("2d")
+                            context.reset()
+                            if (samples.length < 2)
+                                return
+                            const step = width / (root.historyLength - 1)
+                            const left = width - (samples.length - 1) * step
+                            const yOf = value => height - 2 - (height - 6) * value / peak
+                            const trace = key => {
+                                context.beginPath()
+                                samples.forEach((sample, index) => {
+                                    const x = left + index * step
+                                    if (index === 0)
+                                        context.moveTo(x, yOf(sample[key]))
+                                    else
+                                        context.lineTo(x, yOf(sample[key]))
+                                })
+                            }
+
+                            // Download carries the weight: a line with a faint fill below it.
+                            trace("down")
+                            context.lineTo(width, height)
+                            context.lineTo(left, height)
+                            context.closePath()
+                            context.fillStyle = Qt.rgba(0.98, 0.98, 0.98, 0.08)
+                            context.fill()
+
+                            context.lineJoin = "round"
+                            context.lineWidth = 1.5
+                            trace("down")
+                            context.strokeStyle = Theme.Colors.foreground
+                            context.stroke()
+
+                            context.lineWidth = 1
+                            trace("up")
+                            context.strokeStyle = Theme.Colors.muted
+                            context.stroke()
+                        }
+                    }
+
+                    // The scale, top left, clear of the newest samples on the right.
+                    Text {
+                        anchors.left: parent.left
+                        anchors.top: parent.top
+                        text: chart.samples.length > 1 ? "peak " + root.rate(chart.peak) : "collecting"
+                        color: Theme.Colors.muted
+                        font.family: Theme.Fonts.mono
+                        font.pixelSize: 11
                     }
                 }
             }
         }
 
-        Rectangle {
-            id: wifiCard
+        // Other live links, each with its address and traffic.
+        Column {
+            id: links
             width: parent.width
-            height: wifiContent.implicitHeight + 24
-            radius: 12
-            color: Theme.Colors.surface
+            spacing: 8
+            visible: root.others.length > 0 || root.unplugged.length > 0
 
-            Column {
-                id: wifiContent
-                x: 12
-                y: 12
-                width: parent.width - 24
-                spacing: 8
+            SectionLabel {
+                leftPadding: 4
+                text: "Connections"
+            }
 
-                Text {
-                    id: wifiTitle
-                    leftPadding: 2
-                    text: "Wi-Fi"
-                    color: Theme.Colors.muted
-                    font.family: Theme.Fonts.family
-                    font.weight: Theme.Fonts.weight
-                    font.pixelSize: 12
-                }
+            Repeater {
+                // A count model keeps the rows across polls.
+                model: root.others.length
 
-                Text {
-                    id: message
-                    width: parent.width
-                    leftPadding: 2
-                    text: wifi.message
-                    textFormat: Text.PlainText
-                    visible: text.length > 0
-                    wrapMode: Text.Wrap
-                    color: Theme.Colors.foreground
-                    opacity: 0.7
-                    font.family: Theme.Fonts.family
-                    font.weight: Theme.Fonts.weight
-                    font.pixelSize: 12
-                }
+                Item {
+                    id: link
+                    required property int index
+                    readonly property var device: root.others[index] ?? { kind: "", type: "", device: "", connection: "", address: "", speed: 0 }
+                    readonly property var rates: root.ratesOf(device)
 
-                ListView {
-                    id: networkList
-                    // Whatever the page cap leaves after everything else, at least two rows.
-                    readonly property real room: root.maximumHeight - 40 - header.height - content.spacing * 2
-                        - (ethernetCard.visible ? ethernetCard.height + content.spacing : 0)
-                        - activityCard.height - 24 - wifiTitle.height - wifiContent.spacing
-                        - (message.visible ? message.height + wifiContent.spacing : 0)
-                        - (form.visible ? form.height + wifiContent.spacing : 0)
+                    width: links.width
+                    height: root.rowHeight
 
-                    width: parent.width
-                    height: Math.max(root.rowHeight * 2 + root.rowSpacing, Math.min(contentHeight, room))
-                    clip: true
-                    spacing: root.rowSpacing
-                    boundsBehavior: Flickable.StopAtBounds
-                    model: wifi.networks
-                    enabled: !wifi.busy
+                    LinkLight {
+                        x: 4
+                        y: 6
+                        lit: true
+                    }
+                    Column {
+                        x: 20
+                        width: parent.width - x - linkRates.width - 12
+                        spacing: 4
 
-                    delegate: Rectangle {
-                        id: row
-                        required property string ssid
-                        required property bool active
-                        required property int strength
-                        required property string security
-                        required property string device
-                        readonly property bool selected: root.selectedSsid === ssid
-                        readonly property string address: active ? (devices.wirelessDevice(device)?.address ?? "").replace(/\/\d+$/, "") : ""
-
-                        width: networkList.width
-                        height: root.rowHeight
-                        radius: 8
-                        color: active || selected || rowMouse.containsMouse ? Theme.Colors.highlight : Theme.Colors.transparent
-
-                        Components.Icon {
-                            x: 10
-                            anchors.verticalCenter: parent.verticalCenter
-                            width: 18
-                            height: 18
-                            action: row.strength >= 67 ? "wifi" : row.strength >= 34 ? "wifiHigh" : "wifiLow"
-                            iconColor: row.active ? Theme.Colors.foreground : Theme.Colors.muted
-                        }
-
-                        Column {
-                            x: 40
-                            anchors.verticalCenter: parent.verticalCenter
-                            width: parent.width - x - (row.active ? disconnectButton.width + 20 : 56)
-                            spacing: 2
+                        Row {
+                            width: parent.width
+                            spacing: 8
 
                             Text {
-                                width: parent.width
-                                text: row.ssid
-                                textFormat: Text.PlainText
-                                elide: Text.ElideRight
+                                id: linkKind
+                                text: link.device.kind
                                 color: Theme.Colors.foreground
                                 font.family: Theme.Fonts.family
                                 font.weight: Theme.Fonts.weight
                                 font.pixelSize: 13
                             }
                             Text {
-                                width: parent.width
-                                text: row.active ? "Connected" + (row.address ? " · " + row.address : "")
-                                    : (!row.security || row.security === "--" ? "Open" : row.security)
+                                anchors.baseline: linkKind.baseline
+                                width: parent.width - linkKind.width - parent.spacing
+                                text: root.detailOf(link.device)
                                 textFormat: Text.PlainText
                                 elide: Text.ElideRight
-                                color: row.active ? Theme.Colors.success : Theme.Colors.muted
+                                color: Theme.Colors.muted
                                 font.family: Theme.Fonts.family
                                 font.weight: Theme.Fonts.weight
-                                font.pixelSize: 11
+                                font.pixelSize: 12
                             }
                         }
-
                         Text {
-                            anchors.right: parent.right
-                            anchors.rightMargin: 12
-                            anchors.verticalCenter: parent.verticalCenter
-                            visible: !row.active
-                            text: row.strength + "%"
+                            text: link.device.address
                             color: Theme.Colors.muted
-                            font.family: Theme.Fonts.family
-                            font.weight: Theme.Fonts.weight
+                            font.family: Theme.Fonts.mono
                             font.pixelSize: 12
-                            font.features: ({ "tnum": 1 })
                         }
+                    }
+                    Column {
+                        id: linkRates
+                        anchors.right: parent.right
+                        width: 112
+                        spacing: 4
 
-                        MouseArea {
-                            id: rowMouse
-                            anchors.fill: parent
-                            hoverEnabled: true
-                            cursorShape: row.active ? Qt.ArrowCursor : Qt.PointingHandCursor
-                            onClicked: {
-                                if (!row.active)
-                                    root.selectNetwork(row.ssid, row.security)
-                            }
+                        Rate {
+                            width: parent.width
+                            value: link.rates?.incoming
                         }
+                        Rate {
+                            width: parent.width
+                            upload: true
+                            value: link.rates?.outgoing
+                        }
+                    }
+                }
+            }
 
-                        TextButton {
-                            id: disconnectButton
-                            anchors.right: parent.right
-                            anchors.rightMargin: 10
-                            anchors.verticalCenter: parent.verticalCenter
-                            visible: row.active
-                            label: "Disconnect"
-                            onClicked: {
-                                root.clearSelection()
-                                wifi.disconnect(row.device)
-                            }
+            // Empty ports collapse into one dim line.
+            Item {
+                width: links.width
+                height: 16
+                visible: root.unplugged.length > 0
+
+                LinkLight {
+                    x: 4
+                    anchors.verticalCenter: parent.verticalCenter
+                }
+                Text {
+                    x: 20
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: root.unplugged.map(device => device.device).join(", ") + (root.unplugged.every(device => !device.carrier) ? " · cable unplugged" : " · disconnected")
+                    color: Theme.Colors.muted
+                    font.family: Theme.Fonts.mono
+                    font.pixelSize: 12
+                }
+            }
+        }
+
+        // The way into the Wi-Fi page.
+        Rectangle {
+            id: wifiEntry
+            width: parent.width
+            height: root.rowHeight
+            radius: 8
+            color: entryMouse.containsMouse ? Theme.Colors.highlight : Theme.Colors.transparent
+            Accessible.role: Accessible.Button
+            Accessible.name: "Wi-Fi networks"
+
+            SignalBars {
+                x: 4
+                anchors.verticalCenter: parent.verticalCenter
+                strength: root.activeNetwork ? root.activeNetwork.strength : 0
+                emphasized: root.activeNetwork !== null
+            }
+            Text {
+                x: 32
+                anchors.verticalCenter: parent.verticalCenter
+                text: "Wi-Fi networks"
+                color: Theme.Colors.foreground
+                font.family: Theme.Fonts.family
+                font.weight: Theme.Fonts.weight
+                font.pixelSize: 13
+            }
+            Row {
+                anchors.right: parent.right
+                anchors.rightMargin: 4
+                anchors.verticalCenter: parent.verticalCenter
+                spacing: 4
+
+                Text {
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: wifi.networks.count > 0 ? wifi.networks.count + " nearby" : wifi.scanning ? "Scanning" : "None nearby"
+                    color: Theme.Colors.muted
+                    font.family: Theme.Fonts.family
+                    font.weight: Theme.Fonts.weight
+                    font.pixelSize: 12
+                }
+                Components.Icon {
+                    anchors.verticalCenter: parent.verticalCenter
+                    width: 16
+                    height: 16
+                    action: "forward"
+                    iconColor: Theme.Colors.muted
+                }
+            }
+            MouseArea {
+                id: entryMouse
+                anchors.fill: parent
+                hoverEnabled: true
+                cursorShape: Qt.PointingHandCursor
+                onClicked: root.openWifi()
+            }
+        }
+    }
+
+    // The nested Wi-Fi page: networks to join or leave.
+    Column {
+        id: wifiPage
+        x: 20 + 24 * (1 - pageSpring.value)
+        y: 20
+        width: parent.width - 40
+        spacing: 12
+        opacity: pageSpring.value
+        visible: opacity > 0
+        enabled: root.wifiOpen
+
+        Item {
+            id: wifiHeader
+            width: parent.width
+            height: 32
+
+            Components.IconButton {
+                id: back
+                x: -6
+                anchors.verticalCenter: parent.verticalCenter
+                width: 32
+                height: 32
+                iconSize: 18
+                icon: "back"
+                tooltip: "Back to network"
+                onClicked: root.closeWifi()
+            }
+            Text {
+                anchors.left: back.right
+                anchors.leftMargin: 2
+                anchors.verticalCenter: parent.verticalCenter
+                text: "Wi-Fi networks"
+                color: Theme.Colors.foreground
+                font.family: Theme.Fonts.family
+                font.pixelSize: 16
+                font.bold: true
+            }
+            Components.IconButton {
+                anchors.right: parent.right
+                anchors.verticalCenter: parent.verticalCenter
+                width: 32
+                height: 32
+                iconSize: 16
+                icon: "reboot"
+                tooltip: wifi.scanning ? "Scanning" : "Scan again"
+                enabled: !wifi.scanning && !wifi.busy
+                onClicked: wifi.refresh()
+            }
+        }
+
+        Column {
+            id: networksSection
+            width: parent.width
+            spacing: 8
+
+            Text {
+                id: message
+                width: parent.width
+                leftPadding: 4
+                text: wifi.message
+                textFormat: Text.PlainText
+                visible: text.length > 0
+                wrapMode: Text.Wrap
+                color: Theme.Colors.foreground
+                opacity: 0.7
+                font.family: Theme.Fonts.family
+                font.weight: Theme.Fonts.weight
+                font.pixelSize: 12
+            }
+
+            ListView {
+                id: networkList
+                // Whatever the page cap leaves after everything else, at least two rows.
+                readonly property real room: root.maximumHeight - 40 - wifiHeader.height - wifiPage.spacing
+                    - (message.visible ? message.height + networksSection.spacing : 0)
+                    - (form.visible ? form.height + networksSection.spacing : 0)
+
+                width: parent.width
+                height: Math.max(root.rowHeight * 2 + root.rowSpacing, Math.min(contentHeight, room))
+                clip: true
+                spacing: root.rowSpacing
+                boundsBehavior: Flickable.StopAtBounds
+                model: wifi.networks
+                enabled: !wifi.busy
+
+                delegate: Rectangle {
+                    id: row
+                    required property string ssid
+                    required property bool active
+                    required property int strength
+                    required property string security
+                    required property string device
+                    readonly property bool selected: root.selectedSsid === ssid
+                    readonly property bool hovered: rowHover.hovered
+
+                    width: networkList.width
+                    height: root.rowHeight
+                    radius: 8
+                    color: selected || hovered ? Theme.Colors.highlight : Theme.Colors.transparent
+
+                    HoverHandler { id: rowHover }
+
+                    SignalBars {
+                        x: 4
+                        anchors.verticalCenter: parent.verticalCenter
+                        strength: row.strength
+                        emphasized: row.active
+                    }
+                    Text {
+                        x: 32
+                        anchors.verticalCenter: parent.verticalCenter
+                        width: parent.width - x - trailing.width - 16
+                        text: row.ssid
+                        textFormat: Text.PlainText
+                        elide: Text.ElideRight
+                        color: Theme.Colors.foreground
+                        font.family: Theme.Fonts.family
+                        font.weight: Theme.Fonts.weight
+                        font.pixelSize: 13
+                    }
+
+                    MouseArea {
+                        anchors.fill: parent
+                        cursorShape: row.active ? Qt.ArrowCursor : Qt.PointingHandCursor
+                        onClicked: {
+                            if (!row.active)
+                                root.selectNetwork(row.ssid, row.security)
                         }
                     }
 
+                    // Status, and on the current network a Disconnect that asks twice:
+                    // nothing moves under the pointer, and one stray click cannot drop Wi-Fi.
+                    Row {
+                        id: trailing
+                        anchors.right: parent.right
+                        anchors.rightMargin: 6
+                        anchors.verticalCenter: parent.verticalCenter
+                        spacing: 10
+
+                        Text {
+                            anchors.verticalCenter: parent.verticalCenter
+                            visible: !disconnect.armed
+                            text: row.active ? "Connected" : root.secured(row.security) ? "Secured" : "Open"
+                            color: row.active ? Theme.Colors.success : Theme.Colors.muted
+                            font.family: Theme.Fonts.family
+                            font.weight: Theme.Fonts.weight
+                            font.pixelSize: 12
+                        }
+                        TextButton {
+                            id: disconnect
+                            property bool armed: false
+                            anchors.verticalCenter: parent.verticalCenter
+                            visible: row.active
+                            label: armed ? "Confirm disconnect" : "Disconnect"
+                            primary: armed
+                            onClicked: {
+                                if (!armed) {
+                                    armed = true
+                                    disarm.restart()
+                                    return
+                                }
+                                armed = false
+                                root.clearSelection()
+                                wifi.disconnect(row.device)
+                            }
+
+                            Timer {
+                                id: disarm
+                                interval: 4000
+                                onTriggered: disconnect.armed = false
+                            }
+                        }
+                    }
+                }
+
+                Text {
+                    anchors.centerIn: parent
+                    visible: networkList.count === 0 && !message.visible
+                    text: wifi.scanning ? "Scanning" : "No networks"
+                    color: Theme.Colors.muted
+                    font.family: Theme.Fonts.family
+                    font.weight: Theme.Fonts.weight
+                    font.pixelSize: 12
+                }
+            }
+
+            // Joining a secured network: its password, or blank for saved credentials.
+            Column {
+                id: form
+                width: parent.width
+                spacing: 8
+                visible: root.selectedSsid.length > 0
+
+                Rectangle {
+                    width: parent.width
+                    height: 36
+                    radius: 8
+                    color: Theme.Colors.surface
+                    border.width: 1
+                    border.color: password.activeFocus ? Theme.Colors.muted : Theme.Colors.ring
+
+                    TextInput {
+                        id: password
+                        anchors.fill: parent
+                        anchors.leftMargin: 12
+                        anchors.rightMargin: 12
+                        verticalAlignment: TextInput.AlignVCenter
+                        echoMode: TextInput.Password
+                        enabled: !wifi.busy
+                        color: Theme.Colors.foreground
+                        font.family: Theme.Fonts.family
+                        font.pixelSize: 13
+                        selectByMouse: true
+                        clip: true
+                        onAccepted: root.connectSelected()
+                        Keys.onEscapePressed: root.closeWifi()
+                    }
                     Text {
-                        anchors.centerIn: parent
-                        visible: networkList.count === 0 && !message.visible
-                        text: wifi.scanning ? "Scanning…" : "No networks"
+                        anchors.left: parent.left
+                        anchors.leftMargin: 12
+                        anchors.verticalCenter: parent.verticalCenter
+                        width: parent.width - 24
+                        visible: !password.text
+                        text: "Password for " + root.selectedSsid + ", blank uses the saved one"
+                        textFormat: Text.PlainText
+                        elide: Text.ElideRight
                         color: Theme.Colors.muted
                         font.family: Theme.Fonts.family
                         font.weight: Theme.Fonts.weight
                         font.pixelSize: 12
                     }
                 }
-
-                // Joining a secured network: its password, or blank for saved credentials.
-                Column {
-                    id: form
-                    width: parent.width
+                Row {
+                    anchors.right: parent.right
                     spacing: 8
-                    visible: root.selectedSsid.length > 0
 
-                    Rectangle {
-                        width: parent.width
-                        height: 36
-                        radius: 8
-                        color: Theme.Colors.background
-                        border.width: 1
-                        border.color: password.activeFocus ? Theme.Colors.muted : Theme.Colors.ring
-
-                        TextInput {
-                            id: password
-                            anchors.fill: parent
-                            anchors.leftMargin: 12
-                            anchors.rightMargin: 12
-                            verticalAlignment: TextInput.AlignVCenter
-                            echoMode: TextInput.Password
-                            enabled: !wifi.busy
-                            color: Theme.Colors.foreground
-                            font.family: Theme.Fonts.family
-                            font.pixelSize: 13
-                            selectByMouse: true
-                            clip: true
-                            onAccepted: root.connectSelected()
-                        }
-                        Text {
-                            anchors.left: parent.left
-                            anchors.leftMargin: 12
-                            anchors.verticalCenter: parent.verticalCenter
-                            visible: !password.text
-                            text: "Password for " + root.selectedSsid + " (blank uses saved)"
-                            textFormat: Text.PlainText
-                            elide: Text.ElideRight
-                            width: parent.width - 24
-                            color: Theme.Colors.muted
-                            font.family: Theme.Fonts.family
-                            font.weight: Theme.Fonts.weight
-                            font.pixelSize: 12
-                        }
+                    TextButton {
+                        label: "Cancel"
+                        enabled: !wifi.busy
+                        onClicked: root.clearSelection()
                     }
-                    Row {
-                        anchors.right: parent.right
-                        spacing: 8
-
-                        TextButton {
-                            label: "Cancel"
-                            enabled: !wifi.busy
-                            onClicked: root.clearSelection()
-                        }
-                        TextButton {
-                            primary: true
-                            label: wifi.connecting ? "Connecting…" : "Connect"
-                            enabled: !wifi.busy
-                            onClicked: root.connectSelected()
-                        }
+                    TextButton {
+                        primary: true
+                        label: wifi.connecting ? "Connecting" : "Connect"
+                        enabled: !wifi.busy
+                        onClicked: root.connectSelected()
                     }
                 }
             }
         }
+    }
 
-        Rectangle {
-            id: activityCard
-            width: parent.width
-            height: activity.implicitHeight + 24
-            radius: 12
-            color: Theme.Colors.surface
-
-            Column {
-                id: activity
-                x: 14
-                y: 12
-                width: parent.width - 28
-                spacing: 10
-
-                Text {
-                    text: "Activity"
-                    color: Theme.Colors.muted
-                    font.family: Theme.Fonts.family
-                    font.weight: Theme.Fonts.weight
-                    font.pixelSize: 12
-                }
-
-                Repeater {
-                    // A count model keeps the rows across samples.
-                    model: sampler.networkRates.length
-
-                    Item {
-                        id: link
-                        required property int index
-                        readonly property var rates: sampler.networkRates[index] ?? { label: "", incoming: null, outgoing: null }
-
-                        width: activity.width
-                        height: linkName.implicitHeight
-
-                        Text {
-                            id: linkName
-                            width: parent.width - download.width - upload.width
-                            text: link.rates.label
-                            textFormat: Text.PlainText
-                            elide: Text.ElideRight
-                            color: Theme.Colors.foreground
-                            font.family: Theme.Fonts.family
-                            font.weight: Theme.Fonts.weight
-                            font.pixelSize: 12
-                        }
-                        Text {
-                            id: download
-                            x: linkName.width
-                            width: 130
-                            text: "↓ " + root.rate(link.rates.incoming)
-                            horizontalAlignment: Text.AlignRight
-                            color: Theme.Colors.foreground
-                            font.family: Theme.Fonts.family
-                            font.weight: Theme.Fonts.weight
-                            font.pixelSize: 12
-                            font.features: ({ "tnum": 1 })
-                        }
-                        Text {
-                            id: upload
-                            anchors.right: parent.right
-                            width: 130
-                            text: "↑ " + root.rate(link.rates.outgoing)
-                            horizontalAlignment: Text.AlignRight
-                            color: Theme.Colors.foreground
-                            font.family: Theme.Fonts.family
-                            font.weight: Theme.Fonts.weight
-                            font.pixelSize: 12
-                            font.features: ({ "tnum": 1 })
-                        }
-                    }
-                }
-
-                Text {
-                    visible: sampler.networkRates.length === 0
-                    text: sampler.snapshot ? "No active network interfaces" : "Waiting for sample"
-                    color: Theme.Colors.muted
-                    font.family: Theme.Fonts.family
-                    font.weight: Theme.Fonts.weight
-                    font.pixelSize: 11
-                }
-            }
+    // Mouse side buttons move between the pages like a browser: Back returns to
+    // status, Forward goes into Wi-Fi. Other buttons pass through to the pages.
+    MouseArea {
+        anchors.fill: parent
+        acceptedButtons: Qt.BackButton | Qt.ForwardButton
+        onPressed: mouse => {
+            if (mouse.button === Qt.BackButton && root.wifiOpen)
+                root.closeWifi()
+            else if (mouse.button === Qt.ForwardButton && !root.wifiOpen)
+                root.openWifi()
         }
     }
 }

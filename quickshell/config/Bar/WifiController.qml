@@ -87,6 +87,9 @@ Item {
     function disconnect(device) {
         if (!device || busy)
             return
+        // Leaving a network is disruptive; record who asked, to trace surprises.
+        console.warn("Wi-Fi disconnect requested for", device)
+        console.trace()
         message = "Disconnecting…"
         disconnectProcess.command = ["nmcli", "--wait", "15", "device", "disconnect", device]
         disconnectProcess.running = true
