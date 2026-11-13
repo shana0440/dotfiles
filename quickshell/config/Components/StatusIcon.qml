@@ -11,6 +11,9 @@ Item {
     // "success", "error" or "info".
     property string status: "info"
     property color color: Theme.Colors.status(status)
+    // False draws the glyph at rest, without its arrival or gesture (list rows that
+    // would otherwise replay it on every scroll).
+    property bool animated: true
 
     implicitWidth: 22
     implicitHeight: 22
@@ -43,6 +46,18 @@ Item {
     function play() {
         for (const animation of gestures)
             animation.stop()
+        if (!animated) {
+            ringDrawn = 1
+            firstDrawn = 1
+            secondDrawn = 1
+            dotScale = 1
+            pop = 1
+            popOpacity = 1
+            pulse = 1
+            ripple = 0
+            shake = 0
+            return
+        }
         firstDrawn = 0
         secondDrawn = 0
         dotScale = 1

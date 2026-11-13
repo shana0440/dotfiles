@@ -58,6 +58,14 @@ Singleton {
         }
     }
 
+    // Ding status of a notification: critical is an error, a saved screenshot or
+    // recording (screen-capture's own notification) is a success, the rest is info.
+    function statusOf(notification) {
+        if (notification.urgency === NotificationUrgency.Critical)
+            return "error"
+        return notification.desktopEntry === "screen-capture" ? "success" : "info"
+    }
+
     function samePreview(a, b) {
         return a !== null && b !== null && a.appName === b.appName && a.summary === b.summary && a.body === b.body
     }
