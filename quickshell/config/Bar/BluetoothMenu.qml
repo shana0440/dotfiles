@@ -163,9 +163,15 @@ Item {
             height: 16
             radius: 8
             y: 3
-            x: switchRoot.checked ? switchRoot.width - width - 3 : 3
+            x: knobSpring.value
             color: switchRoot.checked ? Theme.Colors.background : Theme.Colors.foreground
-            Behavior on x { NumberAnimation { duration: 120; easing.type: Easing.OutCubic } }
+
+            Components.Spring {
+                id: knobSpring
+                to: switchRoot.checked ? switchRoot.width - 16 - 3 : 3
+                stiffness: Theme.Motion.enterStiffness
+                damping: Theme.Motion.enterDamping
+            }
         }
         MouseArea {
             id: switchMouse
@@ -198,11 +204,17 @@ Item {
             || device.state === BluetoothDeviceState.Disconnecting
 
         width: parent.width
-        height: 48 + (expanded ? actions.height + 8 : 0)
+        height: heightSpring.value
         radius: 6
         color: device.connected || expanded || rowMouse.containsMouse ? Theme.Colors.activeWorkspace : Theme.Colors.transparent
         clip: true
-        Behavior on height { NumberAnimation { duration: 140; easing.type: Easing.OutCubic } }
+
+        Components.Spring {
+            id: heightSpring
+            to: 48 + (row.expanded ? actions.height + 8 : 0)
+            stiffness: row.expanded ? Theme.Motion.morphStiffness : Theme.Motion.closeStiffness
+            damping: row.expanded ? Theme.Motion.morphDamping : Theme.Motion.closeDamping
+        }
 
         Connections {
             target: row.device

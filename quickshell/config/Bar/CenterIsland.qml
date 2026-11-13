@@ -35,10 +35,7 @@ Components.Island {
         return clockView
     }
 
-    radius: showingRecording ? recordingView.height / 2 : 8
-    Behavior on radius {
-        NumberAnimation { duration: root.resizeDuration; easing.type: Easing.OutCubic }
-    }
+    targetRadius: showingRecording ? recordingView.height / 2 : 8
 
     function close() {
         expanded = false

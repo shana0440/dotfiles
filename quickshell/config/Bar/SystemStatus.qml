@@ -131,6 +131,7 @@ Item {
     }
 
     component Meter: Rectangle {
+        id: meter
         property real fraction: 0
         property color fillColor: Theme.Colors.accent
         height: 4
@@ -138,15 +139,16 @@ Item {
         color: Theme.Colors.activeWorkspace
 
         Rectangle {
-            width: parent.width * Math.max(0, Math.min(1, parent.fraction))
+            width: fillSpring.value
             height: parent.height
             radius: parent.radius
             color: parent.fillColor
-            Behavior on width {
-                NumberAnimation {
-                    duration: 400
-                    easing.type: Easing.OutCubic
-                }
+
+            Components.Spring {
+                id: fillSpring
+                to: meter.width * Math.max(0, Math.min(1, meter.fraction))
+                stiffness: Theme.Motion.stackStiffness
+                damping: Theme.Motion.stackDamping
             }
         }
     }

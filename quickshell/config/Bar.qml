@@ -173,7 +173,8 @@ PanelWindow {
         BarComponents.MediaIsland {
             id: mediaIsland
             anchors.right: centerIsland.left
-            anchors.rightMargin: merged ? -width : root.islandSpacing
+            anchors.rightMargin: offset
+            gap: root.islandSpacing
             merged: centerIsland.sideIslandsMerged
             onClicked: centerIsland.open("media")
         }
@@ -181,7 +182,8 @@ PanelWindow {
         BarComponents.NotificationIsland {
             id: notificationIsland
             anchors.left: centerIsland.right
-            anchors.leftMargin: merged ? -width : root.islandSpacing
+            anchors.leftMargin: offset
+            gap: root.islandSpacing
             merged: centerIsland.sideIslandsMerged
             onClicked: centerIsland.open("notifications")
         }
