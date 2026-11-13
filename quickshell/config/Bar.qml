@@ -227,6 +227,19 @@ PanelWindow {
         anchors.rightMargin: root.islandMargin
         focus: true
         Keys.onEscapePressed: root.closeMenus()
+        // Tab and Shift+Tab step through the dashboard tabs while it is open.
+        Keys.onTabPressed: event => {
+            if (centerIsland.expanded)
+                centerIsland.cycleTab(1)
+            else
+                event.accepted = false
+        }
+        Keys.onBacktabPressed: event => {
+            if (centerIsland.expanded)
+                centerIsland.cycleTab(-1)
+            else
+                event.accepted = false
+        }
 
         TapHandler {
             enabled: root.menuOpen

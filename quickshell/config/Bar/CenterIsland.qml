@@ -42,6 +42,11 @@ Components.Island {
         expanded = true
     }
 
+    // Next (1) or previous (-1) dashboard tab.
+    function cycleTab(step) {
+        dashboard.cycle(step)
+    }
+
     Connections {
         target: Services.Notifications
         function onReceived() {

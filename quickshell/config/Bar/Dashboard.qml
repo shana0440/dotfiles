@@ -30,6 +30,43 @@ Item {
     width: sidebarWidth + 1 + pageWidth
     height: Math.max(tabs.implicitHeight + 16, currentPage.height)
 
+    readonly property var tabList: [
+        { tab: "calendar", icon: "calendar", tooltip: "Calendar" },
+        { tab: "media", icon: "disc", tooltip: "Now playing" },
+        { tab: "audio", icon: "speaker", tooltip: "Audio" },
+        { tab: "notifications", icon: "notifications", tooltip: "Notifications" },
+        { tab: "network", icon: "wifi", tooltip: "Network" },
+        { tab: "bluetooth", icon: "bluetooth", tooltip: "Bluetooth" },
+        { tab: "system", icon: "systemStatus", tooltip: "System" },
+        { tab: "usage", icon: "usage", tooltip: "Usage" }
+    ]
+
+    // Moves to the next (1) or previous (-1) tab, wrapping around.
+    function cycle(step) {
+        const index = tabList.findIndex(entry => entry.tab === tab)
+        tabRequested(tabList[(index + step + tabList.length) % tabList.length].tab)
+    }
+
+    // Scrolling over the tab rail moves one tab per notch; touchpads send small
+    // steps that add up to a notch.
+    // Above the tab buttons; it takes no buttons, so clicks and hover reach them.
+    MouseArea {
+        z: 1
+        x: 0
+        y: 0
+        width: root.sidebarWidth
+        height: root.height
+        acceptedButtons: Qt.NoButton
+        property real pending: 0
+        onWheel: wheel => {
+            pending += wheel.angleDelta.y
+            while (Math.abs(pending) >= 120) {
+                root.cycle(pending > 0 ? -1 : 1)
+                pending -= pending > 0 ? 120 : -120
+            }
+        }
+    }
+
     Column {
         id: tabs
         x: 8
@@ -37,16 +74,7 @@ Item {
         spacing: 4
 
         Repeater {
-            model: [
-                { tab: "calendar", icon: "calendar", tooltip: "Calendar" },
-                { tab: "media", icon: "disc", tooltip: "Now playing" },
-                { tab: "audio", icon: "speaker", tooltip: "Audio" },
-                { tab: "notifications", icon: "notifications", tooltip: "Notifications" },
-                { tab: "network", icon: "wifi", tooltip: "Network" },
-                { tab: "bluetooth", icon: "bluetooth", tooltip: "Bluetooth" },
-                { tab: "system", icon: "systemStatus", tooltip: "System" },
-                { tab: "usage", icon: "usage", tooltip: "Usage" }
-            ]
+            model: root.tabList
 
             Components.IconButton {
                 id: tabButton
