@@ -24,6 +24,11 @@ QtObject {
     readonly property color warning: "#fbbf24"
     readonly property color info: "#60a5fa"
 
+    // A Ding status name to its color; anything else (loading) is the foreground.
+    function status(name) {
+        return ({ success: success, error: error, warning: warning, info: info })[name] ?? foreground
+    }
+
     // Floating panels over the desktop (wallpaper picker, capture toolbar).
     readonly property color panel: "#ed0c0c0d"
     // Shade over the desktop outside a selection.
