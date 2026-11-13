@@ -366,18 +366,16 @@ hl.on("window.close", function(event)
 end)
 hl.bind(mainMod .. " + SPACE", hl.dsp.exec_cmd(menu))
 -- Pressing and releasing Super on its own toggles the bar dashboard, however long
--- it is held. Catch-all binds are only allowed in submaps, so pass-through binds on
--- every other key and button mark Super as combined; a still pointer rules out drags.
-local superTap = { held = false, combined = false, cursor = nil }
+-- it is held or how the pointer moves. Catch-all binds are only allowed in submaps,
+-- so pass-through binds on every other key and button (window drags start with a
+-- button) mark Super as combined.
+local superTap = { held = false, combined = false }
 hl.bind("Super_L", function()
     superTap.held = true
     superTap.combined = false
-    superTap.cursor = hl.get_cursor_pos()
 end, { non_consuming = true })
 hl.bind(mainMod .. " + Super_L", function()
-    local cursor = hl.get_cursor_pos()
-    local still = cursor and superTap.cursor and cursor.x == superTap.cursor.x and cursor.y == superTap.cursor.y
-    if superTap.held and not superTap.combined and still then
+    if superTap.held and not superTap.combined then
         hl.exec_cmd("quickshell --path ~/.config/quickshell ipc call dashboard toggle")
     end
     superTap.held = false
