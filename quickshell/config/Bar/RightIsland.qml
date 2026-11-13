@@ -1,5 +1,4 @@
 import QtQuick
-import "../Theme" as Theme
 import "../Components" as Components
 
 Components.Island {
@@ -11,15 +10,13 @@ Components.Island {
     readonly property bool expanded: mode !== "default"
     // IME actions must run while the editor keeps its input context focused.
     readonly property bool keyboardFocusRequired: expanded && mode !== "input"
-    readonly property bool confirming: mode === "power" && menu.confirming
 
-    activeView: mode === "input" ? inputMenu : mode === "power" ? menu : defaultContent
+    activeView: mode === "input" ? inputMenu : defaultContent
     alignment: Qt.AlignRight
     overflowView: defaultContent
 
     function close() {
         mode = "default"
-        menu.cancel()
     }
 
     views: [
@@ -31,35 +28,6 @@ Components.Island {
                 id: inputIndicator
                 onClicked: root.mode = "input"
             }
-
-            Rectangle {
-                width: 40
-                height: 32
-                radius: 8
-                color: powerMouse.containsMouse ? Theme.Colors.highlight : Theme.Colors.transparent
-
-                Components.Icon {
-                    anchors.centerIn: parent
-                    action: "poweroff"
-                }
-
-                MouseArea {
-                    id: powerMouse
-                    anchors.fill: parent
-                    hoverEnabled: true
-                    cursorShape: Qt.PointingHandCursor
-                    onClicked: root.mode = "power"
-                }
-
-                Components.Tooltip {
-                    text: "Power"
-                    shown: powerMouse.containsMouse
-                }
-            }
-        },
-        PowerMenu {
-            id: menu
-            onCloseRequested: root.close()
         },
         InputMethodMenu {
             id: inputMenu
