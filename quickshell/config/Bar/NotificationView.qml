@@ -8,7 +8,6 @@ Item {
 
     property int maximumHeight: 560
     readonly property var entries: Services.Notifications.notifications.slice().reverse()
-    signal closeRequested()
 
     width: 420
     height: Math.min(maximumHeight, Math.max(144, cards.contentHeight + 64))
@@ -38,32 +37,18 @@ Item {
         }
     }
 
-    Row {
+    Components.IconButton {
         anchors.top: parent.top
         anchors.right: parent.right
         anchors.margins: 8
-        spacing: 4
-
-        Components.IconButton {
-            width: 28
-            height: 28
-            radius: 14
-            iconSize: 16
-            icon: "clearNotifications"
-            tooltip: "Clear all notifications"
-            enabled: Services.Notifications.count > 0
-            onClicked: Services.Notifications.dismissAll()
-        }
-
-        Components.IconButton {
-            width: 28
-            height: 28
-            radius: 14
-            iconSize: 16
-            icon: "close"
-            tooltip: "Close notifications"
-            onClicked: root.closeRequested()
-        }
+        width: 28
+        height: 28
+        radius: 14
+        iconSize: 16
+        icon: "clearNotifications"
+        tooltip: "Clear all notifications"
+        enabled: Services.Notifications.count > 0
+        onClicked: Services.Notifications.dismissAll()
     }
 
     ListView {

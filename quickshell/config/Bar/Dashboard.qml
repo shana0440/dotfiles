@@ -112,7 +112,6 @@ Item {
                 id: notificationList
                 width: root.pageWidth
                 maximumHeight: root.maximumHeight
-                onCloseRequested: root.closeRequested()
             }
         ]
     }
