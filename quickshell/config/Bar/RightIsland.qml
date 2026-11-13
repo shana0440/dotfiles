@@ -14,7 +14,7 @@ Components.Island {
     readonly property bool keyboardFocusRequired: expanded && mode !== "input"
     readonly property bool confirming: mode === "power" && menu.confirming
 
-    activeView: mode === "input" ? inputMenu : mode === "wifi" ? wifiMenu : mode === "bluetooth" ? bluetoothMenu : mode === "power" ? menu : defaultContent
+    activeView: mode === "input" ? inputMenu : mode === "bluetooth" ? bluetoothMenu : mode === "power" ? menu : defaultContent
     alignment: Qt.AlignRight
     overflowView: defaultContent
 
@@ -44,11 +44,6 @@ Components.Island {
 
             BluetoothIndicator {
                 onClicked: root.mode = "bluetooth"
-            }
-
-            Wifi {
-                id: wifiStatus
-                onClicked: root.mode = "wifi"
             }
 
             Rectangle {
@@ -85,12 +80,6 @@ Components.Island {
             active: root.mode === "bluetooth"
             maximumHeight: root.availableHeight
             onCloseRequested: root.close()
-        },
-        WifiMenu {
-            id: wifiMenu
-            active: root.mode === "wifi"
-            onCloseRequested: root.close()
-            onConnectionChanged: wifiStatus.refreshStatus()
         },
         InputMethodMenu {
             id: inputMenu
