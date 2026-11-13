@@ -14,7 +14,7 @@ Components.Island {
     readonly property bool keyboardFocusRequired: expanded && mode !== "input"
     readonly property bool confirming: mode === "power" && menu.confirming
 
-    activeView: mode === "input" ? inputMenu : mode === "wifi" ? wifiMenu : mode === "bluetooth" ? bluetoothMenu : mode === "power" ? menu : mode === "system" ? systemStatus : mode === "audio" ? audioMenu : mode === "voice" ? voiceMenu : defaultContent
+    activeView: mode === "input" ? inputMenu : mode === "wifi" ? wifiMenu : mode === "bluetooth" ? bluetoothMenu : mode === "power" ? menu : mode === "audio" ? audioMenu : mode === "voice" ? voiceMenu : defaultContent
     alignment: Qt.AlignRight
     overflowView: defaultContent
 
@@ -56,14 +56,6 @@ Components.Island {
             InputMethodIndicator {
                 id: inputIndicator
                 onClicked: root.mode = "input"
-            }
-
-            Components.IconButton {
-                width: 40
-                height: 32
-                icon: "systemStatus"
-                tooltip: "System status"
-                onClicked: root.mode = "system"
             }
 
             BluetoothIndicator {
@@ -109,12 +101,6 @@ Components.Island {
             id: voiceMenu
             input: true
             maximumHeight: root.availableHeight
-            onCloseRequested: root.close()
-        },
-        SystemStatus {
-            id: systemStatus
-            maximumHeight: root.availableHeight
-            active: root.mode === "system"
             onCloseRequested: root.close()
         },
         PowerMenu {

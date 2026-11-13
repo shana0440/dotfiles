@@ -160,7 +160,9 @@ Item {
                 anchors.right: parent.right
                 anchors.verticalCenter: parent.verticalCenter
                 visible: root.snapshot !== null
-                text: root.snapshot ? "Up " + root.uptime(root.snapshot.uptime) : ""
+                // Load averages over 1, 5 and 15 minutes.
+                text: root.snapshot ? "Up " + root.uptime(root.snapshot.uptime)
+                    + " · load " + root.snapshot.load.map(value => value.toFixed(2)).join(" ") : ""
                 color: Theme.Colors.muted
                 font.family: Theme.Fonts.family
                 font.weight: Theme.Fonts.weight
@@ -186,7 +188,9 @@ Item {
                 label: "Memory"
                 value: root.memory ? root.percent(root.memory.used / root.memory.total) : "—"
                 fraction: root.memory ? root.memory.used / root.memory.total : -1
-                detail: root.memory ? root.bytes(root.memory.used) + " / " + root.bytes(root.memory.total) : "Waiting for sample"
+                detail: !root.memory ? "Waiting for sample"
+                    : root.bytes(root.memory.used) + " / " + root.bytes(root.memory.total)
+                        + (root.memory.swapTotal ? " · swap " + root.bytes(root.memory.swapUsed) : " · no swap")
             }
 
             // One row per GPU: usage on the left, VRAM on the right.
