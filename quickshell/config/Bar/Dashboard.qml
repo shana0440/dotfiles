@@ -69,6 +69,23 @@ Item {
         }
     }
 
+    // Mouse side buttons anywhere over the page go to pages with nested views,
+    // even below a page shorter than the dashboard. Other buttons pass through.
+    MouseArea {
+        z: 1
+        x: root.sidebarWidth + 1
+        width: root.pageWidth
+        height: root.height
+        acceptedButtons: Qt.BackButton | Qt.ForwardButton
+        onPressed: mouse => {
+            const page = root.currentPage
+            if (mouse.button === Qt.BackButton && page.navigateBack)
+                page.navigateBack()
+            else if (mouse.button === Qt.ForwardButton && page.navigateForward)
+                page.navigateForward()
+        }
+    }
+
     Column {
         id: tabs
         x: 8

@@ -269,13 +269,27 @@ Item {
             width: parent.width
             height: 32
 
-            Text {
+            Column {
                 anchors.verticalCenter: parent.verticalCenter
-                text: "Network"
-                color: Theme.Colors.foreground
-                font.family: Theme.Fonts.family
-                font.pixelSize: 16
-                font.bold: true
+                spacing: 2
+
+                Text {
+                    text: "Network"
+                    color: Theme.Colors.foreground
+                    font.family: Theme.Fonts.family
+                    font.pixelSize: 16
+                    font.bold: true
+                }
+                Text {
+                    text: !devices.loaded ? "Checking"
+                        : !root.primary ? "Offline"
+                        : "Online via " + root.primary.kind
+                            + (root.primary.type !== "wifi" && root.activeNetwork ? ", Wi-Fi also connected" : "")
+                    color: Theme.Colors.muted
+                    font.family: Theme.Fonts.family
+                    font.weight: Theme.Fonts.weight
+                    font.pixelSize: 11
+                }
             }
             Row {
                 anchors.right: parent.right
@@ -641,15 +655,29 @@ Item {
                 tooltip: "Back to network"
                 onClicked: root.closeWifi()
             }
-            Text {
+            Column {
                 anchors.left: back.right
                 anchors.leftMargin: 2
                 anchors.verticalCenter: parent.verticalCenter
-                text: "Wi-Fi networks"
-                color: Theme.Colors.foreground
-                font.family: Theme.Fonts.family
-                font.pixelSize: 16
-                font.bold: true
+                spacing: 2
+
+                Text {
+                    text: "Wi-Fi networks"
+                    color: Theme.Colors.foreground
+                    font.family: Theme.Fonts.family
+                    font.pixelSize: 16
+                    font.bold: true
+                }
+                Text {
+                    text: wifi.scanning && wifi.networks.count === 0 ? "Scanning"
+                        : (root.activeNetwork ? "Connected to " + root.activeNetwork.ssid : "Not connected")
+                            + " \u00b7 " + wifi.networks.count + " nearby"
+                    textFormat: Text.PlainText
+                    color: Theme.Colors.muted
+                    font.family: Theme.Fonts.family
+                    font.weight: Theme.Fonts.weight
+                    font.pixelSize: 11
+                }
             }
             Components.IconButton {
                 anchors.right: parent.right
@@ -866,16 +894,15 @@ Item {
         }
     }
 
-    // Mouse side buttons move between the pages like a browser: Back returns to
-    // status, Forward goes into Wi-Fi. Other buttons pass through to the pages.
-    MouseArea {
-        anchors.fill: parent
-        acceptedButtons: Qt.BackButton | Qt.ForwardButton
-        onPressed: mouse => {
-            if (mouse.button === Qt.BackButton && root.wifiOpen)
-                root.closeWifi()
-            else if (mouse.button === Qt.ForwardButton && !root.wifiOpen)
-                root.openWifi()
-        }
+    // Mouse side buttons, routed here by the dashboard from anywhere over the page:
+    // Back returns to status, Forward goes into Wi-Fi.
+    function navigateBack() {
+        if (wifiOpen)
+            closeWifi()
+    }
+
+    function navigateForward() {
+        if (!wifiOpen)
+            openWifi()
     }
 }
