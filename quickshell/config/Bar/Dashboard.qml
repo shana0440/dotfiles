@@ -18,7 +18,8 @@ Item {
         : tab === "network" ? networkView
         : tab === "bluetooth" ? bluetoothView
         : tab === "system" ? systemView
-        : tab === "usage" ? usageView : calendarPage
+        : tab === "usage" ? usageView
+        : tab === "power" ? powerView : calendarPage
     signal tabRequested(string tab)
     signal closeRequested()
 
@@ -38,7 +39,8 @@ Item {
         { tab: "network", icon: "wifi", tooltip: "Network" },
         { tab: "bluetooth", icon: "bluetooth", tooltip: "Bluetooth" },
         { tab: "system", icon: "systemStatus", tooltip: "System" },
-        { tab: "usage", icon: "usage", tooltip: "Usage" }
+        { tab: "usage", icon: "usage", tooltip: "Usage" },
+        { tab: "power", icon: "poweroff", tooltip: "Power" }
     ]
 
     // Moves to the next (1) or previous (-1) tab, wrapping around.
@@ -179,6 +181,13 @@ Item {
                 id: usageView
                 width: root.pageWidth
                 active: root.active && root.tab === "usage"
+            },
+            PowerView {
+                id: powerView
+                width: root.pageWidth
+                fillHeight: tabs.implicitHeight + 16
+                active: root.active && root.tab === "power"
+                onCloseRequested: root.closeRequested()
             }
         ]
     }
