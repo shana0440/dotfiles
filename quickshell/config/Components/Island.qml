@@ -32,6 +32,14 @@ Surface {
             spring.impulse(opening ? Theme.Motion.anticipation : Theme.Motion.swell)
     }
 
+    // Content-aware motion from Ding: a push that springs back to rest. An error
+    // shakes its head (sideways on a loose spring), a repeat nudges it down.
+    function kick(sideways, down) {
+        shakeSpring.impulse(sideways)
+        nudgeSpring.impulse(down)
+    }
+    transform: Translate { x: shakeSpring.value; y: nudgeSpring.value }
+
     onTargetWidthChanged: moveTo(widthSpring, targetWidth, true)
     onTargetHeightChanged: moveTo(heightSpring, targetHeight, false)
     // Change handlers skip the initial value; start at rest at the first size.
@@ -44,6 +52,12 @@ Surface {
 
     Spring { id: widthSpring }
     Spring { id: heightSpring }
+    Spring { id: shakeSpring; stiffness: 520; damping: 13 }
+    Spring {
+        id: nudgeSpring
+        stiffness: Theme.Motion.enterStiffness
+        damping: Theme.Motion.enterDamping
+    }
     Spring {
         id: radiusSpring
         to: root.targetRadius

@@ -12,14 +12,54 @@ Singleton {
     readonly property var notifications: server.trackedNotifications.values
     readonly property int count: notifications.length
     property var preview: null
-    readonly property bool previewVisible: preview !== null
+    // The popup collapses before it hides; it stays visible while closing, even if
+    // the notification itself is already gone.
+    property bool previewClosing: false
+    readonly property bool previewVisible: preview !== null || previewClosing
+    // Repeats of the popup's notification count up instead of replacing it.
+    property int previewCount: 1
+    // Lifetime of the popup in ms; 0 keeps it until dismissed.
+    property int previewDuration: 0
+    property bool previewPaused: false
+    // Restarts the popup's countdown (a new notification or a repeat).
+    signal previewRestarted()
+    signal previewRepeated()
     signal received()
     // Menus holding exclusive keyboard focus must close so the compositor can focus the sender.
     signal actionInvoked()
 
     function hidePreview() {
         previewTimer.stop()
+        closeTimer.stop()
+        previewPaused = false
+        previewClosing = false
         preview = null
+    }
+
+    // Collapse first, then hide (Ding's closing phase).
+    function dismissPreview() {
+        if (!previewVisible || previewClosing)
+            return
+        previewTimer.stop()
+        previewClosing = true
+        closeTimer.restart()
+    }
+
+    // Hovering the popup holds its countdown.
+    function pausePreview(paused) {
+        if (paused === previewPaused || previewClosing || previewDuration === 0)
+            return
+        previewPaused = paused
+        if (paused) {
+            previewTimer.remaining = Math.max(0, previewTimer.remaining - (Date.now() - previewTimer.startedAt))
+            previewTimer.stop()
+        } else {
+            previewTimer.resume()
+        }
+    }
+
+    function samePreview(a, b) {
+        return a !== null && b !== null && a.appName === b.appName && a.summary === b.summary && a.body === b.body
     }
 
     function dismissAll() {
@@ -86,24 +126,48 @@ Singleton {
 
         onNotification: notification => {
             notification.tracked = true
+            const repeat = !root.previewClosing && root.samePreview(root.preview, notification)
+            root.previewCount = repeat ? root.previewCount + 1 : 1
             root.preview = notification
+            closeTimer.stop()
+            root.previewClosing = false
+            root.previewPaused = false
             previewTimer.stop()
             // Expiry hides the popup, not the notification history.
-            if (notification.expireTimeout !== 0 && notification.urgency !== NotificationUrgency.Critical) {
-                previewTimer.interval = notification.expireTimeout > 0 ? notification.expireTimeout : 5000
-                previewTimer.start()
+            const sticky = notification.expireTimeout === 0 || notification.urgency === NotificationUrgency.Critical
+            root.previewDuration = sticky ? 0 : notification.expireTimeout > 0 ? notification.expireTimeout : 5000
+            if (!sticky) {
+                previewTimer.remaining = root.previewDuration
+                previewTimer.resume()
             }
             root.received()
+            root.previewRestarted()
+            if (repeat)
+                root.previewRepeated()
         }
     }
 
     Connections {
         target: root.preview
-        function onClosed() { root.hidePreview() }
+        function onClosed() { root.dismissPreview() }
     }
 
     Timer {
         id: previewTimer
+        property real remaining: 0
+        property real startedAt: 0
+        function resume() {
+            startedAt = Date.now()
+            interval = Math.max(1, remaining)
+            start()
+        }
+        onTriggered: root.dismissPreview()
+    }
+
+    // Matches the toast's collapse: text erases and the pill shrinks back to its dot.
+    Timer {
+        id: closeTimer
+        interval: 340
         onTriggered: root.hidePreview()
     }
 }

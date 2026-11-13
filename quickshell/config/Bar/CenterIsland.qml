@@ -27,7 +27,7 @@ Components.Island {
             return showingMedia ? mediaView : calendar
         }
         if (Services.Notifications.previewVisible)
-            return notificationPreview
+            return toast
         if (volumeVisible)
             return volumeSlider
         if (Services.Capture.recording)
@@ -35,7 +35,9 @@ Components.Island {
         return clockView
     }
 
-    targetRadius: showingRecording ? recordingView.height / 2 : 8
+    // Pills: the recording indicator, and the toast (Ding's 22 px radius caps tall ones).
+    targetRadius: showingRecording ? recordingView.height / 2
+        : activeView === toast ? Math.min(22, toast.height / 2) : 8
 
     function close() {
         expanded = false
@@ -162,12 +164,17 @@ Components.Island {
             maximumHeight: root.availableHeight
             onCloseRequested: root.close()
         },
-        NotificationView {
-            id: notificationPreview
-            preview: true
-            maximumHeight: root.availableHeight
-            onCloseRequested: root.close()
+        DingToast {
+            id: toast
+            revealWidth: root.width
+            revealHeight: root.height
             onListRequested: root.open("notifications")
+            onGesture: kind => {
+                if (kind === "error")
+                    root.kick(380, 0)
+                else if (kind === "repeat")
+                    root.kick(0, 240)
+            }
         }
     ]
 }
