@@ -365,29 +365,44 @@ hl.on("window.close", function(event)
     end
 end)
 hl.bind(mainMod .. " + SPACE", hl.dsp.exec_cmd(menu))
--- Tapping Super alone toggles the bar dashboard. Hyprland already skips the release
--- after a bound Super combo; a short tap with a still pointer also rules out
--- unbound combos, window drags and long holds.
-local superTap = { id = 0, live = false, cursor = nil }
+-- Pressing and releasing Super on its own toggles the bar dashboard, however long
+-- it is held. Catch-all binds are only allowed in submaps, so pass-through binds on
+-- every other key and button mark Super as combined; a still pointer rules out drags.
+local superTap = { held = false, combined = false, cursor = nil }
 hl.bind("Super_L", function()
-    superTap.id = superTap.id + 1
-    local id = superTap.id
-    superTap.live = true
+    superTap.held = true
+    superTap.combined = false
     superTap.cursor = hl.get_cursor_pos()
-    hl.timer(function()
-        if superTap.id == id then
-            superTap.live = false
-        end
-    end, { timeout = 400, type = "oneshot" })
 end, { non_consuming = true })
 hl.bind(mainMod .. " + Super_L", function()
     local cursor = hl.get_cursor_pos()
     local still = cursor and superTap.cursor and cursor.x == superTap.cursor.x and cursor.y == superTap.cursor.y
-    if superTap.live and still then
+    if superTap.held and not superTap.combined and still then
         hl.exec_cmd("quickshell --path ~/.config/quickshell ipc call dashboard toggle")
     end
-    superTap.live = false
+    superTap.held = false
 end, { release = true })
+
+local comboKeys = {
+    "Return", "Tab", "space", "Escape", "BackSpace", "Delete", "Insert", "Home", "End",
+    "Prior", "Next", "Left", "Right", "Up", "Down", "Print", "minus", "equal",
+    "bracketleft", "bracketright", "backslash", "semicolon", "apostrophe", "grave",
+    "comma", "period", "slash", "mouse:272", "mouse:273", "mouse:274", "mouse:275",
+    "mouse:276", "mouse_up", "mouse_down", "mouse_left", "mouse_right",
+}
+for c in ("abcdefghijklmnopqrstuvwxyz0123456789"):gmatch(".") do
+    table.insert(comboKeys, c)
+end
+for i = 1, 12 do
+    table.insert(comboKeys, "F" .. i)
+end
+for _, key in ipairs(comboKeys) do
+    hl.bind(key, function()
+        if superTap.held then
+            superTap.combined = true
+        end
+    end, { non_consuming = true, ignore_mods = true })
+end
 hl.bind(mainMod .. " + SHIFT + W", hl.dsp.exec_cmd("quickshell --path ~/.config/quickshell ipc call wallpaper toggle"))
 
 -- Move focus with mainMod + arrow keys
