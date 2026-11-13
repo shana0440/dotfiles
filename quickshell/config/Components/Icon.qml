@@ -47,6 +47,7 @@ Item {
         ethernet: "ethernet-port",
         back: "chevron-left",
         forward: "chevron-right",
+        usage: "gauge",
         clearNotifications: "list-x"
     })[action] ?? "power"
     readonly property string themedSvg: {

@@ -15,7 +15,8 @@ Item {
     readonly property Item currentPage: tab === "media" ? mediaView
         : tab === "notifications" ? notificationList
         : tab === "network" ? networkView
-        : tab === "system" ? systemView : calendarPage
+        : tab === "system" ? systemView
+        : tab === "usage" ? usageView : calendarPage
     signal tabRequested(string tab)
     signal closeRequested()
 
@@ -39,7 +40,8 @@ Item {
                 { tab: "media", icon: "disc", tooltip: "Now playing" },
                 { tab: "notifications", icon: "notifications", tooltip: "Notifications" },
                 { tab: "network", icon: "wifi", tooltip: "Network" },
-                { tab: "system", icon: "systemStatus", tooltip: "System" }
+                { tab: "system", icon: "systemStatus", tooltip: "System" },
+                { tab: "usage", icon: "usage", tooltip: "Usage" }
             ]
 
             Components.IconButton {
@@ -128,6 +130,11 @@ Item {
                 id: systemView
                 width: root.pageWidth
                 active: root.active && root.tab === "system"
+            },
+            UsageView {
+                id: usageView
+                width: root.pageWidth
+                active: root.active && root.tab === "usage"
             }
         ]
     }
