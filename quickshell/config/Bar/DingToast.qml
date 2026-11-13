@@ -40,8 +40,14 @@ Item {
     readonly property string body: notification?.body ?? lastBody
     readonly property string app: notification?.appName ?? lastApp
     readonly property string image: notification?.image ?? lastImage
-    readonly property string status: notification
-        ? (notification.urgency === NotificationUrgency.Critical ? "error" : "info") : lastStatus
+    // Critical is an error; a saved screenshot or recording (screen-capture's own
+    // notification) is a success; everything else is info.
+    readonly property string status: !notification ? lastStatus
+        : notification.urgency === NotificationUrgency.Critical ? "error"
+        : notification.desktopEntry === "screen-capture" ? "success" : "info"
+    // A success shows its check: a capture preview cropped to a 28 px circle says
+    // little, and the notification list shows it in full.
+    readonly property bool showsImage: status !== "success" && picture.status === Image.Ready
     readonly property var actions: (notification?.actions ?? []).slice(0, 2)
     readonly property int count: Services.Notifications.previewCount
     readonly property bool sticky: Services.Notifications.previewDuration === 0
@@ -158,7 +164,7 @@ Item {
             color: Theme.Colors.surface
             border.width: 1
             border.color: Theme.Colors.ring
-            visible: picture.status === Image.Ready
+            visible: root.showsImage
 
             Image {
                 id: picture
@@ -176,7 +182,7 @@ Item {
             anchors.centerIn: parent
             width: 22
             height: 22
-            visible: picture.status !== Image.Ready
+            visible: !root.showsImage
             status: root.status
         }
     }
