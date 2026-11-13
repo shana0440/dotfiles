@@ -35,7 +35,7 @@ ShaderEffect {
 
     property vector2d resolution: Qt.vector2d(width, height)
     property color fillColor: Theme.Colors.background
-    property color ringColor: Theme.Colors.ring
+    property color ringColor: Theme.Colors.edge
     property color shadowColor: Theme.Colors.shadow
     property vector4d island: Qt.vector4d(islandLeft - x, islandTop - y, target.width, target.height)
     property real islandRadius: target.radius

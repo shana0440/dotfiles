@@ -59,9 +59,8 @@ void main()
     float inner = clamp(0.5 - (surface + 1.0) / aa, 0.0, 1.0);
     float ring = outer - inner;
 
-    vec4 fill = vec4(ubuf.fillColor.rgb * ubuf.fillColor.a, ubuf.fillColor.a);
-    vec4 hairline = vec4(ubuf.ringColor.rgb * ubuf.ringColor.a, ubuf.ringColor.a);
-    vec4 color = fill * inner + hairline * ring;
+    // Qt passes color uniforms premultiplied already.
+    vec4 color = ubuf.fillColor * inner + ubuf.ringColor * ring;
 
     // The Surface drop shadow: 4 px down, spread -4, blur 12.
     float shadowSurface = field(point - vec2(0.0, 4.0)) + 4.0;

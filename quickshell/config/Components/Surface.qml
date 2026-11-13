@@ -2,7 +2,7 @@ import QtQuick
 import QtQuick.Effects
 import "../Theme" as Theme
 
-// A floating surface in Ding's style: a hairline ring and a soft drop shadow.
+// A floating surface in Ding's style: a hairline edge and a soft drop shadow.
 Rectangle {
     id: root
 
@@ -11,7 +11,7 @@ Rectangle {
 
     color: bare ? Theme.Colors.transparent : Theme.Colors.background
     border.width: bare ? 0 : 1
-    border.color: Theme.Colors.ring
+    border.color: Theme.Colors.edge
 
     // Negative z draws beneath the surface itself.
     RectangularShadow {

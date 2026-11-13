@@ -10,6 +10,9 @@ QtObject {
     readonly property color muted: "#a3a29d"
     // Hairline around floating surfaces: white at 10%.
     readonly property color ring: "#1affffff"
+    // Edge of surfaces floating over the desktop (islands, tooltips): white at 24%,
+    // so they still read against a black wallpaper.
+    readonly property color edge: "#3dffffff"
     // Hover and selection fill on a surface: white at 10%.
     readonly property color highlight: "#1affffff"
     // Cards and tiles inside a surface.
