@@ -437,6 +437,8 @@ local function focusAdjacentWorkspace(direction)
 end
 hl.bind("CTRL + left", function() focusAdjacentWorkspace(-1) end)
 hl.bind("CTRL + right", function() focusAdjacentWorkspace(1) end)
+-- Mission Control: every workspace and the current one's windows, like macOS.
+hl.bind("CTRL + up", hl.dsp.exec_cmd("quickshell --path ~/.config/quickshell ipc call overview toggle"))
 
 -- Select an input method directly without cycling or changing workspaces.
 for key, inputMethod in ipairs({ "keyboard-us", "mozc", "chewing" }) do

@@ -1,5 +1,6 @@
 import Quickshell
 import "Capture"
+import "MissionControl"
 import "Wallpaper"
 
 ShellRoot {
@@ -7,4 +8,5 @@ ShellRoot {
     WallpaperTransition {}
     WallpaperPicker {}
     ScreenCapture {}
+    MissionControl {}
 }
