@@ -25,17 +25,48 @@ PanelWindow {
         .filter(ws => ws.id > 0 && ws.monitor === monitor)
         .sort((a, b) => a.id - b.id)
 
-    // Windows of the active workspace, in this monitor's coordinates.
-    readonly property var windows: Hyprland.toplevels.values
-        .filter(t => t.workspace === activeWorkspace && t.lastIpcObject?.at && !t.lastIpcObject.hidden)
-        .map(t => ({
-            address: t.address,
-            x: t.lastIpcObject.at[0] - screenInfo.x,
-            y: t.lastIpcObject.at[1] - screenInfo.y,
-            width: Math.max(1, t.lastIpcObject.size[0]),
-            height: Math.max(1, t.lastIpcObject.size[1]),
-            stack: t.lastIpcObject.focusHistoryID ?? 0
-        }))
+    // Windows of a workspace, in this monitor's coordinates.
+    function windowsOf(workspace) {
+        return Hyprland.toplevels.values
+            .filter(t => workspace && t.workspace === workspace && t.lastIpcObject?.at && !t.lastIpcObject.hidden)
+            .map(t => ({
+                address: t.address,
+                x: t.lastIpcObject.at[0] - screenInfo.x,
+                y: t.lastIpcObject.at[1] - screenInfo.y,
+                width: Math.max(1, t.lastIpcObject.size[0]),
+                height: Math.max(1, t.lastIpcObject.size[1]),
+                stack: t.lastIpcObject.focusHistoryID ?? 0
+            }))
+    }
+    // Spread rects by window address.
+    function spreadOf(list) {
+        const rects = Layout.spread(list, spreadArea, 28, 0.85)
+        const byAddress = {}
+        list.forEach((w, i) => byAddress[w.address] = rects[i])
+        return byAddress
+    }
+    readonly property var windows: windowsOf(activeWorkspace)
+
+    // Switching workspaces while open slides the spread sideways, like Spaces:
+    // the old workspace's windows leave on one side as the new ones come in from
+    // the other, by where the workspaces sit in the strip.
+    property var shownWorkspace: null
+    property var previousWorkspace: null
+    property var previousSpread: ({})
+    property int slideDirection: 1
+    readonly property real slide: slideSpring.value
+    readonly property bool sliding: slideSpring.moving
+    onActiveWorkspaceChanged: {
+        const from = shownWorkspace
+        shownWorkspace = activeWorkspace
+        if (!controller.opened || !from || !activeWorkspace || from === activeWorkspace) return
+        previousWorkspace = from
+        previousSpread = spreadOf(windowsOf(from))
+        slideDirection = activeWorkspace.id > from.id ? 1 : -1
+        selectedAddress = ""
+        slideSpring.value = 0
+        slideSpring.impulse(0)
+    }
 
     readonly property real stripTop: 18
     readonly property real thumbHeight: Math.round(Math.min(130, height * 0.12))
@@ -45,34 +76,22 @@ PanelWindow {
         x: 56, y: stripBottom + 28,
         width: width - 112, height: height - stripBottom - 28 - 56
     })
-    readonly property var spread: {
-        const rects = Layout.spread(windows, spreadArea, 28, 0.85)
-        const byAddress = {}
-        windows.forEach((w, i) => byAddress[w.address] = rects[i])
-        return byAddress
-    }
+    readonly property var spread: spreadOf(windows)
 
     // Keyboard selection (index into `windows` order by layout), hover, and drag state.
     property string selectedAddress: ""
-    property var dropTarget: null // a workspace id, or "new"
+    property var dropTarget: null // a workspace id
 
-    function newWorkspaceId() {
-        const used = Hyprland.workspaces.values.map(ws => ws.id)
-        let id = 1
-        while (used.includes(id)) id++
-        return id
-    }
     function chooseWindow(address) {
         controller.focusWindow(address)
         controller.close()
     }
+    // Mission Control stays open on the new workspace.
     function chooseWorkspace(id) {
         controller.focusWorkspace(id)
-        controller.close()
     }
     function dropWindow(address, target) {
-        if (target === null) return
-        controller.moveWindow(address, target === "new" ? newWorkspaceId() : target)
+        if (target !== null) controller.moveWindow(address, target)
     }
     // The workspace drop target under a point in window coordinates.
     function targetAt(x, y) {
@@ -81,8 +100,7 @@ PanelWindow {
             const p = item.mapFromItem(win.contentItem, x, y)
             if (item.contains(p)) return item.workspaceId
         }
-        const p = addSpace.mapFromItem(win.contentItem, x, y)
-        return addSpace.contains(p) ? "new" : null
+        return null
     }
     // Arrow keys move the selection to the nearest window in that direction.
     function moveSelection(dx, dy) {
@@ -120,12 +138,23 @@ PanelWindow {
         damping: win.controller.opened ? Theme.Motion.morphDamping : Theme.Motion.closeDamping
         precision: 0.001
     }
+    Components.Spring {
+        id: slideSpring
+        to: 1
+        // Critically damped and a little slower than the other motion, like Spaces.
+        stiffness: 220
+        damping: 30
+        precision: 0.001
+    }
 
     Connections {
         target: win.controller
         function onOpenedChanged() {
             win.dropTarget = null
             if (win.controller.opened) {
+                win.shownWorkspace = win.activeWorkspace
+                win.previousWorkspace = null
+                slideSpring.snap()
                 const active = Hyprland.activeToplevel
                 win.selectedAddress = active && win.spread[active.address] ? active.address : ""
                 stage.forceActiveFocus()
@@ -218,42 +247,13 @@ PanelWindow {
                         onClicked: win.chooseWorkspace(modelData.id)
                     }
                 }
-
-                // Adds a workspace: click to go to a new empty one, or drop a window on it.
-                Item {
-                    id: addSpace
-                    width: win.thumbHeight * 0.75
-                    height: win.thumbHeight + 26
-                    Rectangle {
-                        width: parent.width
-                        height: win.thumbHeight
-                        radius: 10
-                        color: win.dropTarget === "new" || addMouse.containsMouse ? Theme.Colors.highlight : Qt.rgba(0, 0, 0, 0.25)
-                        border.width: win.dropTarget === "new" ? 2 : 1
-                        border.color: win.dropTarget === "new" ? Theme.Colors.foreground : Theme.Colors.ring
-                        Text {
-                            anchors.centerIn: parent
-                            text: "+"
-                            color: Theme.Colors.foreground
-                            font.family: Theme.Fonts.family
-                            font.pixelSize: 28
-                        }
-                    }
-                    MouseArea {
-                        id: addMouse
-                        anchors.fill: parent
-                        hoverEnabled: true
-                        cursorShape: Qt.PointingHandCursor
-                        onClicked: win.chooseWorkspace(win.newWorkspaceId())
-                    }
-                }
             }
         }
 
         Text {
             anchors.centerIn: parent
             visible: win.windows.length === 0
-            opacity: win.progress
+            opacity: win.progress * win.slide
             text: "No windows on this workspace"
             color: Theme.Colors.muted
             font.family: Theme.Fonts.family
@@ -261,7 +261,8 @@ PanelWindow {
             font.pixelSize: 15
         }
 
-        // Windows of the active workspace, morphing from where they sit to the spread.
+        // Windows of the active workspace, morphing from where they sit to the spread,
+        // and during a switch those of the workspace being left.
         Repeater {
             model: Hyprland.toplevels
 
@@ -270,8 +271,15 @@ PanelWindow {
                 required property var modelData
                 toplevel: modelData
                 screenInfo: win.screenInfo
-                frame: win.windows.find(w => w.address === modelData.address) ?? null
-                target: win.spread[modelData.address] ?? null
+                readonly property bool current: modelData.workspace === win.activeWorkspace
+                    && !!win.spread[modelData.address]
+                readonly property bool leaving: !current && win.sliding
+                    && modelData.workspace === win.previousWorkspace && !!win.previousSpread[modelData.address]
+                frame: current ? win.windows.find(w => w.address === modelData.address) ?? null : null
+                target: current ? win.spread[modelData.address] : leaving ? win.previousSpread[modelData.address] : null
+                slot: current ? "current" : leaving ? "leaving" : ""
+                offsetX: current ? win.slideDirection * win.width * (1 - win.slide)
+                    : leaving ? -win.slideDirection * win.width * win.slide : 0
                 progress: win.progress
                 settled: win.settled
                 live: win.controller.opened || win.progress > 0.002

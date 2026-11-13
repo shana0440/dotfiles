@@ -9,7 +9,7 @@ import "../Components" as Components
 
 // Mission Control: every monitor shows its workspaces as a strip of live thumbnails
 // along the top and spreads the current workspace's windows out below. Click a
-// window to focus it, a workspace to go there, or drag a window onto a workspace to
+// window to focus it, a workspace to slide over to it, or drag a window onto a workspace to
 // move it.
 Scope {
     id: root

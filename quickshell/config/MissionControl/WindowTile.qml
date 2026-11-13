@@ -2,6 +2,7 @@ import QtQuick
 import Quickshell
 import Quickshell.Wayland
 import "../Theme" as Theme
+import "../Components" as Components
 
 // One window in Mission Control: a live capture that moves from where the window
 // sits (`frame`) to its place in the spread (`target`) as `progress` goes 0 → 1.
@@ -13,6 +14,10 @@ Item {
     required property var screenInfo
     property var frame: null
     property var target: null
+    // Which spread the tile is in ("current", "leaving", or none) and its sideways
+    // offset while workspaces slide.
+    property string slot: ""
+    property real offsetX: 0
     property real progress: 0
     // Once fully open, layout changes (a window leaving) glide instead of jumping.
     property bool settled: false
@@ -25,14 +30,17 @@ Item {
     signal dragMoved(real x, real y)
     signal dropped(real x, real y)
 
-    property real targetX: target?.x ?? 0
-    property real targetY: target?.y ?? 0
-    property real targetWidth: target?.width ?? 0
-    property real targetHeight: target?.height ?? 0
-    Behavior on targetX { enabled: root.settled; NumberAnimation { duration: 260; easing.type: Easing.OutCubic } }
-    Behavior on targetY { enabled: root.settled; NumberAnimation { duration: 260; easing.type: Easing.OutCubic } }
-    Behavior on targetWidth { enabled: root.settled; NumberAnimation { duration: 260; easing.type: Easing.OutCubic } }
-    Behavior on targetHeight { enabled: root.settled; NumberAnimation { duration: 260; easing.type: Easing.OutCubic } }
+    readonly property real targetX: springX.value
+    readonly property real targetY: springY.value
+    readonly property real targetWidth: springWidth.value
+    readonly property real targetHeight: springHeight.value
+    Components.Spring { id: springX; to: root.target?.x ?? 0; enabled: root.settled; stiffness: Theme.Motion.stackStiffness; damping: Theme.Motion.stackDamping }
+    Components.Spring { id: springY; to: root.target?.y ?? 0; enabled: root.settled; stiffness: Theme.Motion.stackStiffness; damping: Theme.Motion.stackDamping }
+    Components.Spring { id: springWidth; to: root.target?.width ?? 0; enabled: root.settled; stiffness: Theme.Motion.stackStiffness; damping: Theme.Motion.stackDamping }
+    Components.Spring { id: springHeight; to: root.target?.height ?? 0; enabled: root.settled; stiffness: Theme.Motion.stackStiffness; damping: Theme.Motion.stackDamping }
+    // Entering a spread lands in place; only layout changes within one glide.
+    function snapTarget() { springX.snap(); springY.snap(); springWidth.snap(); springHeight.snap() }
+    onSlotChanged: { snapTarget(); Qt.callLater(snapTarget) }
 
     function lerp(a, b) { return a + (b - a) * progress }
 
@@ -47,11 +55,12 @@ Item {
     property real dragScale: dragging ? Math.min(1, 180 / Math.max(1, targetWidth)) : 1
     Behavior on dragScale { NumberAnimation { duration: 160; easing.type: Easing.OutCubic } }
 
-    visible: frame !== null && target !== null && live
-    x: frame ? lerp(frame.x, targetX) + dragX : 0
-    y: frame ? lerp(frame.y, targetY) + dragY : 0
-    width: frame ? lerp(frame.width, targetWidth) : 0
-    height: frame ? lerp(frame.height, targetHeight) : 0
+    // Without a frame (a workspace being left) the tile stays in the spread.
+    visible: target !== null && live
+    x: (frame ? lerp(frame.x, targetX) : targetX) + offsetX + dragX
+    y: (frame ? lerp(frame.y, targetY) : targetY) + dragY
+    width: frame ? lerp(frame.width, targetWidth) : targetWidth
+    height: frame ? lerp(frame.height, targetHeight) : targetHeight
     // The most recently focused window on top, as on the desktop; a dragged one above all.
     z: dragging ? 10000 : 1000 - (frame?.stack ?? 0)
     transformOrigin: Item.Center
