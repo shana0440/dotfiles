@@ -36,15 +36,15 @@
         extraSpecialArgs = { inherit zen-browser inputs; };
       };
     in {
-      packages.x86_64-linux.pi-bolt = import ./pi-bolt/package.nix {
+      packages.x86_64-linux.pi-bolt = import ./agents/pi-bolt/package.nix {
         pkgs = nixpkgs.legacyPackages.x86_64-linux;
         inherit inputs;
       };
-      packages.aarch64-linux.pi-bolt = import ./pi-bolt/package.nix {
+      packages.aarch64-linux.pi-bolt = import ./agents/pi-bolt/package.nix {
         pkgs = nixpkgs.legacyPackages.aarch64-linux;
         inherit inputs;
       };
-      packages.aarch64-darwin.pi-bolt = import ./pi-bolt/package.nix {
+      packages.aarch64-darwin.pi-bolt = import ./agents/pi-bolt/package.nix {
         pkgs = nixpkgs.legacyPackages.aarch64-darwin;
         inherit inputs;
       };

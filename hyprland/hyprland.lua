@@ -365,6 +365,42 @@ hl.on("window.close", function(event)
     end
 end)
 hl.bind(mainMod .. " + SPACE", hl.dsp.exec_cmd(menu))
+-- Pressing and releasing Super on its own toggles the bar dashboard, however long
+-- it is held or how the pointer moves. Catch-all binds are only allowed in submaps,
+-- so pass-through binds on every other key and button (window drags start with a
+-- button) mark Super as combined.
+local superTap = { held = false, combined = false }
+hl.bind("Super_L", function()
+    superTap.held = true
+    superTap.combined = false
+end, { non_consuming = true })
+hl.bind(mainMod .. " + Super_L", function()
+    if superTap.held and not superTap.combined then
+        hl.exec_cmd("quickshell --path ~/.config/quickshell ipc call dashboard toggle")
+    end
+    superTap.held = false
+end, { release = true, non_consuming = true })
+
+local comboKeys = {
+    "Return", "Tab", "space", "Escape", "BackSpace", "Delete", "Insert", "Home", "End",
+    "Prior", "Next", "Left", "Right", "Up", "Down", "Print", "minus", "equal",
+    "bracketleft", "bracketright", "backslash", "semicolon", "apostrophe", "grave",
+    "comma", "period", "slash", "mouse:272", "mouse:273", "mouse:274", "mouse:275",
+    "mouse:276", "mouse_up", "mouse_down", "mouse_left", "mouse_right",
+}
+for c in ("abcdefghijklmnopqrstuvwxyz0123456789"):gmatch(".") do
+    table.insert(comboKeys, c)
+end
+for i = 1, 12 do
+    table.insert(comboKeys, "F" .. i)
+end
+for _, key in ipairs(comboKeys) do
+    hl.bind(key, function()
+        if superTap.held then
+            superTap.combined = true
+        end
+    end, { non_consuming = true, ignore_mods = true })
+end
 hl.bind(mainMod .. " + SHIFT + W", hl.dsp.exec_cmd("quickshell --path ~/.config/quickshell ipc call wallpaper toggle"))
 
 -- Move focus with mainMod + arrow keys
@@ -401,6 +437,8 @@ local function focusAdjacentWorkspace(direction)
 end
 hl.bind("CTRL + left", function() focusAdjacentWorkspace(-1) end)
 hl.bind("CTRL + right", function() focusAdjacentWorkspace(1) end)
+-- Mission Control: every workspace and the current one's windows, like macOS.
+hl.bind("CTRL + up", hl.dsp.exec_cmd("quickshell --path ~/.config/quickshell ipc call overview toggle"))
 
 -- Select an input method directly without cycling or changing workspaces.
 for key, inputMethod in ipairs({ "keyboard-us", "mozc", "chewing" }) do

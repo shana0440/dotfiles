@@ -313,9 +313,14 @@ configured channel; this does not change pinned channel or release branches.
 
 Keep `home.stateVersion` unchanged when updating packages.
 
-Shared coding agents are managed in `agents.nix`. Pi uses the native Pi-Bolt
+Shared coding agents are managed in `agents/agents.nix`. Pi uses the native Pi-Bolt
 package; its latest-release archives are pinned in `flake.lock` and refreshed
 by `make update`.
+
+The same module installs `agent-usage`, which prints the Claude and Codex
+5-hour and weekly subscription limits as JSON from the logins Pi saved (falling
+back to Claude Code and Codex CLI). It only reads those logins and never
+refreshes them. The Quickshell dashboard's usage tab runs it.
 
 ## NixOS system configuration
 

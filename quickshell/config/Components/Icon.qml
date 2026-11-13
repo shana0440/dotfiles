@@ -40,6 +40,18 @@ Item {
         recordRegion: "square-dashed",
         stop: "square",
         notifications: "bell",
+        calendar: "calendar",
+        disc: "disc-3",
+        album: "disc-album",
+        radio: "radio",
+        ethernet: "ethernet-port",
+        back: "chevron-left",
+        forward: "chevron-right",
+        usage: "gauge",
+        speaker: "volume-2",
+        speakerMuted: "volume-x",
+        microphoneMuted: "mic-off",
+        check: "check",
         clearNotifications: "list-x"
     })[action] ?? "power"
     readonly property string themedSvg: {

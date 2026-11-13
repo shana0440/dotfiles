@@ -4,20 +4,25 @@ import "../Theme" as Theme
 import "../Components" as Components
 import "../Services" as Services
 
+// Now playing: source and state, artwork with track details, a spectrum that doubles
+// as progress, the seek bar, and transport controls.
 Item {
     id: root
 
     property bool active: false
-    signal closeRequested()
     readonly property var player: Services.Media.player
+    readonly property bool isPlaying: root.player?.isPlaying ?? false
     readonly property real duration: player?.lengthSupported ? Math.max(0, player.length) : 0
     readonly property real position: player?.positionSupported ? Math.max(0, player.position) : 0
     readonly property bool seekable: (player?.canSeek ?? false)
         && (player?.positionSupported ?? false) && duration > 0
     property real previewPosition: 0
+    readonly property real shownPosition: seekMouse.pressed ? previewPosition : position
+    // Without a known length the whole spectrum stays live.
+    readonly property real progress: duration > 0 ? Math.min(1, shownPosition / duration) : 1
 
-    implicitWidth: 380
-    implicitHeight: content.implicitHeight + 32
+    implicitWidth: 480
+    implicitHeight: content.implicitHeight + 40
 
     function formatTime(seconds) {
         const value = Math.max(0, Math.floor(seconds))
@@ -25,31 +30,112 @@ Item {
         return minutes + ":" + String(value % 60).padStart(2, "0")
     }
 
+    function seekFraction(x, width) {
+        return Math.max(0, Math.min(1, x / width)) * duration
+    }
+
     // MPRIS position needs explicit refreshes to advance the seek bar during playback.
     Timer {
-        id: positionRefresh
         interval: 250
         repeat: true
-        running: root.active && (root.player?.isPlaying ?? false)
+        running: root.active && root.isPlaying
         onTriggered: root.player.positionChanged()
     }
 
     Column {
         id: content
-        x: 16
-        y: 16
-        width: parent.width - 32
-        spacing: 12
+        x: 20
+        y: 20
+        width: parent.width - 40
+        spacing: 16
+
+        // Source on the left, playback state on the right.
+        Item {
+            width: parent.width
+            height: 32
+
+            Rectangle {
+                width: source.implicitWidth + 24
+                height: parent.height
+                radius: height / 2
+                color: Theme.Colors.surface
+                visible: sourceName.text.length > 0
+
+                Row {
+                    id: source
+                    anchors.centerIn: parent
+                    spacing: 8
+
+                    Components.Icon {
+                        anchors.verticalCenter: parent.verticalCenter
+                        width: 16
+                        height: 16
+                        action: "radio"
+                        iconColor: Theme.Colors.muted
+                    }
+                    Text {
+                        id: sourceName
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: root.player?.identity ?? ""
+                        textFormat: Text.PlainText
+                        color: Theme.Colors.muted
+                        font.family: Theme.Fonts.family
+                        font.weight: Theme.Fonts.weight
+                        font.pixelSize: 13
+                    }
+                }
+            }
+
+            Row {
+                anchors.right: parent.right
+                anchors.verticalCenter: parent.verticalCenter
+                spacing: 8
+
+                Text {
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: root.isPlaying || Services.Media.playing ? "Now playing"
+                        : root.player ? "Paused" : "Idle"
+                    color: Theme.Colors.muted
+                    font.family: Theme.Fonts.family
+                    font.weight: Theme.Fonts.weight
+                    font.pixelSize: 13
+                }
+                Row {
+                    anchors.verticalCenter: parent.verticalCenter
+                    height: 14
+                    spacing: 2
+
+                    Repeater {
+                        model: 3
+
+                        Rectangle {
+                            required property int index
+                            readonly property var levels: Services.Cava.groupedBars(3)
+                            anchors.bottom: parent.bottom
+                            width: 3
+                            height: Services.Media.playing
+                                ? Math.max(4, parent.height * (levels[index] ?? 0)) : 4
+                            radius: 1.5
+                            color: Theme.Colors.muted
+
+                            Behavior on height {
+                                SmoothedAnimation { velocity: 120 }
+                            }
+                        }
+                    }
+                }
+            }
+        }
 
         Row {
             width: parent.width
-            height: 72
-            spacing: 12
+            height: 120
+            spacing: 20
 
             ClippingRectangle {
-                width: 72
-                height: 72
-                radius: 8
+                width: 120
+                height: 120
+                radius: 12
                 color: Theme.Colors.surface
 
                 Image {
@@ -58,14 +144,14 @@ Item {
                     source: root.player?.trackArtUrl ?? ""
                     asynchronous: true
                     fillMode: Image.PreserveAspectCrop
-                    sourceSize.width: 144
-                    sourceSize.height: 144
+                    sourceSize.width: 240
+                    sourceSize.height: 240
                 }
 
                 Components.Icon {
                     anchors.centerIn: parent
-                    width: 32
-                    height: 32
+                    width: 40
+                    height: 40
                     action: "audio"
                     iconColor: Theme.Colors.muted
                     visible: artwork.status !== Image.Ready
@@ -73,16 +159,17 @@ Item {
             }
 
             Column {
-                width: parent.width - 72 - 28 - 24
+                width: parent.width - 120 - parent.spacing
                 anchors.verticalCenter: parent.verticalCenter
-                spacing: 5
+                spacing: 6
 
                 Text {
                     width: parent.width
                     text: Services.Media.title
                     textFormat: Text.PlainText
                     color: Theme.Colors.foreground
-                    font.pixelSize: 14
+                    font.family: Theme.Fonts.family
+                    font.pixelSize: 20
                     font.bold: true
                     maximumLineCount: 2
                     wrapMode: Text.Wrap
@@ -94,48 +181,58 @@ Item {
                     textFormat: Text.PlainText
                     color: Theme.Colors.foreground
                     opacity: 0.75
-                    font.pixelSize: 12
+                    font.family: Theme.Fonts.family
+                    font.weight: Theme.Fonts.weight
+                    font.pixelSize: 14
                     elide: Text.ElideRight
                 }
-                Text {
+                Row {
                     width: parent.width
-                    text: root.player?.trackAlbum ?? ""
-                    textFormat: Text.PlainText
-                    visible: text.length > 0
-                    color: Theme.Colors.foreground
-                    opacity: 0.5
-                    font.pixelSize: 11
-                    elide: Text.ElideRight
-                }
-            }
+                    spacing: 6
+                    visible: album.text.length > 0
 
-            Components.IconButton {
-                width: 28
-                height: 28
-                icon: "close"
-                tooltip: "Close media"
-                onClicked: root.closeRequested()
+                    Components.Icon {
+                        anchors.verticalCenter: parent.verticalCenter
+                        width: 14
+                        height: 14
+                        action: "album"
+                        iconColor: Theme.Colors.muted
+                    }
+                    Text {
+                        id: album
+                        width: parent.width - 20
+                        text: root.player?.trackAlbum ?? ""
+                        textFormat: Text.PlainText
+                        color: Theme.Colors.muted
+                        font.family: Theme.Fonts.family
+                        font.weight: Theme.Fonts.weight
+                        font.pixelSize: 13
+                        elide: Text.ElideRight
+                    }
+                }
             }
         }
 
+        // Bars up to the playhead move with the audio; the rest wait as dashes.
         Row {
             id: spectrum
             width: parent.width
-            height: 40
-            spacing: 3
+            height: 32
+            spacing: 4
 
             Repeater {
                 model: Services.Cava.barCount
 
                 Rectangle {
                     required property int index
+                    readonly property bool played: (index + 0.5) / Services.Cava.barCount <= root.progress
 
                     anchors.verticalCenter: parent.verticalCenter
                     width: (spectrum.width - (Services.Cava.barCount - 1) * spectrum.spacing) / Services.Cava.barCount
-                    height: Math.max(3, spectrum.height * (Services.Cava.bars[index] ?? 0))
-                    radius: width / 2
-                    color: Theme.Colors.foreground
-                    opacity: 0.8
+                    height: played ? Math.max(width, spectrum.height * (Services.Cava.bars[index] ?? 0)) : 3
+                    radius: Math.min(width, height) / 2
+                    color: played ? Theme.Colors.foreground : Theme.Colors.track
+                    opacity: played ? 0.85 : 1
 
                     Behavior on height {
                         SmoothedAnimation { velocity: 240 }
@@ -146,34 +243,48 @@ Item {
 
         Item {
             width: parent.width
-            height: 32
+            height: 40
 
             Rectangle {
-                y: 5
+                id: track
+                y: 6
                 width: parent.width
                 height: 4
                 radius: 2
                 color: Theme.Colors.track
 
                 Rectangle {
-                    width: root.duration > 0 ? parent.width * Math.min(1,
-                        (seekMouse.pressed ? root.previewPosition : root.position) / root.duration) : 0
+                    width: root.duration > 0 ? parent.width * root.progress : 0
                     height: parent.height
                     radius: 2
                     color: Theme.Colors.foreground
                 }
             }
 
+            Rectangle {
+                visible: root.duration > 0
+                x: track.width * root.progress - width / 2
+                y: track.y + track.height / 2 - height / 2
+                width: seekMouse.pressed ? 16 : 14
+                height: width
+                radius: width / 2
+                color: Theme.Colors.foreground
+
+                Behavior on width {
+                    NumberAnimation { duration: 120 }
+                }
+            }
+
             MouseArea {
                 id: seekMouse
                 width: parent.width
-                height: 16
+                height: 20
                 enabled: root.seekable
                 cursorShape: Qt.PointingHandCursor
-                onPressed: mouse => root.previewPosition = Math.max(0, Math.min(1, mouse.x / width)) * root.duration
+                onPressed: mouse => root.previewPosition = root.seekFraction(mouse.x, width)
                 onPositionChanged: mouse => {
                     if (pressed)
-                        root.previewPosition = Math.max(0, Math.min(1, mouse.x / width)) * root.duration
+                        root.previewPosition = root.seekFraction(mouse.x, width)
                 }
                 onReleased: {
                     if (root.seekable)
@@ -182,50 +293,62 @@ Item {
             }
 
             Text {
-                y: 17
-                text: root.player?.positionSupported
-                    ? root.formatTime(seekMouse.pressed ? root.previewPosition : root.position) : "--:--"
-                color: Theme.Colors.foreground
-                opacity: 0.6
-                font.pixelSize: 11
+                y: 24
+                text: root.player?.positionSupported ? root.formatTime(root.shownPosition) : "--:--"
+                color: Theme.Colors.muted
+                font.family: Theme.Fonts.family
+                font.weight: Theme.Fonts.weight
+                font.pixelSize: 12
+                font.features: ({ "tnum": 1 })
             }
             Text {
                 anchors.right: parent.right
-                y: 17
-                text: root.duration > 0 ? root.formatTime(root.duration) : "Live / unknown duration"
-                color: Theme.Colors.foreground
-                opacity: 0.6
-                font.pixelSize: 11
+                y: 24
+                text: root.duration > 0 ? "-" + root.formatTime(root.duration - root.shownPosition) : "Live"
+                color: Theme.Colors.muted
+                font.family: Theme.Fonts.family
+                font.weight: Theme.Fonts.weight
+                font.pixelSize: 12
+                font.features: ({ "tnum": 1 })
             }
         }
 
         Item {
             width: parent.width
-            height: 40
+            height: 56
 
             Row {
                 anchors.centerIn: parent
-                spacing: 12
+                spacing: 28
 
                 Components.IconButton {
                     anchors.verticalCenter: parent.verticalCenter
+                    width: 40
+                    height: 40
+                    radius: 20
+                    iconSize: 22
                     icon: "previous"
                     tooltip: "Previous track"
                     enabled: root.player?.canGoPrevious ?? false
                     onClicked: root.player.previous()
                 }
                 Components.IconButton {
-                    width: 40
-                    height: 40
-                    radius: 20
-                    icon: root.player?.isPlaying ? "pause" : "play"
-                    tooltip: root.player?.isPlaying ? "Pause" : "Play"
+                    width: 56
+                    height: 56
+                    radius: 28
+                    iconSize: 24
+                    icon: root.isPlaying ? "pause" : "play"
+                    tooltip: root.isPlaying ? "Pause" : "Play"
                     highlighted: true
                     enabled: root.player?.canTogglePlaying ?? false
                     onClicked: root.player.togglePlaying()
                 }
                 Components.IconButton {
                     anchors.verticalCenter: parent.verticalCenter
+                    width: 40
+                    height: 40
+                    radius: 20
+                    iconSize: 22
                     icon: "next"
                     tooltip: "Next track"
                     enabled: root.player?.canGoNext ?? false

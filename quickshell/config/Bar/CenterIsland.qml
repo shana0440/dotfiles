@@ -12,16 +12,12 @@ Components.Island {
     property bool volumeVisible: false
     property int availableHeight: 560
     readonly property bool notificationVisible: Services.Notifications.previewVisible
-    readonly property bool showingMedia: expanded && expandedView === "media"
     readonly property bool showingRecording: activeView === recordingView
     readonly property bool sideIslandsMerged: expanded || notificationVisible || Services.Capture.recording
 
     activeView: {
-        if (expanded) {
-            if (expandedView === "notifications")
-                return notificationList
-            return showingMedia ? mediaView : calendar
-        }
+        if (expanded)
+            return dashboard
         if (Services.Notifications.previewVisible)
             return toast
         if (volumeVisible)
@@ -31,9 +27,10 @@ Components.Island {
         return clockView
     }
 
-    // Pills: the recording indicator, and the toast (Ding's 22 px radius caps tall ones).
+    // Compact views are pills; cap rounding on the taller dashboard and toast.
     targetRadius: showingRecording ? recordingView.height / 2
-        : activeView === toast ? Math.min(22, toast.height / 2) : 8
+        : activeView === toast ? Math.min(22, toast.height / 2)
+        : Math.min(16, targetHeight / 2)
 
     function close() {
         expanded = false
@@ -46,6 +43,11 @@ Components.Island {
         expanded = true
     }
 
+    // Next (1) or previous (-1) dashboard tab.
+    function cycleTab(step) {
+        dashboard.cycle(step)
+    }
+
     Connections {
         target: Services.Notifications
         function onReceived() {
@@ -56,6 +58,9 @@ Components.Island {
     }
 
     function showVolume() {
+        // The audio tab shows the change itself; collapsing would close it mid-drag.
+        if (expanded && expandedView === "audio")
+            return
         expanded = false
         volumeVisible = true
         volumeTimeout.restart()
@@ -73,8 +78,8 @@ Components.Island {
     }
 
     onExpandedChanged: {
-        if (expanded && expandedView === "calendar")
-            calendar.displayedMonth = new Date(clock.date.getFullYear(), clock.date.getMonth(), 1)
+        if (expanded)
+            dashboard.calendar.displayedMonth = new Date(clock.date.getFullYear(), clock.date.getMonth(), 1)
     }
 
     SystemClock {
@@ -90,8 +95,10 @@ Components.Island {
 
             Text {
                 id: dateTime
+                font.family: Theme.Fonts.family
+                font.weight: Theme.Fonts.weight
                 anchors.centerIn: parent
-                text: Qt.formatDateTime(clock.date, "ddd MM/dd hh:mm A")
+                text: Qt.formatDateTime(clock.date, "ddd d MMM · hh:mm A")
                 color: Theme.Colors.foreground
                 font.pixelSize: 14
             }
@@ -108,26 +115,20 @@ Components.Island {
             height: 32
             onAdjusted: root.showVolume()
         },
-        Calendar {
-            id: calendar
+        Dashboard {
+            id: dashboard
+            tab: root.expandedView
+            active: root.expanded
             today: clock.date
-            onCloseRequested: root.expanded = false
-        },
-        MediaView {
-            id: mediaView
-            active: root.showingMedia
-            onCloseRequested: root.expanded = false
+            maximumHeight: root.availableHeight
+            onTabRequested: tab => root.open(tab)
+            onCloseRequested: root.close()
         },
         RecordingView {
             id: recordingView
             elapsedSeconds: Services.Capture.recordingElapsedSeconds
             stopping: Services.Capture.recordingCommandRunning
             onStopRequested: Services.Capture.stopRecording()
-        },
-        NotificationView {
-            id: notificationList
-            maximumHeight: root.availableHeight
-            onCloseRequested: root.close()
         },
         DingToast {
             id: toast

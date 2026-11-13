@@ -87,6 +87,7 @@ Rectangle {
 
                 Text {
                     id: title
+                    font.family: Theme.Fonts.family
                     width: Math.min(implicitWidth, parent.width - (app.text.length > 0 ? app.width + 6 : 0))
                     text: root.notification ? root.notification.summary : ""
                     textFormat: Text.PlainText
@@ -97,6 +98,8 @@ Rectangle {
                 }
                 Text {
                     id: app
+                    font.family: Theme.Fonts.family
+                    font.weight: Theme.Fonts.weight
                     anchors.baseline: title.baseline
                     width: Math.min(implicitWidth, 120)
                     text: root.notification ? root.notification.appName : ""
@@ -109,6 +112,8 @@ Rectangle {
             }
 
             Text {
+                font.family: Theme.Fonts.family
+                font.weight: Theme.Fonts.weight
                 width: parent.width
                 text: root.notification ? root.notification.body : ""
                 textFormat: Text.PlainText
@@ -170,6 +175,7 @@ Rectangle {
 
                         Text {
                             id: actionText
+                            font.family: Theme.Fonts.family
                             anchors.centerIn: parent
                             width: Math.min(implicitWidth, parent.width - 20)
                             text: actionButton.modelData.text

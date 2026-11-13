@@ -1,8 +1,7 @@
 import QtQuick
-import QtQuick.Effects
 import "../Theme" as Theme
 
-// Keep views instantiated so subscriptions and pending requests survive view switches.
+// A surface that springs to the size of its active view.
 Surface {
     id: root
 
@@ -10,7 +9,7 @@ Surface {
     property Item activeView: null
     property Item overflowView: null
     property int alignment: Qt.AlignHCenter
-    property real targetRadius: 8
+    property real targetRadius: Math.min(16, targetHeight / 2)
     readonly property real targetWidth: activeView ? activeView.width : 0
     readonly property real targetHeight: activeView ? activeView.height : 0
     readonly property bool moving: widthSpring.moving || heightSpring.moving
@@ -38,7 +37,8 @@ Surface {
         shakeSpring.impulse(sideways)
         nudgeSpring.impulse(down)
     }
-    transform: Translate { x: shakeSpring.value; y: nudgeSpring.value }
+    readonly property point shift: Qt.point(shakeSpring.value, nudgeSpring.value)
+    transform: Translate { x: root.shift.x; y: root.shift.y }
 
     onTargetWidthChanged: moveTo(widthSpring, targetWidth, true)
     onTargetHeightChanged: moveTo(heightSpring, targetHeight, false)
@@ -65,48 +65,11 @@ Surface {
         damping: Theme.Motion.morphDamping
     }
 
-    Item {
+    ViewStack {
         anchors.fill: parent
         clip: root.activeView !== root.overflowView
-
-        Repeater {
-            model: root.views
-
-            delegate: Item {
-                id: viewContainer
-                required property var modelData
-                readonly property Item view: modelData
-                readonly property bool current: root.activeView === view
-                readonly property real reveal: revealSpring.value
-
-                width: view.width
-                height: view.height
-                x: root.alignment === Qt.AlignRight ? parent.width - width
-                    : root.alignment === Qt.AlignLeft ? 0 : (parent.width - width) / 2
-                // Like Ding's text: content fades in, sharpens and settles into place.
-                opacity: Math.max(0, Math.min(1, reveal * 1.5 - 0.25))
-                visible: opacity > 0
-                enabled: current
-                transform: Translate { y: (1 - viewContainer.reveal) * -6 }
-
-                // Blur only while it moves, so text at rest is never resampled.
-                layer.enabled: visible && reveal < 0.995
-                layer.effect: MultiEffect {
-                    blurEnabled: true
-                    blurMax: 16
-                    blur: (1 - viewContainer.reveal) * 0.6
-                }
-
-                Spring {
-                    id: revealSpring
-                    to: viewContainer.current ? 1 : 0
-                    stiffness: Theme.Motion.stackStiffness
-                    damping: Theme.Motion.stackDamping
-                    precision: 0.002
-                }
-
-                Component.onCompleted: view.parent = viewContainer
-            }
-        }
+        views: root.views
+        activeView: root.activeView
+        alignment: root.alignment
     }
 }

@@ -221,6 +221,7 @@ Item {
 
                     Text {
                         id: titleText
+                        font.family: Theme.Fonts.family
                         width: Math.min(implicitWidth, copyColumn.width
                             - (root.count > 1 ? countText.width + 6 : 0) - (root.app.length > 0 ? metaText.width + 6 : 0))
                         text: root.title
@@ -232,6 +233,7 @@ Item {
                     }
                     Text {
                         id: countText
+                        font.family: Theme.Fonts.family
                         visible: root.count > 1
                         width: root.count > 1 ? implicitWidth : 0
                         text: "×" + root.count
@@ -243,6 +245,8 @@ Item {
                     }
                     Text {
                         id: metaText
+                        font.family: Theme.Fonts.family
+                        font.weight: Theme.Fonts.weight
                         visible: text.length > 0
                         width: root.app.length > 0 ? Math.min(implicitWidth, 120) : 0
                         text: root.app
@@ -256,6 +260,8 @@ Item {
 
                 Text {
                     id: description
+                    font.family: Theme.Fonts.family
+                    font.weight: Theme.Fonts.weight
                     width: Math.min(implicitWidth, copyColumn.width)
                     visible: text.length > 0
                     text: root.body
@@ -283,6 +289,7 @@ Item {
                 transform: Translate { id: ghostShift }
 
                 Text {
+                    font.family: Theme.Fonts.family
                     width: parent.width
                     text: ghost.title
                     textFormat: Text.PlainText
@@ -292,6 +299,8 @@ Item {
                     font.weight: Font.DemiBold
                 }
                 Text {
+                    font.family: Theme.Fonts.family
+                    font.weight: Theme.Fonts.weight
                     width: parent.width
                     visible: text.length > 0
                     text: ghost.body
@@ -352,6 +361,7 @@ Item {
     
                         Text {
                             id: actionLabel
+                            font.family: Theme.Fonts.family
                             anchors.centerIn: parent
                             text: action.modelData.text
                             textFormat: Text.PlainText

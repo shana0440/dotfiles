@@ -3,73 +3,63 @@ import "../Components" as Components
 import "../Services" as Services
 import "../Theme" as Theme
 
+// The dashboard's notifications tab: the history, newest first.
 Item {
     id: root
 
     property int maximumHeight: 560
     readonly property var entries: Services.Notifications.notifications.slice().reverse()
-    signal closeRequested()
+    readonly property int count: Services.Notifications.count
 
     width: 420
-    height: Math.min(maximumHeight, Math.max(144, cards.contentHeight + 64))
+    height: Math.min(maximumHeight, cards.y + cards.contentHeight + 20)
 
-    Row {
-        x: 16
-        y: 15
-        spacing: 6
+    // The same header as the other tabs: title, a quiet line under it, one action.
+    Item {
+        id: header
+        x: 20
+        y: 20
+        width: parent.width - 40
+        height: 32
 
-        Text {
-            id: heading
-            text: "Notifications"
-            color: Theme.Colors.foreground
-            font.pixelSize: 14
-            font.weight: Font.DemiBold
+        Column {
+            anchors.verticalCenter: parent.verticalCenter
+            spacing: 2
+
+            Text {
+                text: "Notifications"
+                color: Theme.Colors.foreground
+                font.family: Theme.Fonts.family
+                font.pixelSize: 16
+                font.bold: true
+            }
+            Text {
+                text: root.count === 0 ? "No notifications" : root.count + (root.count === 1 ? " notification" : " notifications")
+                color: Theme.Colors.muted
+                font.family: Theme.Fonts.family
+                font.weight: Theme.Fonts.weight
+                font.pixelSize: 11
+            }
         }
-        Text {
-            anchors.baseline: heading.baseline
-            text: Services.Notifications.count
-            color: Theme.Colors.foreground
-            opacity: 0.7
-            font.pixelSize: 12
-            font.features: ({ "tnum": 1 })
-        }
-    }
-
-    Row {
-        anchors.top: parent.top
-        anchors.right: parent.right
-        anchors.margins: 8
-        spacing: 4
-
         Components.IconButton {
-            width: 28
-            height: 28
-            radius: 14
+            anchors.right: parent.right
+            anchors.verticalCenter: parent.verticalCenter
+            width: 32
+            height: 32
             iconSize: 16
             icon: "clearNotifications"
-            tooltip: "Clear all notifications"
-            enabled: Services.Notifications.count > 0
+            tooltip: "Clear all"
+            enabled: root.count > 0
             onClicked: Services.Notifications.dismissAll()
-        }
-
-        Components.IconButton {
-            width: 28
-            height: 28
-            radius: 14
-            iconSize: 16
-            icon: "close"
-            tooltip: "Close notifications"
-            onClicked: root.closeRequested()
         }
     }
 
     ListView {
         id: cards
-        anchors.fill: parent
-        anchors.topMargin: 48
-        anchors.leftMargin: 12
-        anchors.rightMargin: 12
-        anchors.bottomMargin: 12
+        x: 20
+        y: header.y + header.height + 16
+        width: parent.width - 40
+        height: parent.height - y - 20
         clip: true
         spacing: 8
         boundsBehavior: Flickable.StopAtBounds
@@ -79,15 +69,6 @@ Item {
             required property var modelData
             width: cards.width
             notification: modelData
-        }
-
-        Text {
-            anchors.centerIn: parent
-            visible: cards.count === 0
-            text: "No notifications"
-            color: Theme.Colors.foreground
-            opacity: 0.65
-            font.pixelSize: 13
         }
     }
 }

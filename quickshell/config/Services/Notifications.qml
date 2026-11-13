@@ -27,6 +27,9 @@ Singleton {
     signal received()
     // Menus holding exclusive keyboard focus must close so the compositor can focus the sender.
     signal actionInvoked()
+    // Set by a closing menu until it has handed the keyboard back; it then calls flushFocus().
+    property bool focusBlocked: false
+    property var pendingSender: []
 
     function hidePreview() {
         previewTimer.stop()
@@ -79,9 +82,16 @@ Singleton {
         // Read the sender first: invoking may close and destroy the notification.
         const names = [notification?.desktopEntry, notification?.appName].filter(name => name)
         action.invoke()
+        pendingSender = names
         actionInvoked()
-        // Wait for the closing menu to release its exclusive keyboard focus.
-        Qt.callLater(() => focusSender(names))
+        if (!focusBlocked)
+            Qt.callLater(flushFocus)
+    }
+
+    function flushFocus() {
+        const names = pendingSender
+        pendingSender = []
+        focusSender(names)
     }
 
     // Hyprland ignores apps' own activation requests (focus_on_activate is off),

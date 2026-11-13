@@ -10,6 +10,8 @@ Rectangle {
     property int iconSize: 20
     property bool iconFilled: false
     property bool highlighted: false
+    // A selected tab keeps the hover fill.
+    property bool selected: false
     signal clicked()
 
     implicitWidth: 36
@@ -18,7 +20,7 @@ Rectangle {
     // Highlighted is Ding's primary action: the foreground fills it and the glyph inverts.
     color: highlighted
         ? (mouse.containsMouse ? Qt.tint(Theme.Colors.foreground, "#2e0c0c0d") : Theme.Colors.foreground)
-        : mouse.containsMouse || activeFocus ? Theme.Colors.highlight : Theme.Colors.transparent
+        : selected || mouse.containsMouse || activeFocus ? Theme.Colors.highlight : Theme.Colors.transparent
     opacity: enabled ? 1 : 0.4
     activeFocusOnTab: true
     Accessible.role: Accessible.Button

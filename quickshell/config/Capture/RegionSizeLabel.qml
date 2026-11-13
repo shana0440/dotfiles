@@ -19,12 +19,16 @@ Rectangle {
         spacing: 4
 
         Text {
+            font.family: Theme.Fonts.family
+            font.weight: Theme.Fonts.weight
             anchors.horizontalCenter: parent.horizontalCenter
             text: root.regionWidth + " × " + root.regionHeight
             color: Theme.Colors.foreground
             font.pixelSize: 12
         }
         Text {
+            font.family: Theme.Fonts.family
+            font.weight: Theme.Fonts.weight
             text: root.recording ? "Enter to record · Esc to cancel" : "Enter to capture · Esc to cancel"
             color: Theme.Colors.foreground
             opacity: 0.65

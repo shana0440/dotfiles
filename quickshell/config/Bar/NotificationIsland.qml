@@ -9,7 +9,8 @@ Components.MergeableCircle {
     signal clicked()
     Accessible.role: Accessible.Button
     Accessible.name: "Notifications: " + Services.Notifications.count
-    activeFocusOnTab: !merged
+    available: Services.Notifications.count > 0
+    activeFocusOnTab: shown
     Keys.onReturnPressed: root.clicked()
     Keys.onSpacePressed: root.clicked()
 

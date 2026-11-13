@@ -1,8 +1,10 @@
 import QtQuick
 import Quickshell
 import Quickshell.Io
+import Quickshell.Hyprland
 import Quickshell.Wayland
 import "Bar" as BarComponents
+import "Components" as Components
 import "Theme" as Theme
 import "Services" as Services
 
@@ -23,7 +25,41 @@ PanelWindow {
 
     Connections {
         target: Services.Notifications
-        function onActionInvoked() { root.closeMenus() }
+        function onActionInvoked() {
+            // Hyprland refuses window focus while an exclusive layer exists, so the
+            // sender waits until the menu has handed the keyboard back.
+            if (root.menuNeedsKeyboardFocus)
+                Services.Notifications.focusBlocked = true
+            root.closeMenus()
+        }
+    }
+
+    // The expanded center island; toggling opens it on the calendar.
+    IpcHandler {
+        target: "dashboard"
+        function toggle(): void {
+            if (centerIsland.expanded)
+                root.closeMenus()
+            else
+                root.openDashboard("calendar")
+        }
+        function open(tab: string): void { root.openDashboard(tab) }
+        function close(): void { centerIsland.close() }
+    }
+
+    function openDashboard(tab) {
+        rightIsland.close()
+        centerIsland.open(["calendar", "media", "audio", "notifications", "network", "bluetooth", "system", "usage", "power"].includes(tab) ? tab : "calendar")
+    }
+
+    // Pairing prompts can arrive while the dashboard is closed, e.g. from a remote
+    // device; the Bluetooth tab shows them.
+    Connections {
+        target: Services.Bluetooth
+        function onRequestChanged() {
+            if (Services.Bluetooth.request)
+                root.openDashboard("bluetooth")
+        }
     }
 
     IpcHandler {
@@ -31,6 +67,70 @@ PanelWindow {
         function close() {
             if (rightIsland.mode === "input")
                 rightIsland.close()
+        }
+    }
+
+    // When a layer drops exclusive keyboard focus without unmapping, Hyprland clears
+    // the focused surface but keeps the focused window, so its refocus of that window
+    // is a no-op and the keyboard goes nowhere. Unmapping an exclusive layer takes the
+    // working path, so a throwaway one hands focus back to the previous window.
+    onMenuNeedsKeyboardFocusChanged: {
+        if (!menuNeedsKeyboardFocus)
+            focusCheck.restart()
+    }
+
+    // An empty activewindowv2 means no window has the keyboard.
+    property bool keyboardUnfocused: false
+    Connections {
+        target: Hyprland
+        function onRawEvent(event) {
+            if (event.name === "activewindowv2")
+                root.keyboardUnfocused = event.data.length === 0
+        }
+    }
+
+    Timer {
+        id: focusCheck
+        interval: 50
+        onTriggered: {
+            if (!root.menuNeedsKeyboardFocus && root.keyboardUnfocused)
+                focusRelay.visible = true
+            else
+                root.focusHandedBack()
+        }
+    }
+
+    function focusHandedBack() {
+        if (Services.Notifications.focusBlocked) {
+            Services.Notifications.focusBlocked = false
+            Services.Notifications.flushFocus()
+        }
+    }
+
+    PanelWindow {
+        id: focusRelay
+        screen: root.screen
+        visible: false
+        anchors.top: true
+        anchors.left: true
+        implicitWidth: 1
+        implicitHeight: 1
+        color: Theme.Colors.transparent
+        exclusionMode: ExclusionMode.Ignore
+        WlrLayershell.layer: WlrLayer.Overlay
+        WlrLayershell.keyboardFocus: WlrKeyboardFocus.Exclusive
+        WlrLayershell.namespace: "quickshell-focus-relay"
+        mask: Region {}
+
+        onVisibleChanged: if (visible) relayRelease.restart()
+
+        Timer {
+            id: relayRelease
+            interval: 50
+            onTriggered: {
+                focusRelay.visible = false
+                Qt.callLater(root.focusHandedBack)
+            }
         }
     }
 
@@ -128,6 +228,19 @@ PanelWindow {
         anchors.rightMargin: root.islandMargin
         focus: true
         Keys.onEscapePressed: root.closeMenus()
+        // Tab and Shift+Tab step through the dashboard tabs while it is open.
+        Keys.onTabPressed: event => {
+            if (centerIsland.expanded)
+                centerIsland.cycleTab(1)
+            else
+                event.accepted = false
+        }
+        Keys.onBacktabPressed: event => {
+            if (centerIsland.expanded)
+                centerIsland.cycleTab(-1)
+            else
+                event.accepted = false
+        }
 
         TapHandler {
             enabled: root.menuOpen
@@ -157,21 +270,32 @@ PanelWindow {
 
         BarComponents.AppsIsland {
             id: appsIsland
-            anchors.left: workspaceIsland.right
-            anchors.leftMargin: root.islandSpacing
+            anchors.right: rightIsland.left
+            anchors.rightMargin: root.islandSpacing
             height: root.compactIslandHeight
-            availableWidth: Math.max(0, (mediaIsland.visible ? mediaIsland.x : centerIsland.x)
-                - x - root.islandSpacing)
+            availableWidth: Math.max(0, rightIsland.x - root.islandSpacing
+                - (notificationIsland.visible ? notificationIsland.x + notificationIsland.width
+                    : centerIsland.x + centerIsland.width) - root.islandSpacing)
+        }
+
+        // Declared first so it paints beneath the islands it draws.
+        Components.IslandGoo {
+            id: centerGoo
+            target: centerIsland
+            leading: mediaIsland
+            trailing: notificationIsland
         }
 
         BarComponents.CenterIsland {
             id: centerIsland
+            bare: centerGoo.ready
             anchors.horizontalCenter: parent.horizontalCenter
             availableHeight: Math.min(560, Math.max(144, root.height - root.islandMargin * 2))
         }
 
         BarComponents.MediaIsland {
             id: mediaIsland
+            bare: centerGoo.ready
             anchors.right: centerIsland.left
             anchors.rightMargin: offset
             gap: root.islandSpacing
@@ -181,6 +305,7 @@ PanelWindow {
 
         BarComponents.NotificationIsland {
             id: notificationIsland
+            bare: centerGoo.ready
             anchors.left: centerIsland.right
             anchors.leftMargin: offset
             gap: root.islandSpacing

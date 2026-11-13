@@ -43,6 +43,7 @@ Item {
 
             Text {
                 id: elapsedTime
+                font.weight: Theme.Fonts.weight
                 height: parent.height
                 text: root.elapsedText
                 color: Theme.Colors.error
@@ -52,6 +53,8 @@ Item {
             }
 
             Text {
+                font.family: Theme.Fonts.family
+                font.weight: Theme.Fonts.weight
                 width: parent.width - recordingDot.width - elapsedTime.width - 2 * parent.spacing
                 height: parent.height
                 text: "Screen Recording"
