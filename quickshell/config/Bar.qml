@@ -26,6 +26,24 @@ PanelWindow {
         function onActionInvoked() { root.closeMenus() }
     }
 
+    // The expanded center island; it reopens on the last tab.
+    IpcHandler {
+        target: "dashboard"
+        function toggle(): void {
+            if (centerIsland.expanded)
+                root.closeMenus()
+            else
+                root.openDashboard(centerIsland.expandedView)
+        }
+        function open(tab: string): void { root.openDashboard(tab) }
+        function close(): void { centerIsland.close() }
+    }
+
+    function openDashboard(tab) {
+        rightIsland.close()
+        centerIsland.open(["calendar", "media", "notifications"].includes(tab) ? tab : "calendar")
+    }
+
     IpcHandler {
         target: "inputMenu"
         function close() {

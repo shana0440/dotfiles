@@ -365,6 +365,29 @@ hl.on("window.close", function(event)
     end
 end)
 hl.bind(mainMod .. " + SPACE", hl.dsp.exec_cmd(menu))
+-- Tapping Super alone toggles the bar dashboard. Hyprland already skips the release
+-- after a bound Super combo; a short tap with a still pointer also rules out
+-- unbound combos, window drags and long holds.
+local superTap = { id = 0, live = false, cursor = nil }
+hl.bind("Super_L", function()
+    superTap.id = superTap.id + 1
+    local id = superTap.id
+    superTap.live = true
+    superTap.cursor = hl.get_cursor_pos()
+    hl.timer(function()
+        if superTap.id == id then
+            superTap.live = false
+        end
+    end, { timeout = 400, type = "oneshot" })
+end, { non_consuming = true })
+hl.bind(mainMod .. " + Super_L", function()
+    local cursor = hl.get_cursor_pos()
+    local still = cursor and superTap.cursor and cursor.x == superTap.cursor.x and cursor.y == superTap.cursor.y
+    if superTap.live and still then
+        hl.exec_cmd("quickshell --path ~/.config/quickshell ipc call dashboard toggle")
+    end
+    superTap.live = false
+end, { release = true })
 hl.bind(mainMod .. " + SHIFT + W", hl.dsp.exec_cmd("quickshell --path ~/.config/quickshell ipc call wallpaper toggle"))
 
 -- Move focus with mainMod + arrow keys
