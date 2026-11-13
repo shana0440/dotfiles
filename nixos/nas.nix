@@ -1,17 +1,14 @@
-# Optional NAS support. Only encrypted secrets and runtime file paths enter Nix.
+# Optional NAS support. The plaintext secrets file is read at runtime through its
+# absolute path, so its contents never enter the world-readable Nix store.
 { config, lib, pkgs, ... }:
 
 let
   cfg = config.services.nas;
   user = config.user.name;
   group = config.users.users.${user}.group;
-  sopsNix = builtins.fetchTarball {
-    url = "https://github.com/Mic92/sops-nix/archive/60182817ee048ac94b4c68ea76d5ef2e8aac730d.tar.gz";
-    sha256 = "0fk81bs1c8c3p8ab3152a4hw6qjqkcdli6pw1ndyd56c74fliwk3";
-  };
   secretsFile =
     if builtins.pathExists cfg.secretsFile then cfg.secretsFile
-    else throw "NAS is enabled but its encrypted secrets file is missing. See nixos/nas/README.md.";
+    else throw "NAS is enabled but ${cfg.secretsFile} is missing. See nixos/nas/README.md.";
   cleanupMount = stopFlags: ''
     for unit in mnt-nas.automount mnt-nas.mount; do
       load_state=$(systemctl show --property=LoadState --value "$unit")
@@ -20,46 +17,31 @@ let
       fi
     done
   '';
-  secret = key: {
-    sopsFile = secretsFile;
-    inherit key;
-    mode = "0400";
-    restartUnits = [ "nas-automount.service" ];
-  };
 in
 {
-  imports = [ "${sopsNix}/modules/sops" ];
-
   options.services.nas = {
-    enable = lib.mkEnableOption "the SOPS-backed on-demand NAS mount at /mnt/nas";
+    enable = lib.mkEnableOption "the on-demand NAS mount at /mnt/nas";
     secretsFile = lib.mkOption {
-      type = lib.types.path;
-      default = ./nas/secrets.enc.yaml;
-      description = "SOPS-encrypted YAML containing the NFS device key (HOST:/EXPORT/PATH).";
+      # A string, not a path: a path value would be copied into the Nix store.
+      type = lib.types.str;
+      default = toString ./nas/secrets.yaml;
+      description = "Absolute path to the plaintext YAML whose device key is HOST:/EXPORT/PATH.";
     };
   };
 
   config = lib.mkIf cfg.enable {
     boot.supportedFilesystems = [ "nfs" ];
 
-    sops = {
-      useSystemdActivation = true;
-      age.keyFile = lib.mkDefault "${config.users.users.${user}.home}/.config/sops/age/keys.txt";
-      secrets = {
-        "nas/device" = secret "device";
-      };
-    };
-
     systemd.tmpfiles.rules = [ "d /mnt/nas 0700 ${user} ${group} - -" ];
 
     # A static mount unit would put its What= (the NAS address) in the Nix store.
-    # Create transient mount/automount units after runtime secret decryption instead.
+    # Create transient mount/automount units from the runtime secrets file instead.
     systemd.services.nas-automount = {
       description = "Configure the on-demand NAS mount from runtime secrets";
       wantedBy = [ "multi-user.target" ];
-      requires = [ "sops-install-secrets.service" ];
-      after = [ "sops-install-secrets.service" ];
-      path = [ pkgs.systemd pkgs.nfs-utils ];
+      # The secrets file lives in the dotfiles checkout under /home.
+      unitConfig.RequiresMountsFor = [ secretsFile ];
+      path = [ pkgs.systemd pkgs.nfs-utils pkgs.yq-go ];
       serviceConfig = {
         Type = "oneshot";
         RemainAfterExit = true;
@@ -73,7 +55,7 @@ in
       # systemd still waits for the queued unmount jobs before finishing shutdown.
       postStop = cleanupMount "--no-block";
       script = ''
-        device=$(< ${lib.escapeShellArg config.sops.secrets."nas/device".path})
+        device=$(yq -e '.device' ${lib.escapeShellArg secretsFile})
         case "$device" in
           ?*:/?*) ;;
           *) echo "Invalid NAS device: expected HOST:/EXPORT/PATH" >&2; exit 1 ;;

@@ -1,4 +1,4 @@
-# Plaintext secrets and temporary files. Commit secrets.enc.yaml instead.
+# Plaintext secrets and temporary files. Commit only *.example.* templates.
 secrets.yaml
 secrets.yaml.*
 secrets.json

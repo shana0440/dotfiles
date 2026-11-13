@@ -13,7 +13,7 @@
     ./nas.nix
   ];
 
-  # Enable on this machine after provisioning its SOPS key and encrypted secrets.
+  # Enable on this machine after creating nixos/nas/secrets.yaml.
   services.nas.enable = true;
 
   # Keep GRUB on the NixOS EFI partition and chainload the Windows EFI partition.

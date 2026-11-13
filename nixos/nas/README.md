@@ -38,11 +38,8 @@ device: "NAS_HOST:/volume1/homes/YOUR_NAS_USERNAME"
 This keeps `/mnt/nas/Eagle/...` unchanged; mounting all of `homes` would add an
 extra username directory. Use the actual volume/export path from DSM.
 
-Follow the root README's [Secrets (SOPS)](../../README.md#secrets-sops) guide to
-encrypt this configuration into `nixos/nas/secrets.enc.yaml`. NixOS uses the
-existing private age key at `~/.config/sops/age/keys.txt` for system-level
-decryption; no separate root key copy is needed. NFS needs only the `device` key;
-the former SMB `credentials` key is no longer deployed or used.
+`secrets.yaml` is Git-ignored; never commit it. NFS needs only the `device` key;
+the former SMB `credentials` key is no longer used.
 
 ## Enable or migrate the mount
 
@@ -52,9 +49,9 @@ Set this in `nixos/configuration.nix` on machines that need NAS access:
 services.nas.enable = true;
 ```
 
-For an existing SMB configuration, decrypt the secrets, change `device` from
-`//HOST/home` to the NFS path above, remove the unused `credentials` key, and
-re-encrypt. Do not overwrite existing secrets with the example.
+For an existing SMB configuration, change `device` in `secrets.yaml` from
+`//HOST/home` to the NFS path above and remove the unused `credentials` key. Do
+not overwrite existing secrets with the example.
 
 Close Eagle and any other applications using the NAS, then run:
 
@@ -68,9 +65,9 @@ Verify the mounted filesystem is NFSv4 and verify read/write permissions before
 opening Eagle. After testing, remove the separate read-only test mount with
 `sudo umount /mnt/nas-nfs` when nothing is using it.
 
-NixOS decrypts `secrets.enc.yaml` at runtime; it does not use your plaintext copy.
-`make decrypt` is only needed to view or edit secrets; after editing, run
-`make encrypt`. Accessing `/mnt/nas` connects automatically and keeps it mounted,
+The `nas-automount` service reads `nixos/nas/secrets.yaml` at runtime by its
+absolute path, so the file must stay in this checkout. After editing it, run
+`sudo systemctl restart nas-automount`. Accessing `/mnt/nas` connects automatically and keeps it mounted,
 even when idle. Other machines can leave NAS support disabled.
 
 The mount uses `hard` semantics: an unavailable NAS can block file operations
@@ -78,10 +75,10 @@ while the client retries. The systemd mount timeout is not an I/O timeout; avoid
 `soft` mounts for a writable Eagle library because failed operations can risk
 incomplete writes.
 
-**Privacy:** secrets stay out of the Nix store, but the address is visible in
-runtime mount information.
+**Privacy:** the secrets file stays out of the Nix store, but the address is
+visible in runtime mount information.
 
-**Troubleshooting:** `journalctl -b -u sops-install-secrets -u nas-automount -u mnt-nas.mount`
+**Troubleshooting:** `journalctl -b -u nas-automount -u mnt-nas.mount`
 
 ## Performance check
 
