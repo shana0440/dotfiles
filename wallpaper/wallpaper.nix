@@ -1,4 +1,4 @@
-{ config, pkgs, ... }:
+{ config, lib, pkgs, ... }:
 
 let
   # One interpreter for every wallpaper command: thumbnails (ImageMagick
@@ -46,7 +46,16 @@ in
   services.awww.enable = true;
   # Quickshell reads the shader's store path from here. Qt caches shaders by
   # URL, so a stable path would keep the old shader after a rebuild; the store
-  # path changes with every shader change.
-  xdg.configFile."wallpaper/colonies-shader".text = "${shader}\n";
+  # path changes with every shader change. It is a plain file rewritten in place,
+  # not a store symlink: the running shell watches it, and a swapped symlink
+  # fires no change.
+  home.activation.publishColoniesShader = lib.hm.dag.entryAfter [ "linkGeneration" ] ''
+    target="${config.xdg.configHome}/wallpaper/colonies-shader"
+    run mkdir -p "$(dirname "$target")"
+    if [ -L "$target" ]; then run rm "$target"; fi
+    if [ "$(cat "$target" 2>/dev/null)" != "${shader}" ]; then
+      run sh -c 'printf "%s\n" "$1" > "$2"' _ "${shader}" "$target"
+    fi
+  '';
   home.packages = [ library colonies setWallpaper check ];
 }

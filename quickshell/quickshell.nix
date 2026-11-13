@@ -44,6 +44,14 @@ in
     "${config.dotfiles.directory}/quickshell/config";
   # The config is an out-of-store symlink, so the compiled shader's store path is
   # published beside it. The path changes with the shader, which also defeats Qt's
-  # per-URL shader cache.
-  xdg.configFile."quickshell-shaders/island-goo".text = "${islandShader}\n";
+  # per-URL shader cache. It is a plain file rewritten in place, not a store
+  # symlink: the running shell watches it, and a swapped symlink fires no change.
+  home.activation.publishIslandShader = lib.hm.dag.entryAfter [ "linkGeneration" ] ''
+    target="${config.xdg.configHome}/quickshell-shaders/island-goo"
+    run mkdir -p "$(dirname "$target")"
+    if [ -L "$target" ]; then run rm "$target"; fi
+    if [ "$(cat "$target" 2>/dev/null)" != "${islandShader}" ]; then
+      run sh -c 'printf "%s\n" "$1" > "$2"' _ "${islandShader}" "$target"
+    fi
+  '';
 }
