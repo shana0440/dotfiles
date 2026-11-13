@@ -125,6 +125,8 @@ Item {
 
         Text {
             id: buttonText
+            font.family: Theme.Fonts.family
+            font.weight: Theme.Fonts.weight
             anchors.centerIn: parent
             text: parent.label
             color: parent.primary ? Theme.Colors.background : Theme.Colors.foreground
@@ -254,6 +256,8 @@ Item {
             spacing: 2
 
             Text {
+                font.family: Theme.Fonts.family
+                font.weight: Theme.Fonts.weight
                 width: parent.width
                 text: row.device.name
                 textFormat: Text.PlainText
@@ -262,6 +266,8 @@ Item {
                 font.pixelSize: 13
             }
             Text {
+                font.family: Theme.Fonts.family
+                font.weight: Theme.Fonts.weight
                 width: parent.width
                 text: root.stateText(row.device)
                 textFormat: Text.PlainText
@@ -338,6 +344,7 @@ Item {
                 spacing: 8
 
                 Text {
+                    font.family: Theme.Fonts.family
                     width: parent.width - powerSwitch.width - closeButton.width - 16
                     height: parent.height
                     text: "Bluetooth"
@@ -366,6 +373,8 @@ Item {
             }
 
             Text {
+                font.family: Theme.Fonts.family
+                font.weight: Theme.Fonts.weight
                 width: parent.width
                 visible: !root.powered
                 text: !Services.Bluetooth.available ? "No Bluetooth adapter found."
@@ -385,6 +394,8 @@ Item {
                 visible: root.powered
 
                 Text {
+                    font.family: Theme.Fonts.family
+                    font.weight: Theme.Fonts.weight
                     width: parent.width - discoverableSwitch.width - scanButton.width - 16
                     height: parent.height
                     text: "Visible as " + (root.adapter?.name ?? "")
@@ -413,6 +424,8 @@ Item {
             }
 
             Text {
+                font.family: Theme.Fonts.family
+                font.weight: Theme.Fonts.weight
                 width: parent.width
                 text: !Services.Bluetooth.agentRunning ? "Pairing agent is not running; PIN pairing may fail." : root.message
                 textFormat: Text.PlainText
@@ -441,6 +454,8 @@ Item {
                     spacing: 8
 
                     Text {
+                        font.family: Theme.Fonts.family
+                        font.weight: Theme.Fonts.weight
                         width: parent.width
                         text: {
                             const request = root.request
@@ -464,6 +479,7 @@ Item {
                         font.pixelSize: 13
                     }
                     Text {
+                        font.family: Theme.Fonts.family
                         width: parent.width
                         visible: text.length > 0
                         text: root.request?.passkey ?? ""
@@ -495,6 +511,8 @@ Item {
                             Keys.onEscapePressed: root.cancelPrompt()
                         }
                         Text {
+                            font.family: Theme.Fonts.family
+                            font.weight: Theme.Fonts.weight
                             anchors.centerIn: parent
                             text: root.request?.type === "passkey" ? "6-digit passkey" : "PIN code (often 0000 or 1234)"
                             visible: !valueInput.text && !valueInput.activeFocus
@@ -551,6 +569,8 @@ Item {
                         text: Services.Bluetooth.discovering ? "AVAILABLE DEVICES · SCANNING…" : "AVAILABLE DEVICES"
                     }
                     Text {
+                        font.family: Theme.Fonts.family
+                        font.weight: Theme.Fonts.weight
                         width: parent.width
                         height: 36
                         visible: root.availableDevices.length === 0

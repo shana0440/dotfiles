@@ -1,7 +1,7 @@
 { pkgs, ... }:
 
 {
-  home.packages = [ pkgs.adwaita-fonts ];
+  home.packages = [ pkgs.adwaita-fonts pkgs.inter ];
 
   fonts.fontconfig = {
     enable = true;

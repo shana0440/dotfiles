@@ -16,6 +16,8 @@ Rectangle {
         ? Theme.Colors.highlight : Theme.Colors.transparent
 
     Text {
+        font.family: Theme.Fonts.family
+        font.weight: Theme.Fonts.weight
         anchors.centerIn: parent
         anchors.verticalCenterOffset: -2
         text: workspaceId

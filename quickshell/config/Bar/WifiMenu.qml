@@ -179,6 +179,8 @@ Item {
 
         Text {
             id: buttonText
+            font.family: Theme.Fonts.family
+            font.weight: Theme.Fonts.weight
             anchors.centerIn: parent
             text: parent.label
             color: Theme.Colors.foreground
@@ -214,6 +216,7 @@ Item {
                 height: 30
 
                 Text {
+                    font.family: Theme.Fonts.family
                     width: parent.width - refreshButton.width - closeButton.width
                     height: parent.height
                     text: "Wi-Fi"
@@ -236,6 +239,8 @@ Item {
             }
 
             Text {
+                font.family: Theme.Fonts.family
+                font.weight: Theme.Fonts.weight
                 width: parent.width
                 text: root.message
                 textFormat: Text.PlainText
@@ -280,6 +285,8 @@ Item {
                         spacing: 2
 
                         Text {
+                            font.family: Theme.Fonts.family
+                            font.weight: Theme.Fonts.weight
                             width: parent.width
                             text: ssid
                             textFormat: Text.PlainText
@@ -288,6 +295,8 @@ Item {
                             font.pixelSize: 13
                         }
                         Text {
+                            font.family: Theme.Fonts.family
+                            font.weight: Theme.Fonts.weight
                             width: parent.width
                             text: active ? "Connected" : (!security || security === "--" ? "Open" : security)
                             textFormat: Text.PlainText
@@ -299,6 +308,8 @@ Item {
                     }
 
                     Text {
+                        font.family: Theme.Fonts.family
+                        font.weight: Theme.Fonts.weight
                         anchors.right: parent.right
                         anchors.rightMargin: 8
                         anchors.verticalCenter: parent.verticalCenter
@@ -337,6 +348,8 @@ Item {
                 visible: root.selectedSsid.length > 0
 
                 Text {
+                    font.family: Theme.Fonts.family
+                    font.weight: Theme.Fonts.weight
                     width: parent.width
                     text: root.selectedSsid
                     textFormat: Text.PlainText
@@ -363,6 +376,8 @@ Item {
                         onAccepted: root.connectSelected()
                     }
                     Text {
+                        font.family: Theme.Fonts.family
+                        font.weight: Theme.Fonts.weight
                         anchors.centerIn: parent
                         text: "Password (blank uses saved credentials)"
                         visible: !password.text && !password.activeFocus

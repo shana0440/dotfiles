@@ -37,6 +37,8 @@ Item {
                 height: 28
 
                 Text {
+                    font.family: Theme.Fonts.family
+                    font.weight: Theme.Fonts.weight
                     width: 28
                     height: parent.height
                     text: "‹"
@@ -53,6 +55,7 @@ Item {
                 }
 
                 Text {
+                    font.family: Theme.Fonts.family
                     width: parent.width - 56
                     height: parent.height
                     text: Qt.formatDateTime(calendar.displayedMonth, "MMMM yyyy")
@@ -70,6 +73,8 @@ Item {
                 }
 
                 Text {
+                    font.family: Theme.Fonts.family
+                    font.weight: Theme.Fonts.weight
                     width: 28
                     height: parent.height
                     text: "›"
@@ -95,6 +100,8 @@ Item {
                     model: 7
 
                     Text {
+                        font.family: Theme.Fonts.family
+                        font.weight: Theme.Fonts.weight
                         required property int index
 
                         width: weekdays.width / 7
@@ -130,6 +137,7 @@ Item {
                         color: isToday ? Theme.Colors.highlight : Theme.Colors.transparent
 
                         Text {
+                            font.family: Theme.Fonts.family
                             anchors.centerIn: parent
                             text: parent.day.getDate()
                             color: Theme.Colors.foreground

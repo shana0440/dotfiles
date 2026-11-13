@@ -93,6 +93,8 @@ Item {
         Keys.onSpacePressed: entry.triggered()
 
         Text {
+            font.family: Theme.Fonts.family
+            font.weight: Theme.Fonts.weight
             anchors.left: parent.left
             anchors.leftMargin: 10
             anchors.verticalCenter: parent.verticalCenter
@@ -105,6 +107,8 @@ Item {
             font.pixelSize: choice.compact ? 20 : 14
         }
         Text {
+            font.family: Theme.Fonts.family
+            font.weight: Theme.Fonts.weight
             anchors.right: parent.right
             anchors.rightMargin: 10
             anchors.verticalCenter: parent.verticalCenter
@@ -144,6 +148,7 @@ Item {
             width: parent.width
             height: 30
             Text {
+                font.family: Theme.Fonts.family
                 width: parent.width - closeButton.width
                 height: parent.height
                 text: "Input method"
@@ -164,6 +169,8 @@ Item {
         }
 
         Text {
+            font.family: Theme.Fonts.family
+            font.weight: Theme.Fonts.weight
             width: parent.width
             text: root.currentDescription
             textFormat: Text.PlainText
@@ -174,6 +181,8 @@ Item {
         }
 
         Text {
+            font.family: Theme.Fonts.family
+            font.weight: Theme.Fonts.weight
             width: parent.width
             visible: !root.available || root.inputEntries.length === 0
             text: !root.inputItem ? "Fcitx5 unavailable" : !root.available ? "Input menu unavailable" : "Loading input methods…"
@@ -193,6 +202,8 @@ Item {
         }
 
         Text {
+            font.family: Theme.Fonts.family
+            font.weight: Theme.Fonts.weight
             visible: root.showKanaModes
             text: "Japanese mode"
             color: Theme.Colors.foreground

@@ -44,6 +44,8 @@ Rectangle {
 
     Text {
         id: inputLabel
+        font.family: Theme.Fonts.family
+        font.weight: Theme.Fonts.weight
         anchors.centerIn: parent
         text: root.label
         textFormat: Text.PlainText

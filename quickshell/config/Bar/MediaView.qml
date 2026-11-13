@@ -78,6 +78,7 @@ Item {
                 spacing: 5
 
                 Text {
+                    font.family: Theme.Fonts.family
                     width: parent.width
                     text: Services.Media.title
                     textFormat: Text.PlainText
@@ -89,6 +90,8 @@ Item {
                     elide: Text.ElideRight
                 }
                 Text {
+                    font.family: Theme.Fonts.family
+                    font.weight: Theme.Fonts.weight
                     width: parent.width
                     text: Services.Media.artist
                     textFormat: Text.PlainText
@@ -98,6 +101,8 @@ Item {
                     elide: Text.ElideRight
                 }
                 Text {
+                    font.family: Theme.Fonts.family
+                    font.weight: Theme.Fonts.weight
                     width: parent.width
                     text: root.player?.trackAlbum ?? ""
                     textFormat: Text.PlainText
@@ -182,6 +187,8 @@ Item {
             }
 
             Text {
+                font.family: Theme.Fonts.family
+                font.weight: Theme.Fonts.weight
                 y: 17
                 text: root.player?.positionSupported
                     ? root.formatTime(seekMouse.pressed ? root.previewPosition : root.position) : "--:--"
@@ -190,6 +197,8 @@ Item {
                 font.pixelSize: 11
             }
             Text {
+                font.family: Theme.Fonts.family
+                font.weight: Theme.Fonts.weight
                 anchors.right: parent.right
                 y: 17
                 text: root.duration > 0 ? root.formatTime(root.duration) : "Live / unknown duration"

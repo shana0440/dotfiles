@@ -170,17 +170,22 @@ Item {
             width: parent.width - 24
             spacing: 6
             Text {
+                font.family: Theme.Fonts.family
+                font.weight: Theme.Fonts.weight
                 text: label
                 color: root.muted
                 font.pixelSize: 12
             }
             Text {
+                font.family: Theme.Fonts.family
                 text: value
                 color: warning ? Theme.Colors.warning : Theme.Colors.foreground
                 font.pixelSize: 24
                 font.weight: Font.DemiBold
             }
             Text {
+                font.family: Theme.Fonts.family
+                font.weight: Theme.Fonts.weight
                 width: parent.width
                 text: detail
                 textFormat: Text.PlainText
@@ -214,6 +219,8 @@ Item {
             width: parent.width - 24
             spacing: 8
             Text {
+                font.family: Theme.Fonts.family
+                font.weight: Theme.Fonts.weight
                 text: label
                 color: root.muted
                 font.pixelSize: 11
@@ -221,12 +228,16 @@ Item {
             Row {
                 width: parent.width
                 Text {
+                    font.family: Theme.Fonts.family
+                    font.weight: Theme.Fonts.weight
                     width: parent.width / 2
                     text: incomingLabel + "  " + root.rate(incoming)
                     color: Theme.Colors.foreground
                     font.pixelSize: 12
                 }
                 Text {
+                    font.family: Theme.Fonts.family
+                    font.weight: Theme.Fonts.weight
                     text: outgoingLabel + "  " + root.rate(outgoing)
                     color: Theme.Colors.foreground
                     font.pixelSize: 12
@@ -256,12 +267,15 @@ Item {
             width: parent.width - 72
             spacing: 2
             Text {
+                font.family: Theme.Fonts.family
                 text: "System status"
                 color: Theme.Colors.foreground
                 font.pixelSize: 16
                 font.bold: true
             }
             Text {
+                font.family: Theme.Fonts.family
+                font.weight: Theme.Fonts.weight
                 text: root.failed ? "Unable to read system metrics" : "Live host metrics · every 2 seconds"
                 color: root.failed ? Theme.Colors.warning : root.muted
                 font.pixelSize: 10
@@ -325,6 +339,8 @@ Item {
                 width: parent.width
                 spacing: 10
                 Text {
+                    font.family: Theme.Fonts.family
+                    font.weight: Theme.Fonts.weight
                     text: "GPU"
                     color: root.muted
                     font.pixelSize: 10
@@ -337,6 +353,8 @@ Item {
                         width: content.width
                         spacing: 8
                         Text {
+                            font.family: Theme.Fonts.family
+                            font.weight: Theme.Fonts.weight
                             width: parent.width
                             text: modelData.name
                             textFormat: Text.PlainText
@@ -367,6 +385,8 @@ Item {
                     }
                 }
                 Text {
+                    font.family: Theme.Fonts.family
+                    font.weight: Theme.Fonts.weight
                     visible: !root.snapshot || !(root.snapshot.gpus || []).length
                     text: root.snapshot ? "No supported GPU telemetry" : "Waiting for sample"
                     color: root.muted
@@ -378,6 +398,8 @@ Item {
                 width: parent.width
                 spacing: 10
                 Text {
+                    font.family: Theme.Fonts.family
+                    font.weight: Theme.Fonts.weight
                     text: "NETWORK"
                     color: root.muted
                     font.pixelSize: 10
@@ -395,6 +417,8 @@ Item {
                     }
                 }
                 Text {
+                    font.family: Theme.Fonts.family
+                    font.weight: Theme.Fonts.weight
                     visible: !root.networkRates.length
                     text: root.snapshot ? "No active network interfaces" : "Waiting for sample"
                     color: root.muted
@@ -406,6 +430,8 @@ Item {
                 width: parent.width
                 spacing: 10
                 Text {
+                    font.family: Theme.Fonts.family
+                    font.weight: Theme.Fonts.weight
                     text: "DISK ACTIVITY"
                     color: root.muted
                     font.pixelSize: 10
@@ -423,6 +449,8 @@ Item {
                     }
                 }
                 Text {
+                    font.family: Theme.Fonts.family
+                    font.weight: Theme.Fonts.weight
                     visible: !root.diskRates.length
                     text: root.snapshot ? "No physical disk counters available" : "Waiting for sample"
                     color: root.muted
@@ -434,6 +462,8 @@ Item {
                 width: parent.width
                 spacing: 10
                 Text {
+                    font.family: Theme.Fonts.family
+                    font.weight: Theme.Fonts.weight
                     text: "STORAGE"
                     color: root.muted
                     font.pixelSize: 10
@@ -448,6 +478,8 @@ Item {
                         Row {
                             width: parent.width
                             Text {
+                                font.family: Theme.Fonts.family
+                                font.weight: Theme.Fonts.weight
                                 width: parent.width - 55
                                 text: modelData.label + " · " + modelData.path
                                 textFormat: Text.PlainText
@@ -456,6 +488,8 @@ Item {
                                 font.pixelSize: 12
                             }
                             Text {
+                                font.family: Theme.Fonts.family
+                                font.weight: Theme.Fonts.weight
                                 width: 55
                                 text: root.percent(modelData.percent)
                                 horizontalAlignment: Text.AlignRight
@@ -469,6 +503,8 @@ Item {
                             fillColor: modelData.percent >= 0.9 ? Theme.Colors.warning : Theme.Colors.foreground
                         }
                         Text {
+                            font.family: Theme.Fonts.family
+                            font.weight: Theme.Fonts.weight
                             text: root.bytes(modelData.used) + " used · " + root.bytes(modelData.free) + " available"
                             color: root.muted
                             font.pixelSize: 11
@@ -483,6 +519,8 @@ Item {
                 color: Theme.Colors.track
             }
             Text {
+                font.family: Theme.Fonts.family
+                font.weight: Theme.Fonts.weight
                 width: parent.width
                 text: root.snapshot ? "Up " + root.uptime(root.snapshot.uptime) + "  ·  Load " + root.snapshot.load.map(value => value.toFixed(2)).join(" / ") : "Waiting for system data…"
                 color: root.muted

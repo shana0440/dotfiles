@@ -49,6 +49,8 @@ Item {
         spacing: 8
 
         Text {
+            font.family: Theme.Fonts.family
+            font.weight: Theme.Fonts.weight
             width: 36
             height: 32
             text: root.audio?.muted ? "Mute" : "Vol"
@@ -106,6 +108,8 @@ Item {
         }
 
         Text {
+            font.family: Theme.Fonts.family
+            font.weight: Theme.Fonts.weight
             width: 38
             height: 32
             text: Math.round((root.audio?.volume ?? 0) * 100) + "%"

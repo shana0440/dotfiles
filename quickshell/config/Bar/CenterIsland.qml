@@ -90,6 +90,8 @@ Components.Island {
 
             Text {
                 id: dateTime
+                font.family: Theme.Fonts.family
+                font.weight: Theme.Fonts.weight
                 anchors.centerIn: parent
                 text: Qt.formatDateTime(clock.date, "ddd MM/dd hh:mm A")
                 color: Theme.Colors.foreground

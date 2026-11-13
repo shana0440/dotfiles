@@ -88,6 +88,8 @@ Components.Surface {
                     }
 
                     Text {
+                        font.family: Theme.Fonts.family
+                        font.weight: Theme.Fonts.weight
                         anchors.centerIn: parent
                         visible: appIcon.status !== Image.Ready
                         text: (button.entry?.name || button.modelData.appId || "?").charAt(0).toUpperCase()

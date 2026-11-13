@@ -93,6 +93,8 @@ Item {
         color: Theme.Colors.panel
         Text {
             id: label
+            font.family: Theme.Fonts.family
+            font.weight: Theme.Fonts.weight
             anchors.centerIn: parent
             width: Math.min(implicitWidth, root.width - 48)
             text: root.selected

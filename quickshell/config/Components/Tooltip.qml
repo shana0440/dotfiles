@@ -71,6 +71,8 @@ Item {
 
             Text {
                 id: label
+                font.family: Theme.Fonts.family
+                font.weight: Theme.Fonts.weight
                 anchors.centerIn: parent
                 width: parent.width - 16
                 text: root.text

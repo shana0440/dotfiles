@@ -78,6 +78,8 @@ Item {
                 }
 
                 Text {
+                    font.family: Theme.Fonts.family
+                    font.weight: Theme.Fonts.weight
                     anchors.left: actionIcon.right
                     anchors.leftMargin: 12
                     anchors.right: parent.right
@@ -108,6 +110,7 @@ Item {
         visible: root.confirming
 
         Text {
+            font.family: Theme.Fonts.family
             width: parent.width
             text: root.pendingAction === "reboot" ? "Restart?"
                 : root.pendingAction === "poweroff" ? "Power off?" : "Log out?"
@@ -117,6 +120,8 @@ Item {
         }
 
         Text {
+            font.family: Theme.Fonts.family
+            font.weight: Theme.Fonts.weight
             text: "Unsaved work may be lost."
             color: Theme.Colors.foreground
             opacity: 0.65
@@ -138,6 +143,8 @@ Item {
                     color: confirmMouse.containsMouse ? Theme.Colors.highlight : Theme.Colors.transparent
 
                     Text {
+                        font.family: Theme.Fonts.family
+                        font.weight: Theme.Fonts.weight
                         anchors.centerIn: parent
                         text: modelData
                         color: Theme.Colors.foreground

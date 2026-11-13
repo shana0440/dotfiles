@@ -207,6 +207,8 @@ Scope {
                 spacing: 8
 
                 Text {
+                    font.family: Theme.Fonts.family
+                    font.weight: Theme.Fonts.weight
                     visible: root.message.length > 0
                     text: root.message
                     textFormat: Text.PlainText
@@ -272,6 +274,7 @@ Scope {
                         Accessible.name: label
 
                         Text {
+                            font.family: Theme.Fonts.family
                             anchors.centerIn: parent
                             text: captureButton.label
                             color: Theme.Colors.background

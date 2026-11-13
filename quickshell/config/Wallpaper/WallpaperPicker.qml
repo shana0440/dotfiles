@@ -203,6 +203,7 @@ Scope {
                 clip: true
 
                 Text {
+                    font.family: Theme.Fonts.family
                     anchors { top: parent.top; topMargin: 24; horizontalCenter: parent.horizontalCenter }
                     text: "Wallpapers"
                     color: Theme.Colors.foreground
@@ -284,6 +285,8 @@ Scope {
                     anchors { left: parent.left; right: parent.right; bottom: parent.bottom; margins: 24 }
                     spacing: 10
                     Text {
+                        font.family: Theme.Fonts.family
+                        font.weight: Theme.Fonts.weight
                         width: parent.width
                         horizontalAlignment: Text.AlignHCenter
                         text: root.busy ? "Loading thumbnails…"
@@ -294,6 +297,8 @@ Scope {
                         elide: Text.ElideMiddle
                     }
                     Text {
+                        font.family: Theme.Fonts.family
+                        font.weight: Theme.Fonts.weight
                         width: parent.width
                         horizontalAlignment: Text.AlignHCenter
                         text: root.message || root.label(root.items[carousel.currentIndex]?.path ?? "") + "← → Browse   ·   Enter Apply to all monitors   ·   Esc Close"

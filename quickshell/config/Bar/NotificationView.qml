@@ -20,12 +20,15 @@ Item {
 
         Text {
             id: heading
+            font.family: Theme.Fonts.family
             text: "Notifications"
             color: Theme.Colors.foreground
             font.pixelSize: 14
             font.weight: Font.DemiBold
         }
         Text {
+            font.family: Theme.Fonts.family
+            font.weight: Theme.Fonts.weight
             anchors.baseline: heading.baseline
             text: Services.Notifications.count
             color: Theme.Colors.foreground
@@ -82,6 +85,8 @@ Item {
         }
 
         Text {
+            font.family: Theme.Fonts.family
+            font.weight: Theme.Fonts.weight
             anchors.centerIn: parent
             visible: cards.count === 0
             text: "No notifications"

@@ -31,6 +31,7 @@ Item {
         width: parent.width - 32
         height: 32
         Text {
+            font.family: Theme.Fonts.family
             width: parent.width - 32
             height: 32
             text: root.input ? "Voice input · microphone" : "Audio output"
@@ -65,6 +66,8 @@ Item {
             spacing: 4
 
             Text {
+                font.family: Theme.Fonts.family
+                font.weight: Theme.Fonts.weight
                 visible: root.devices.length === 0
                 width: parent.width
                 height: 40
@@ -94,6 +97,8 @@ Item {
                     Keys.onSpacePressed: root.selectDevice(modelData)
 
                     Text {
+                        font.family: Theme.Fonts.family
+                        font.weight: Theme.Fonts.weight
                         anchors.left: parent.left
                         anchors.leftMargin: 10
                         anchors.verticalCenter: parent.verticalCenter
@@ -105,6 +110,8 @@ Item {
                         font.pixelSize: 13
                     }
                     Text {
+                        font.family: Theme.Fonts.family
+                        font.weight: Theme.Fonts.weight
                         anchors.right: parent.right
                         anchors.rightMargin: 10
                         anchors.verticalCenter: parent.verticalCenter
