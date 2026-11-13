@@ -4,6 +4,7 @@ import Quickshell.Io
 import Quickshell.Hyprland
 import Quickshell.Wayland
 import "Bar" as BarComponents
+import "Components" as Components
 import "Theme" as Theme
 import "Services" as Services
 
@@ -276,14 +277,24 @@ PanelWindow {
                 - x - root.islandSpacing)
         }
 
+        // Declared first so it paints beneath the islands it draws.
+        Components.IslandGoo {
+            id: centerGoo
+            target: centerIsland
+            leading: mediaIsland
+            trailing: notificationIsland
+        }
+
         BarComponents.CenterIsland {
             id: centerIsland
+            bare: centerGoo.ready
             anchors.horizontalCenter: parent.horizontalCenter
             availableHeight: Math.min(560, Math.max(144, root.height - root.islandMargin * 2))
         }
 
         BarComponents.MediaIsland {
             id: mediaIsland
+            bare: centerGoo.ready
             anchors.right: centerIsland.left
             anchors.rightMargin: offset
             gap: root.islandSpacing
@@ -293,6 +304,7 @@ PanelWindow {
 
         BarComponents.NotificationIsland {
             id: notificationIsland
+            bare: centerGoo.ready
             anchors.left: centerIsland.right
             anchors.leftMargin: offset
             gap: root.islandSpacing

@@ -37,7 +37,8 @@ Surface {
         shakeSpring.impulse(sideways)
         nudgeSpring.impulse(down)
     }
-    transform: Translate { x: shakeSpring.value; y: nudgeSpring.value }
+    readonly property point shift: Qt.point(shakeSpring.value, nudgeSpring.value)
+    transform: Translate { x: root.shift.x; y: root.shift.y }
 
     onTargetWidthChanged: moveTo(widthSpring, targetWidth, true)
     onTargetHeightChanged: moveTo(heightSpring, targetHeight, false)

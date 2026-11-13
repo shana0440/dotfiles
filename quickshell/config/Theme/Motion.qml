@@ -15,6 +15,12 @@ QtObject {
     // Content and small controls settling: tight, no wobble.
     readonly property real stackStiffness: 400
     readonly property real stackDamping: 36
+    // Liquid: side dots flowing out of an island and back in, slow enough to
+    // read the neck stretch and pinch off.
+    readonly property real liquidStiffness: 190
+    readonly property real liquidDamping: 19
+    readonly property real absorbStiffness: 230
+    readonly property real absorbDamping: 27
 
     // Opening squeezes in first, closing swells first (px/s).
     readonly property real anticipation: -260
