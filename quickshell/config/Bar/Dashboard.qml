@@ -16,6 +16,7 @@ Item {
         : tab === "audio" ? audioView
         : tab === "notifications" ? notificationList
         : tab === "network" ? networkView
+        : tab === "bluetooth" ? bluetoothView
         : tab === "system" ? systemView
         : tab === "usage" ? usageView : calendarPage
     signal tabRequested(string tab)
@@ -42,6 +43,7 @@ Item {
                 { tab: "audio", icon: "speaker", tooltip: "Audio" },
                 { tab: "notifications", icon: "notifications", tooltip: "Notifications" },
                 { tab: "network", icon: "wifi", tooltip: "Network" },
+                { tab: "bluetooth", icon: "bluetooth", tooltip: "Bluetooth" },
                 { tab: "system", icon: "systemStatus", tooltip: "System" },
                 { tab: "usage", icon: "usage", tooltip: "Usage" }
             ]
@@ -131,6 +133,13 @@ Item {
                 width: root.pageWidth
                 maximumHeight: root.maximumHeight
                 active: root.active && root.tab === "network"
+                onCloseRequested: root.closeRequested()
+            },
+            BluetoothView {
+                id: bluetoothView
+                width: root.pageWidth
+                maximumHeight: root.maximumHeight
+                active: root.active && root.tab === "bluetooth"
                 onCloseRequested: root.closeRequested()
             },
             SystemView {
