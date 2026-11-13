@@ -74,6 +74,25 @@ Item {
         active: root.active
     }
 
+    NetworkDevices {
+        id: devices
+        active: root.active
+    }
+
+    readonly property bool wiredConnected: devices.wired.some(device => device.connected)
+
+    function linkSpeed(megabits) {
+        return megabits >= 1000 ? (megabits / 1000) + " Gb/s" : megabits + " Mb/s"
+    }
+
+    function wiredStatus(device) {
+        if (device.connected)
+            return "Connected" + (device.speed > 0 ? " · " + linkSpeed(device.speed) : "")
+        if (!device.carrier)
+            return "Cable unplugged"
+        return device.state.charAt(0).toUpperCase() + device.state.slice(1)
+    }
+
     component TextButton: Rectangle {
         id: button
         property string label: ""
@@ -133,8 +152,10 @@ Item {
                     font.bold: true
                 }
                 Text {
-                    text: root.connectedNetwork ? "Connected to " + root.connectedNetwork.ssid
-                        : wifi.scanning && wifi.networks.count === 0 ? "Scanning…" : "Wi-Fi not connected"
+                    readonly property var links: (root.wiredConnected ? ["Ethernet"] : [])
+                        .concat(root.connectedNetwork ? ["Wi-Fi " + root.connectedNetwork.ssid] : [])
+                    text: links.length > 0 ? "Connected via " + links.join(" and ")
+                        : !devices.loaded || (wifi.scanning && wifi.networks.count === 0) ? "Checking…" : "Not connected"
                     textFormat: Text.PlainText
                     color: Theme.Colors.muted
                     font.family: Theme.Fonts.family
@@ -168,6 +189,127 @@ Item {
                     onClicked: {
                         root.closeRequested()
                         Quickshell.execDetached(["kitty", "--class", "wifi-settings", "-e", "nmtui"])
+                    }
+                }
+            }
+        }
+
+        Rectangle {
+            id: ethernetCard
+            width: parent.width
+            height: wired.implicitHeight + 24
+            radius: 12
+            color: Theme.Colors.surface
+            visible: devices.wired.length > 0
+
+            Column {
+                id: wired
+                x: 12
+                y: 12
+                width: parent.width - 24
+                spacing: 4
+
+                Text {
+                    leftPadding: 2
+                    bottomPadding: 4
+                    text: "Ethernet"
+                    color: Theme.Colors.muted
+                    font.family: Theme.Fonts.family
+                    font.weight: Theme.Fonts.weight
+                    font.pixelSize: 12
+                }
+
+                Repeater {
+                    // A count model keeps the rows across polls.
+                    model: devices.wired.length
+
+                    Rectangle {
+                        id: port
+                        required property int index
+                        readonly property var device: devices.wired[index] ?? { device: "", connection: "", state: "", connected: false, carrier: false, speed: 0, address: "", gateway: "", dns: "" }
+
+                        width: wired.width
+                        height: portText.implicitHeight + 20
+                        radius: 8
+                        color: device.connected ? Theme.Colors.highlight : Theme.Colors.transparent
+
+                        Components.Icon {
+                            x: 10
+                            y: 12
+                            width: 18
+                            height: 18
+                            action: "ethernet"
+                            iconColor: port.device.connected ? Theme.Colors.foreground : Theme.Colors.muted
+                        }
+
+                        Column {
+                            id: portText
+                            x: 40
+                            y: 10
+                            width: parent.width - x - address.width - 22
+                            spacing: 2
+
+                            Row {
+                                width: parent.width
+                                spacing: 6
+
+                                Text {
+                                    id: portName
+                                    text: port.device.connection || port.device.device
+                                    textFormat: Text.PlainText
+                                    elide: Text.ElideRight
+                                    width: Math.min(implicitWidth, parent.width - deviceName.implicitWidth - parent.spacing)
+                                    color: Theme.Colors.foreground
+                                    font.family: Theme.Fonts.family
+                                    font.weight: Theme.Fonts.weight
+                                    font.pixelSize: 13
+                                }
+                                Text {
+                                    id: deviceName
+                                    anchors.baseline: portName.baseline
+                                    visible: port.device.connection.length > 0
+                                    text: port.device.device
+                                    textFormat: Text.PlainText
+                                    color: Theme.Colors.muted
+                                    font.family: Theme.Fonts.family
+                                    font.weight: Theme.Fonts.weight
+                                    font.pixelSize: 11
+                                }
+                            }
+                            Text {
+                                text: root.wiredStatus(port.device)
+                                color: port.device.connected ? Theme.Colors.success : Theme.Colors.muted
+                                font.family: Theme.Fonts.family
+                                font.weight: Theme.Fonts.weight
+                                font.pixelSize: 11
+                            }
+                            Text {
+                                width: parent.width
+                                visible: port.device.connected && (port.device.gateway || port.device.dns)
+                                text: [port.device.gateway ? "Gateway " + port.device.gateway : "",
+                                    port.device.dns ? "DNS " + port.device.dns : ""].filter(part => part).join(" · ")
+                                textFormat: Text.PlainText
+                                elide: Text.ElideRight
+                                color: Theme.Colors.muted
+                                font.family: Theme.Fonts.family
+                                font.weight: Theme.Fonts.weight
+                                font.pixelSize: 11
+                            }
+                        }
+
+                        Text {
+                            id: address
+                            anchors.right: parent.right
+                            anchors.rightMargin: 12
+                            y: 12
+                            visible: port.device.address.length > 0
+                            text: port.device.address.replace(/\/\d+$/, "")
+                            color: Theme.Colors.foreground
+                            font.family: Theme.Fonts.family
+                            font.weight: Theme.Fonts.weight
+                            font.pixelSize: 12
+                            font.features: ({ "tnum": 1 })
+                        }
                     }
                 }
             }
@@ -216,6 +358,7 @@ Item {
                     id: networkList
                     // Whatever the page cap leaves after everything else, at least two rows.
                     readonly property real room: root.maximumHeight - 40 - header.height - content.spacing * 2
+                        - (ethernetCard.visible ? ethernetCard.height + content.spacing : 0)
                         - activityCard.height - 24 - wifiTitle.height - wifiContent.spacing
                         - (message.visible ? message.height + wifiContent.spacing : 0)
                         - (form.visible ? form.height + wifiContent.spacing : 0)
@@ -236,6 +379,7 @@ Item {
                         required property string security
                         required property string device
                         readonly property bool selected: root.selectedSsid === ssid
+                        readonly property string address: active ? (devices.wirelessDevice(device)?.address ?? "").replace(/\/\d+$/, "") : ""
 
                         width: networkList.width
                         height: root.rowHeight
@@ -269,7 +413,8 @@ Item {
                             }
                             Text {
                                 width: parent.width
-                                text: row.active ? "Connected" : (!row.security || row.security === "--" ? "Open" : row.security)
+                                text: row.active ? "Connected" + (row.address ? " · " + row.address : "")
+                                    : (!row.security || row.security === "--" ? "Open" : row.security)
                                 textFormat: Text.PlainText
                                 elide: Text.ElideRight
                                 color: row.active ? Theme.Colors.success : Theme.Colors.muted
