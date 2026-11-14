@@ -298,6 +298,8 @@ PanelWindow {
             anchors.right: centerIsland.left
             anchors.rightMargin: offset
             gap: root.islandSpacing
+            outer: weatherIsland
+            direction: -1
             merged: centerIsland.sideIslandsMerged
             onClicked: centerIsland.open("media")
         }
@@ -320,6 +322,8 @@ PanelWindow {
             anchors.left: centerIsland.right
             anchors.leftMargin: offset
             gap: root.islandSpacing
+            outer: inputIsland
+            direction: 1
             merged: centerIsland.sideIslandsMerged
             onClicked: centerIsland.open("notifications")
         }

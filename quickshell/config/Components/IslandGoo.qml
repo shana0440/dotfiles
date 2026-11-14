@@ -34,12 +34,13 @@ ShaderEffect {
     visible: shaderFile !== ""
 
     function circle(item) {
-        return Qt.vector4d(item.x + item.width / 2 - x, item.y + item.height / 2 - y, item.diameter, item.blend)
+        return Qt.vector4d(item.x + item.drift + item.width / 2 - x, item.y + item.height / 2 - y,
+            item.diameter, item.blend)
     }
 
     // Center xy and painted size zw.
     function box(item) {
-        return Qt.vector4d(item.x + item.width / 2 - x, item.y + item.height / 2 - y,
+        return Qt.vector4d(item.x + item.drift + item.width / 2 - x, item.y + item.height / 2 - y,
             item.paintedWidth, item.paintedHeight)
     }
 

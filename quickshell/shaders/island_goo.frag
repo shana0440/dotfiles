@@ -55,20 +55,32 @@ float smoothMinimum(float first, float second, float radius)
     return min(first, second) - influence * influence * radius * 0.25;
 }
 
+// A side circle fuses with the island and with the box beyond it, so a circle
+// forming between the two draws a neck from each.
 float field(vec2 point)
 {
-    float surface = roundedBox(point, ubuf.island, ubuf.islandRadius);
-    surface = smoothMinimum(surface, circle(point, ubuf.leftCircle), ubuf.leftCircle.w);
-    surface = smoothMinimum(surface, circle(point, ubuf.rightCircle), ubuf.rightCircle.w);
-    surface = smoothMinimum(surface, centeredBox(point, ubuf.leftOuter, ubuf.leftOuterShape.x), ubuf.leftOuterShape.y);
-    return smoothMinimum(surface, centeredBox(point, ubuf.rightOuter, ubuf.rightOuterShape.x), ubuf.rightOuterShape.y);
+    float island = roundedBox(point, ubuf.island, ubuf.islandRadius);
+    float left = circle(point, ubuf.leftCircle);
+    float right = circle(point, ubuf.rightCircle);
+    float leftOuter = centeredBox(point, ubuf.leftOuter, ubuf.leftOuterShape.x);
+    float rightOuter = centeredBox(point, ubuf.rightOuter, ubuf.rightOuterShape.x);
+
+    float surface = smoothMinimum(island, left, ubuf.leftCircle.w);
+    surface = smoothMinimum(surface, right, ubuf.rightCircle.w);
+    surface = smoothMinimum(surface, leftOuter, ubuf.leftOuterShape.y);
+    surface = smoothMinimum(surface, rightOuter, ubuf.rightOuterShape.y);
+    surface = min(surface, smoothMinimum(leftOuter, left, ubuf.leftCircle.w));
+    return min(surface, smoothMinimum(rightOuter, right, ubuf.rightCircle.w));
 }
 
 void main()
 {
     vec2 point = qt_TexCoord0 * ubuf.resolution;
     float surface = field(point);
-    float aa = max(fwidth(surface), 0.001);
+    // One device pixel. Not fwidth(surface): it jumps along the creases where the
+    // field takes a min, which would draw the ring inside the surface.
+    vec2 pixel = fwidth(point);
+    float aa = max(max(pixel.x, pixel.y), 0.001);
     float outer = clamp(0.5 - surface / aa, 0.0, 1.0);
     // Like a Rectangle border, the 1 px ring replaces the fill along the edge.
     float inner = clamp(0.5 - (surface + 1.0) / aa, 0.0, 1.0);
