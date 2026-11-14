@@ -67,9 +67,9 @@ Rectangle {
     onAuthStateChanged: {
         if (authState === "denied") {
             shake.restart()
-            password.selectAll()
+            clear()
         }
-        if (authState !== "busy") focusInput()
+        focusInput()
     }
 
     component RoundButton: Rectangle {
@@ -256,8 +256,9 @@ Rectangle {
                 font.letterSpacing: 3
                 clip: true
                 focus: true
-                enabled: root.authState !== "busy" && root.authState !== "granted"
-                onAccepted: if (text.length) root.submit(text)
+                // Read-only rather than disabled: disabling drops the keyboard focus.
+                readOnly: root.authState === "busy" || root.authState === "granted"
+                onAccepted: if (text.length && !readOnly) root.submit(text)
                 onTextEdited: root.edited()
 
                 Text {
