@@ -50,6 +50,10 @@
   networking.hostName = "kwguo-nixos";
   # NetworkManager and VPN-aware DNS are configured by vpn/vpn.nix.
   networking.nameservers = [ "1.1.1.1" "8.8.8.8" ];
+  # The home router advertises IPv6 prefixes but does not route IPv6 to the
+  # internet, so anything that tries IPv6 first stalls until it times out.
+  # Tailscale keeps working over its IPv4 (100.x) addresses.
+  networking.enableIPv6 = false;
   networking.firewall.enable = true;
   time.timeZone = "Asia/Taipei";
   i18n.defaultLocale = "en_US.UTF-8";
