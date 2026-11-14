@@ -3,8 +3,8 @@ import Quickshell.Hyprland
 import "../Theme" as Theme
 import "../Components" as Components
 
-// One workspace as a numbered dot: white and stretched when focused, grey when it
-// has windows. Empty workspaces hide unless focused, so the row lists only what is
+// One workspace as a numbered dot: white and stretched when focused, half-clear
+// white when it has windows, so it takes on what lies behind the island. Empty workspaces hide unless focused, so the row lists only what is
 // in use. The item is a little wider than the dot to give an easy target.
 Item {
     id: root
@@ -29,7 +29,7 @@ Item {
         radius: height / 2
         // White is the shell's emphasis; hover brightens without looking focused.
         color: root.focused ? Theme.Colors.foreground
-            : mouse.containsMouse ? Qt.rgba(0.98, 0.98, 0.98, 0.7) : Theme.Colors.muted
+            : Qt.alpha(Theme.Colors.foreground, mouse.containsMouse ? 0.7 : 0.5)
 
         Behavior on color {
             ColorAnimation { duration: 150 }
