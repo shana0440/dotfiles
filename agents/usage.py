@@ -5,19 +5,32 @@ own files, and asks the usage endpoints behind Claude Code's /usage and Codex's
 /status. Logins are only read, never refreshed: refreshing rotates the saved
 refresh token and would sign the owning tool out. Output carries limits only,
 never tokens, emails or account IDs.
+
+`agent-usage reset-codex [CREDIT_ID]` redeems one of Codex's earned limit resets
+(the next available one when no ID is given), as Codex's /usage menu does, and
+prints {"outcome": ...}.
 """
 
 import json
+import socket
 import sys
 import time
 import urllib.error
 import urllib.request
+import uuid
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
 from pathlib import Path
 
 HOME = Path.home()
 TIMEOUT = 10
+
+# Try IPv4 addresses first. urllib tries addresses in order, waiting the full
+# timeout on each, so a network that hands out IPv6 addresses without routing
+# them would stall every request by 10 seconds per IPv6 address.
+_getaddrinfo = socket.getaddrinfo
+socket.getaddrinfo = lambda *args, **kwargs: sorted(
+    _getaddrinfo(*args, **kwargs), key=lambda entry: entry[0] != socket.AF_INET)
 
 
 def read_json(path):
@@ -27,8 +40,13 @@ def read_json(path):
         return None
 
 
-def get(url, headers):
-    request = urllib.request.Request(url, headers={"Accept": "application/json", **headers})
+CODEX_API = "https://chatgpt.com/backend-api/wham"
+
+
+def get(url, headers, body=None):
+    data = None if body is None else json.dumps(body).encode()
+    request = urllib.request.Request(url, data=data, headers={
+        "Accept": "application/json", **({"Content-Type": "application/json"} if data else {}), **headers})
     with urllib.request.urlopen(request, timeout=TIMEOUT) as response:
         return json.load(response)
 
@@ -96,16 +114,40 @@ def claude():
     }
 
 
-def codex():
+def codex_headers():
+    """Request headers for the Codex backend, or a failure reason."""
     token, account, expires = codex_login()
     if not token:
-        return failure("not signed in")
+        return None, "not signed in"
     if expired(expires):
-        return failure("login expired")
+        return None, "login expired"
     headers = {"Authorization": "Bearer " + token, "User-Agent": "codex_cli_rs"}
     if account:
         headers["chatgpt-account-id"] = account
-    data = get("https://chatgpt.com/backend-api/wham/usage", headers)
+    return headers, None
+
+
+def codex_resets(headers, summary):
+    """Earned limit resets: how many exist, how many would help now, and each one."""
+    summary = summary or {}
+    available = summary.get("available_count") or 0
+    credits = []
+    if available:
+        listing = get(CODEX_API + "/rate-limit-reset-credits", headers)
+        credits = [
+            {"id": credit.get("id"), "title": credit.get("title"), "expiresAt": credit.get("expires_at")}
+            for credit in listing.get("credits") or []
+            if credit.get("status") == "available" and credit.get("is_supported_by_plan", True)
+        ]
+    return {"available": available, "applicable": summary.get("applicable_available_count") or 0,
+            "credits": credits}
+
+
+def codex():
+    headers, reason = codex_headers()
+    if reason:
+        return failure(reason)
+    data = get(CODEX_API + "/usage", headers)
     limits = data.get("rate_limit") or {}
 
     def from_window(entry):
@@ -119,7 +161,21 @@ def codex():
         "fiveHour": from_window(limits.get("primary_window")),
         "weekly": from_window(limits.get("secondary_window")),
         "models": [],
+        "resets": codex_resets(headers, data.get("rate_limit_reset_credits")),
     }
+
+
+def reset_codex(credit_id=None):
+    """Redeem one earned Codex limit reset. Outcome is reset, nothing_to_reset,
+    no_credit or already_redeemed as the backend reports it."""
+    headers, reason = codex_headers()
+    if reason:
+        return failure(reason)
+    body = {"redeem_request_id": str(uuid.uuid4())}
+    if credit_id:
+        body["credit_id"] = credit_id
+    data = get(CODEX_API + "/rate-limit-reset-credits/consume", headers, body) or {}
+    return {"available": True, "outcome": data.get("outcome") or data.get("status") or "reset"}
 
 
 def safely(provider):
@@ -134,6 +190,10 @@ def safely(provider):
 
 
 def main():
+    if sys.argv[1:2] == ["reset-codex"]:
+        json.dump(safely(lambda: reset_codex(sys.argv[2] if len(sys.argv) > 2 else None)), sys.stdout)
+        sys.stdout.write("\n")
+        return
     with ThreadPoolExecutor(max_workers=2) as pool:
         claude_result, codex_result = pool.map(safely, [claude, codex])
     json.dump({"checkedAt": datetime.now(timezone.utc).isoformat(), "claude": claude_result, "codex": codex_result},

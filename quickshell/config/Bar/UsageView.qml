@@ -3,7 +3,7 @@ import "../Theme" as Theme
 import "../Components" as Components
 
 // The dashboard's usage tab: how much of each subscription's 5-hour and weekly
-// limits is spent, and when each resets.
+// limits is spent, when each resets, and any earned Codex limit resets to redeem.
 Item {
     id: root
 
@@ -48,6 +48,130 @@ Item {
             "unexpected response": "Unexpected response",
             "agent-usage not installed": "agent-usage not installed"
         })[error] ?? error
+    }
+
+    function expiryText(iso) {
+        return iso ? "Expires " + Qt.formatDateTime(new Date(iso), "MMM d") : "Does not expire"
+    }
+
+    function outcomeText(outcome) {
+        return ({
+            "reset": "Limits reset",
+            "nothing_to_reset": "Nothing to reset, credit kept",
+            "no_credit": "No resets left",
+            "already_redeemed": "Already used"
+        })[outcome] ?? "Couldn't reset: " + errorText(outcome)
+    }
+
+    component TextButton: Rectangle {
+        id: button
+        property string label: ""
+        property bool primary: false
+        signal clicked()
+
+        implicitWidth: buttonText.implicitWidth + 24
+        implicitHeight: 28
+        radius: 8
+        color: primary ? (buttonMouse.containsMouse ? Qt.tint(Theme.Colors.foreground, "#2e0c0c0d") : Theme.Colors.foreground)
+            : buttonMouse.containsMouse || activeFocus ? Theme.Colors.highlight : Theme.Colors.transparent
+        border.width: primary ? 0 : 1
+        border.color: Theme.Colors.ring
+        opacity: enabled ? 1 : 0.4
+        activeFocusOnTab: true
+        Accessible.role: Accessible.Button
+        Accessible.name: label
+        Keys.onReturnPressed: clicked()
+        Keys.onSpacePressed: clicked()
+
+        Text {
+            id: buttonText
+            anchors.centerIn: parent
+            text: button.label
+            color: button.primary ? Theme.Colors.background : Theme.Colors.foreground
+            font.family: Theme.Fonts.family
+            font.weight: Theme.Fonts.weight
+            font.pixelSize: 12
+        }
+        MouseArea {
+            id: buttonMouse
+            anchors.fill: parent
+            hoverEnabled: true
+            cursorShape: Qt.PointingHandCursor
+            onClicked: button.clicked()
+        }
+    }
+
+    // One earned Codex reset. Like the power tab, redeeming takes a second click
+    // within 4 seconds; the
+    // backend only accepts it while a limit is spent enough to need it.
+    component ResetCredit: Item {
+        id: credit
+        property var entry: null
+        property bool applicable: false
+        property bool armed: false
+
+        width: parent.width
+        height: Math.max(creditText.implicitHeight, use.implicitHeight)
+
+        Column {
+            id: creditText
+            anchors.left: parent.left
+            anchors.right: use.left
+            anchors.rightMargin: 12
+            anchors.verticalCenter: parent.verticalCenter
+            spacing: 2
+
+            Text {
+                width: parent.width
+                text: credit.entry && credit.entry.title ? credit.entry.title : "Limit reset"
+                elide: Text.ElideRight
+                color: Theme.Colors.foreground
+                font.family: Theme.Fonts.family
+                font.weight: Theme.Fonts.weight
+                font.pixelSize: 13
+            }
+            Text {
+                width: parent.width
+                text: root.expiryText(credit.entry ? credit.entry.expiresAt : null)
+                    + (credit.applicable ? "" : " \u00b7 not needed yet")
+                elide: Text.ElideRight
+                color: Theme.Colors.muted
+                font.family: Theme.Fonts.family
+                font.weight: Theme.Fonts.weight
+                font.pixelSize: 11
+            }
+        }
+        TextButton {
+            id: use
+            anchors.right: parent.right
+            anchors.verticalCenter: parent.verticalCenter
+            label: usage.resetting ? "Resetting" : credit.armed ? "Confirm reset" : "Use reset"
+            primary: credit.armed
+            enabled: credit.applicable && !usage.resetting
+            onClicked: {
+                if (!credit.armed) {
+                    credit.armed = true
+                    disarm.restart()
+                    return
+                }
+                credit.armed = false
+                usage.resetCodex(credit.entry ? credit.entry.id : "")
+            }
+
+            Timer {
+                id: disarm
+                interval: 4000
+                onTriggered: credit.armed = false
+            }
+        }
+
+        // Like the power tab, leaving the tab cancels a pending second click.
+        Connections {
+            target: root
+            function onActiveChanged() {
+                credit.armed = false
+            }
+        }
     }
 
     component Limit: Column {
@@ -177,6 +301,46 @@ Item {
                     readonly property var entry: card.reading?.models[index] ?? null
                     label: entry ? entry.name + " weekly" : ""
                     span: entry
+                }
+            }
+
+            // Earned resets that clear the 5-hour and weekly limits at once.
+            Column {
+                readonly property var resets: card.reading ? card.reading.resets ?? null : null
+                width: parent.width
+                spacing: 10
+                visible: !!resets && resets.available > 0
+
+                Rectangle {
+                    width: parent.width
+                    height: 1
+                    color: Theme.Colors.ring
+                }
+                Text {
+                    text: parent.resets ? (parent.resets.available === 1 ? "1 limit reset" : parent.resets.available + " limit resets") : ""
+                    color: Theme.Colors.muted
+                    font.family: Theme.Fonts.family
+                    font.weight: Theme.Fonts.weight
+                    font.pixelSize: 12
+                }
+                Repeater {
+                    model: parent.resets ? parent.resets.credits.length : 0
+
+                    ResetCredit {
+                        required property int index
+                        entry: card.reading?.resets?.credits[index] ?? null
+                        applicable: (card.reading?.resets?.applicable ?? 0) > 0
+                    }
+                }
+                Text {
+                    width: parent.width
+                    visible: usage.resetOutcome.length > 0
+                    text: usage.resetOutcome ? root.outcomeText(usage.resetOutcome) : ""
+                    wrapMode: Text.WordWrap
+                    color: usage.resetOutcome === "reset" ? Theme.Colors.success : Theme.Colors.warning
+                    font.family: Theme.Fonts.family
+                    font.weight: Theme.Fonts.weight
+                    font.pixelSize: 11
                 }
             }
         }

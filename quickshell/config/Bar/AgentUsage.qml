@@ -2,7 +2,7 @@ import QtQuick
 import Quickshell.Io
 
 // Claude and Codex subscription limits from the agents module's agent-usage,
-// polled every 2 minutes while active.
+// polled every 2 minutes while active. It can also redeem an earned Codex limit reset.
 Item {
     id: root
 
@@ -15,6 +15,10 @@ Item {
     property date checkedAt: new Date(0)
     readonly property bool checking: query.running
     readonly property bool loaded: checkedAt.getTime() > 0
+    readonly property bool resetting: redeem.running
+    // What the last reset attempt did: reset, nothing_to_reset, no_credit,
+    // already_redeemed, or a failure reason.
+    property string resetOutcome: ""
 
     visible: false
 
@@ -23,6 +27,15 @@ Item {
             query.started = false
             query.running = true
         }
+    }
+
+    // Redeems the given credit, or the next available one, then checks again.
+    function resetCodex(creditId) {
+        if (redeem.running)
+            return
+        resetOutcome = ""
+        redeem.command = ["agent-usage", "reset-codex"].concat(creditId ? [creditId] : [])
+        redeem.running = true
     }
 
     function fail(reason) {
@@ -67,6 +80,21 @@ Item {
         onRunningChanged: {
             if (!running && !started)
                 root.fail("agent-usage not installed")
+        }
+    }
+
+    Process {
+        id: redeem
+        stdout: StdioCollector { id: redeemOutput }
+        stderr: StdioCollector {}
+        onExited: code => {
+            try {
+                const result = JSON.parse(redeemOutput.text)
+                root.resetOutcome = result.available ? result.outcome : result.error
+            } catch (error) {
+                root.resetOutcome = "agent-usage failed"
+            }
+            root.refresh()
         }
     }
 }

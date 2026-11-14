@@ -286,7 +286,10 @@ by `make update`.
 The same module installs `agent-usage`, which prints the Claude and Codex
 5-hour and weekly subscription limits as JSON from the logins Pi saved (falling
 back to Claude Code and Codex CLI). It only reads those logins and never
-refreshes them. The Quickshell dashboard's usage tab runs it.
+refreshes them. It also lists the limit resets Codex has granted, and
+`agent-usage reset-codex` redeems one. The Quickshell dashboard's usage tab runs
+it and offers each reset with a two-click "Use reset" button, enabled only when
+Codex says a reset would help (a limit is spent enough to need it).
 
 ## NixOS system configuration
 
