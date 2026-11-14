@@ -37,6 +37,9 @@ small pool is kept and each map is replaced after use.
 
 - Thumbnails: `${XDG_CACHE_HOME:-~/.cache}/wallpaper/thumbnails`
 - Transition maps: `${XDG_CACHE_HOME:-~/.cache}/wallpaper/colonies`
+- Current wallpaper: `${XDG_STATE_HOME:-~/.local/state}/wallpaper/current`, its
+  absolute path, replaced atomically on every `wallpaper-set`. Watch it to
+  follow the wallpaper (a systemd `PathChanged=` unit fires on each change).
 - `WALLPAPER_DIR` overrides the wallpaper folder.
 - `WALLPAPER_SHELL` / `WALLPAPER_SHADER` override the Quickshell config and
   shader paths (useful for testing in isolation).

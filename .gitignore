@@ -5,3 +5,6 @@ secrets.json
 secrets.json.*
 *.plaintext
 *.plaintext.*
+
+# Python bytecode from running tests in place.
+__pycache__/

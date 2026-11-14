@@ -22,6 +22,10 @@ class LibraryTests(unittest.TestCase):
         self.source = self.root / "walls"
         self.source.mkdir()
         self.cache = self.root / "cache"
+        # `set` records the current wallpaper; keep that out of the real state dir.
+        state = patch.dict(os.environ, {"XDG_STATE_HOME": str(self.root / "state")})
+        state.start()
+        self.addCleanup(state.stop)
 
     def image(self, name="wallpaper # ' one.PNG"):
         path = self.source / name
@@ -84,6 +88,28 @@ class LibraryTests(unittest.TestCase):
             library.main()
         self.assertEqual(run.call_args.args[0][:3], ["awww", "img", str(image)])
         self.assertTrue(run.call_args.kwargs["check"])
+
+    def test_set_records_current_wallpaper(self):
+        image = self.image()
+        state = Path(os.environ["XDG_STATE_HOME"])
+        with patch.object(sys, "argv", ["library", "set", str(image)]), patch.object(
+            library, "set_wallpaper"
+        ):
+            library.main()
+        self.assertEqual((state / "wallpaper/current").read_text(), f"{image}\n")
+        self.assertEqual([p.name for p in (state / "wallpaper").iterdir()], ["current"])
+
+    def test_failed_set_keeps_previous_record(self):
+        image = self.image()
+        state = Path(os.environ["XDG_STATE_HOME"])
+        (state / "wallpaper").mkdir(parents=True)
+        (state / "wallpaper/current").write_text("/old.png\n")
+        with patch.object(sys, "argv", ["library", "set", str(image)]), patch.object(
+            library, "set_wallpaper", side_effect=subprocess.CalledProcessError(1, "awww")
+        ):
+            with self.assertRaises(subprocess.CalledProcessError):
+                library.main()
+        self.assertEqual((state / "wallpaper/current").read_text(), "/old.png\n")
 
     def test_set_propagates_daemon_failure(self):
         image = self.image()

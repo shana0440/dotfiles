@@ -143,6 +143,20 @@ def set_wallpaper(image):
                         "--transition-duration", "0.35"], check=True, timeout=5)
 
 
+def record_current(image):
+    # The current wallpaper, for anything that follows it: one absolute path,
+    # replaced atomically so a watcher never reads half a file.
+    state = Path(os.environ.get("XDG_STATE_HOME", str(Path.home() / ".local/state"))) / "wallpaper"
+    state.mkdir(parents=True, exist_ok=True)
+    fd, temp = tempfile.mkstemp(dir=state)
+    try:
+        with os.fdopen(fd, "w") as file:
+            file.write(f"{image}\n")
+        os.replace(temp, state / "current")
+    finally:
+        Path(temp).unlink(missing_ok=True)
+
+
 def main():
     if len(sys.argv) > 1 and sys.argv[1] == "set":
         if len(sys.argv) != 3:
@@ -151,6 +165,7 @@ def main():
         if not image.is_file() or image.suffix.lower() not in EXTENSIONS:
             raise ValueError("Choose a JPG, PNG, or WebP image")
         set_wallpaper(image)
+        record_current(image)
         return
     directory = Path(os.environ["WALLPAPER_DIR"]).expanduser().resolve()
     cache = Path(os.environ.get("XDG_CACHE_HOME", str(Path.home() / ".cache"))) / "wallpaper/thumbnails"

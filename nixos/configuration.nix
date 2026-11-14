@@ -8,6 +8,7 @@
     (import ../vpn/vpn.nix).nixos
     (import ../file-manager/file-manager.nix).nixos
     ./desktop.nix
+    ./login.nix
     ./iphone-webcam.nix
     ./user.nix
     ./nas.nix

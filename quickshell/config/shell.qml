@@ -1,5 +1,6 @@
 import Quickshell
 import "Capture"
+import "Lock"
 import "MissionControl"
 import "Wallpaper"
 
@@ -9,4 +10,5 @@ ShellRoot {
     WallpaperPicker {}
     ScreenCapture {}
     MissionControl {}
+    Lock {}
 }
