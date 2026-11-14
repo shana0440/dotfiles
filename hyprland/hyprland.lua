@@ -304,6 +304,7 @@ for _, key in ipairs({ "Z", "T", "R" }) do
 end
 
 hl.bind(mainMod .. " + SHIFT + S", hl.dsp.exec_cmd("quickshell --path ~/.config/quickshell ipc call capture open"))
+hl.bind(mainMod .. " + SHIFT + L", hl.dsp.exec_cmd("quickshell --path ~/.config/quickshell ipc call lock lock"))
 
 -- Example binds, see https://wiki.hypr.land/Configuring/Basics/Binds/ for more
 hl.bind(mainMod .. " + Q", hl.dsp.window.close())

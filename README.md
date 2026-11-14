@@ -103,6 +103,7 @@ All bindings are in `hyprland/hyprland.lua`. The main ones:
   word navigation).
 - `Super+Arrow`: move focus.
 - `Super+Shift+S`: screen capture ([details](quickshell/config/Capture/README.md)).
+- `Super+Shift+L`: lock the screen.
 - `Super+Shift+W`: wallpaper picker ([details](wallpaper/README.md)).
 
 ### Input methods
