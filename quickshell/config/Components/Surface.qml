@@ -9,10 +9,13 @@ Rectangle {
 
     // Another item paints this surface (see IslandGoo); keep only the content.
     property bool bare: false
+    // How far the theme clears this surface; the center island's group follows
+    // Colors.centerClearness instead.
+    property real clearness: Theme.Colors.clearness
 
-    color: bare ? Theme.Colors.transparent : Theme.Colors.surfaceFill
+    color: bare ? Theme.Colors.transparent : Theme.Colors.surfaceFill(clearness)
     border.width: bare ? 0 : 1
-    border.color: Theme.Colors.surfaceEdge
+    border.color: Theme.Colors.surfaceEdge(clearness)
 
     // Negative z draws beneath the surface itself.
     RectangularShadow {

@@ -26,10 +26,20 @@ Singleton {
         NumberAnimation { duration: 400; easing.type: Easing.InOutCubic }
     }
 
-    // A themed color at the current clearness. Premultiplied, so a dark fill fading
-    // out does not pass through a light grey on the way.
-    function themed(solid, clear) {
-        const t = clearness
+    // The center island turns solid while it holds something to read, the dashboard
+    // or a notification, even in the transparent theme. The bar sets the hold.
+    property bool centerHeld: false
+    property real centerClearness: transparentTheme && !centerHeld ? 1 : 0
+    Behavior on centerClearness {
+        NumberAnimation { duration: 400; easing.type: Easing.InOutCubic }
+    }
+
+    // A color between its solid and clear values at clearness `t`, the theme's by
+    // default. Premultiplied, so a dark fill fading out does not pass through a
+    // light grey on the way.
+    function themed(solid, clear, t) {
+        if (t === undefined)
+            t = clearness
         const s = 1 - t
         const a = solid.a * s + clear.a * t
         if (a <= 0)
@@ -52,10 +62,11 @@ Singleton {
     readonly property color highlight: "#1affffff"
     // Cards and tiles inside a surface, and the same under the pointer. Without a
     // surface behind them they turn to a light tint, so no dark block remains.
-    readonly property color surface: themed(solidSurface, tint)
-    readonly property color surfaceHover: themed(solidSurfaceHover, strongTint)
+    // They live in the center island, so they follow its clearness.
+    readonly property color surface: themed(solidSurface, tint, centerClearness)
+    readonly property color surfaceHover: themed(solidSurfaceHover, strongTint, centerClearness)
     // Tracks behind meters and progress.
-    readonly property color track: themed(solidTrack, strongTint)
+    readonly property color track: themed(solidTrack, strongTint, centerClearness)
     readonly property color solidSurface: "#1c1c1a"
     readonly property color solidSurfaceHover: "#262624"
     readonly property color solidTrack: "#2c2c2a"
@@ -81,10 +92,10 @@ Singleton {
     readonly property color scrim: "#88000000"
 
     // Fill, edge and shadow of the shell's floating surfaces (islands and the
-    // dashboard) under the current theme.
-    readonly property color surfaceFill: themed(background, transparent)
-    readonly property color surfaceEdge: themed(edge, transparent)
-    readonly property color surfaceShadow: themed(shadow, transparent)
+    // dashboard) at clearness `t`; see Surface.
+    function surfaceFill(t) { return themed(background, transparent, t) }
+    function surfaceEdge(t) { return themed(edge, transparent, t) }
+    function surfaceShadow(t) { return themed(shadow, transparent, t) }
 
     // Only this shell writes the file, so it is read once and not watched: reloading
     // on our own write can read the old contents back and undo the change. Loading
