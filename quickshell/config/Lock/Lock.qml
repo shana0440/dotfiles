@@ -20,9 +20,24 @@ Scope {
     // PAM service that checks the password; tests point it elsewhere.
     property string pamConfig: "quickshell-lock"
     property string pamDirectory: "/etc/pam.d"
+    // Lock: the background fades in over the desktop, then the card slides down.
+    // Unlock: the card slides up, then the background fades out.
+    // Hyprland's misc:session_lock_xray keeps the desktop drawn beneath it.
+    property bool shown: false
+    readonly property int fadeInDuration: 750
+    readonly property int fadeOutDuration: 500
+    readonly property int slideDuration: 480
 
     function lock() {
-        if (sessionLock.locked) return
+        if (sessionLock.locked) {
+            // Locking again while it leaves: bring it back instead.
+            if (!shown || unlockDelay.running) {
+                unlockDelay.stop()
+                authState = "idle"
+                shown = true
+            }
+            return
+        }
         // Without the PAM service no password could unlock it again.
         pamService.reload()
         if (!pamService.text().length) {
@@ -32,6 +47,7 @@ Scope {
         authState = "idle"
         message = ""
         wallpaperQuery.running = true
+        shown = true
         sessionLock.locked = true
     }
 
@@ -82,11 +98,11 @@ Scope {
         onError: error => root.fail(PamError.toString(error))
     }
 
-    // Long enough to see the result before the screen goes away.
+    // Long enough to see the result before the sheet slides away.
     Timer {
         id: unlockDelay
         interval: 450
-        onTriggered: sessionLock.locked = false
+        onTriggered: root.shown = false
     }
 
     Process {
@@ -119,11 +135,40 @@ Scope {
         id: sessionLock
 
         WlSessionLockSurface {
-            color: Theme.Colors.background
+            id: surface
+            color: Theme.Colors.transparent
+
+            property real fade: 0
+            property real cardIn: 0
+
+            SequentialAnimation {
+                id: enter
+                NumberAnimation { target: surface; property: "fade"; to: 1; duration: root.fadeInDuration; easing.type: Easing.InOutQuad }
+                NumberAnimation { target: surface; property: "cardIn"; to: 1; duration: root.slideDuration; easing.type: Easing.OutCubic }
+            }
+
+            // Still locked until the background is gone.
+            SequentialAnimation {
+                id: leave
+                NumberAnimation { target: surface; property: "cardIn"; to: 0; duration: root.slideDuration; easing.type: Easing.InCubic }
+                NumberAnimation { target: surface; property: "fade"; to: 0; duration: root.fadeOutDuration; easing.type: Easing.InOutQuad }
+                onFinished: if (!root.shown) sessionLock.locked = false
+            }
+
+            Connections {
+                target: root
+                function onShownChanged() {
+                    (root.shown ? leave : enter).stop();
+                    (root.shown ? enter : leave).start()
+                }
+            }
+            Component.onCompleted: if (root.shown) enter.start()
 
             Login.HudScreen {
                 id: screen
                 anchors.fill: parent
+                opacity: surface.fade
+                cardProgress: surface.cardIn
                 mode: "lock"
                 userName: Quickshell.env("USER")
                 hostName: hostname.text().trim()

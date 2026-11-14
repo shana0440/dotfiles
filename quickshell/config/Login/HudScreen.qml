@@ -20,6 +20,9 @@ Item {
     property string sessionId: ""
     // Image path or URL; empty shows the plain background.
     property string wallpaper: ""
+    // 0 = the card waits above the screen, 1 = the card is in place.
+    property real cardProgress: 1
+    readonly property real cardShift: -(1 - cardProgress) * (card.y + card.height + 40)
 
     signal submit(string password)
     signal edited()
@@ -248,10 +251,11 @@ Item {
         onSuspend: root.suspend()
         onReboot: root.reboot()
         onPowerOff: root.powerOff()
+        transform: Translate { y: root.cardShift }
     }
 
-    Bracket { x: card.x - 12; y: card.y - 12; width: 28; height: 28 }
-    Bracket { x: card.x + card.width - 16; y: card.y + card.height - 16; width: 28; height: 28; dx: -1; dy: -1 }
+    Bracket { x: card.x - 12; y: card.y - 12 + root.cardShift; width: 28; height: 28 }
+    Bracket { x: card.x + card.width - 16; y: card.y + card.height - 16 + root.cardShift; width: 28; height: 28; dx: -1; dy: -1 }
 
     // ---------------------------------------------------------------- ruler
 
