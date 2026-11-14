@@ -95,8 +95,14 @@ Item {
         }
         function onPreviewRestarted() {
             life.restart()
-            if (root.phase !== "open")
+            // A notification arriving while the pill collapses springs it open again;
+            // the island stays visible, so nothing else restarts the phase.
+            if (root.phase === "closing") {
+                root.phase = "open"
+                statusIcon.restart()
+            } else if (root.phase !== "open") {
                 return
+            }
             if (Services.Notifications.previewCount > 1)
                 root.gesture("repeat")
             else
