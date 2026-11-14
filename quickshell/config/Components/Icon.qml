@@ -50,6 +50,8 @@ Item {
         back: "chevron-left",
         forward: "chevron-right",
         usage: "gauge",
+        timer: "timer",
+        reset: "rotate-ccw",
         speaker: "volume-2",
         speakerMuted: "volume-x",
         microphoneMuted: "mic-off",

@@ -37,6 +37,7 @@ in
   home.packages = [ pkgs.quickshell pkgs.pipewire playbackMonitor systemStatus launcherBadgeMonitor bluetoothAgent ]
     ++ lib.optionals pkgs.stdenv.isLinux [
       pkgs.cava
+      pkgs.libnotify
       pkgs.wl-clipboard
     ];
 
