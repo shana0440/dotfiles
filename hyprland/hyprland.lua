@@ -44,7 +44,7 @@ hl.config({
 
 -- Set programs that you use
 local terminal    = "kitty"
-local fileManager = "thunar"
+local fileManager = "nautilus"
 local menu        = "vicinae toggle"
 
 
