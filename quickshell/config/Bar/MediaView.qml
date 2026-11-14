@@ -49,40 +49,34 @@ Item {
         width: parent.width - 40
         spacing: 16
 
-        // Source on the left, playback state on the right.
+        // The same header as the other tabs: title, then the source and state under it.
         Item {
             width: parent.width
             height: 32
 
-            Rectangle {
-                width: source.implicitWidth + 24
-                height: parent.height
-                radius: height / 2
-                color: Theme.Colors.surface
-                visible: sourceName.text.length > 0
+            Column {
+                anchors.verticalCenter: parent.verticalCenter
+                width: parent.width - 40
+                spacing: 2
 
-                Row {
-                    id: source
-                    anchors.centerIn: parent
-                    spacing: 8
-
-                    Components.Icon {
-                        anchors.verticalCenter: parent.verticalCenter
-                        width: 16
-                        height: 16
-                        action: "radio"
-                        iconColor: Theme.Colors.muted
-                    }
-                    Text {
-                        id: sourceName
-                        anchors.verticalCenter: parent.verticalCenter
-                        text: root.player?.identity ?? ""
-                        textFormat: Text.PlainText
-                        color: Theme.Colors.muted
-                        font.family: Theme.Fonts.family
-                        font.weight: Theme.Fonts.weight
-                        font.pixelSize: 13
-                    }
+                Text {
+                    text: "Now playing"
+                    color: Theme.Colors.foreground
+                    font.family: Theme.Fonts.family
+                    font.pixelSize: 16
+                    font.bold: true
+                }
+                Text {
+                    readonly property string state: root.isPlaying || Services.Media.playing ? "Playing"
+                        : root.player ? "Paused" : "Nothing playing"
+                    width: parent.width
+                    text: root.player?.identity ? root.player.identity + " · " + state : state
+                    textFormat: Text.PlainText
+                    color: Theme.Colors.muted
+                    font.family: Theme.Fonts.family
+                    font.weight: Theme.Fonts.weight
+                    font.pixelSize: 11
+                    elide: Text.ElideRight
                 }
             }
 
@@ -91,15 +85,6 @@ Item {
                 anchors.verticalCenter: parent.verticalCenter
                 spacing: 8
 
-                Text {
-                    anchors.verticalCenter: parent.verticalCenter
-                    text: root.isPlaying || Services.Media.playing ? "Now playing"
-                        : root.player ? "Paused" : "Idle"
-                    color: Theme.Colors.muted
-                    font.family: Theme.Fonts.family
-                    font.weight: Theme.Fonts.weight
-                    font.pixelSize: 13
-                }
                 Row {
                     anchors.verticalCenter: parent.verticalCenter
                     height: 14
