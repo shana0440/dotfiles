@@ -62,7 +62,6 @@ directory made a Windows reveal probe take 37 seconds. Adding a minimal
 same probe to 1.4 seconds; Eagle's shortcut reached the adapter in 0.8 seconds.
 Do not overwrite an existing `desktop.ini`. This is a per-library workaround,
 not something the launcher automatically writes into users' libraries.
-Host recording: `~/.local/state/eagle-test/host-reveal-fixed.mp4`.
 
 Wine prefixes isolate app configuration, **not filesystem access**.
 
@@ -83,13 +82,11 @@ C# integration and library creation. Re-tested the normal profile after adding
 core fonts: UI text is visibly smoother and the large white helper is hidden.
 Also verified directly on the real Hyprland desktop at 150% scale: automatic
 helper hiding after a fresh launch, native-resolution text, and one main Eagle
-window. Screenshot: `~/.local/state/eagle-test/hyprland-fixed.png`.
+window.
 Native reveal was tested in a separate, copied prefix with a disposable library:
 Eagle's **Open in Explorer** menu opens the correct item directory in Thunar.
 Quoted `/select,` paths with spaces and Unicode were also verified through Wine.
 Helper unit tests: `python3 -B eagle/test-native-reveal.py`.
-Recording: `~/.local/state/eagle-test/native-file-manager.mp4`.
-Screenshot: `~/.local/state/eagle-test/native-file-manager.png`.
 
 A small Wine tray host and rendering warnings can remain, including a failed
 online-download helper request. Browser integration,

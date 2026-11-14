@@ -85,4 +85,4 @@ visible in runtime mount information.
 A read-only Wine directory-listing comparison of the same 27,942 library entries
 returned identical filenames in 90.6 seconds over SMB versus 20.3 and 19.8 seconds
 over NFSv4.0. This measures the metadata-heavy startup operation, not full Eagle
-startup or write compatibility. Results: `~/.local/state/eagle-startup-test/nfs-results.json`.
+startup or write compatibility.

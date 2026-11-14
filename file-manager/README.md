@@ -22,5 +22,4 @@ After `make nixos`, run `thunar -q` so the background Thunar reconnects.
 Clearing `~/.cache/thumbnails/` is always safe; it is regenerated.
 
 Verified in an agent workspace on a private bus: icons before, thumbnails for
-MP4, WebM, WebP, JPEG, and PNG after. Recording:
-`~/.local/state/thumbnail-test/thunar-thumbnails.mp4`.
+MP4, WebM, WebP, JPEG, and PNG after.
