@@ -17,6 +17,7 @@ Item {
     property string message: ""
     property bool capsLock: false
     property string sessionName: ""
+    property string sessionId: ""
     // Image path or URL; empty shows the plain background.
     property string wallpaper: ""
 
@@ -160,7 +161,7 @@ Item {
         x: 56
         y: 44
         spacing: 12
-        Caption { text: root.hostName; color: Theme.Colors.foreground }
+        Caption { text: root.hostName || root.userName; color: Theme.Colors.foreground }
         Caption { text: "//"; color: Theme.Colors.edge }
         Caption { text: root.mode === "login" ? "login" : "locked" }
     }
@@ -240,6 +241,7 @@ Item {
         message: root.message
         capsLock: root.capsLock
         sessionName: root.sessionName
+        sessionId: root.sessionId
         onSubmit: password => root.submit(password)
         onEdited: root.edited()
         onNextSession: root.nextSession()
@@ -294,7 +296,7 @@ Item {
         Caption {
             anchors.horizontalCenter: parent.horizontalCenter
             anchors.bottom: parent.bottom
-            text: "hyprland · quickshell · " + root.hostName
+            text: ["hyprland", "quickshell", root.hostName].filter(part => part).join(" · ")
             font.pixelSize: 10
             font.letterSpacing: 3
         }

@@ -15,6 +15,8 @@ Rectangle {
     property bool capsLock: false
     // Login only: the session to start, cycled with nextSession().
     property string sessionName: ""
+    // Session file without .desktop, for the command line; the name otherwise.
+    property string sessionId: ""
 
     signal submit(string password)
     // Typing after a failure; the wrapper returns to idle.
@@ -205,9 +207,9 @@ Rectangle {
             horizontalAlignment: Text.AlignHCenter
             elide: Text.ElideRight
             textFormat: Text.StyledText
-            text: "<font color='" + Theme.Colors.foreground + "'>" + root.userName + "@" + root.hostName
+            text: "<font color='" + Theme.Colors.foreground + "'>" + root.userName + (root.hostName ? "@" + root.hostName : "")
                 + "</font> ~ ❯ " + (root.mode === "login"
-                    ? "login --session " + root.sessionName.toLowerCase().split(" ")[0]
+                    ? "login --session " + (root.sessionId || root.sessionName.toLowerCase())
                     : "unlock")
             color: Theme.Colors.muted
             font.family: Theme.Fonts.mono
