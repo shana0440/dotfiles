@@ -8,12 +8,14 @@ Components.Island {
     id: root
 
     property bool expanded: false
-    property string expandedView: "calendar"
+    property string expandedView: "home"
     property bool volumeVisible: false
     property int availableHeight: 560
     readonly property bool notificationVisible: Services.Notifications.previewVisible
     readonly property bool showingRecording: activeView === recordingView
     readonly property bool sideIslandsMerged: expanded || notificationVisible || Services.Capture.recording
+    // The dashboard holds the keyboard, except while choosing an input method.
+    readonly property bool keyboardFocusRequired: expanded && !dashboard.inputMethodsOpen
 
     activeView: {
         if (expanded)
@@ -41,6 +43,12 @@ Components.Island {
         Services.Notifications.hidePreview()
         expandedView = view
         expanded = true
+    }
+
+    // The home tab's nested input method page.
+    function openInputMethods() {
+        open("home")
+        dashboard.showInputMethods()
     }
 
     // Next (1) or previous (-1) dashboard tab.
@@ -106,7 +114,7 @@ Components.Island {
             MouseArea {
                 anchors.fill: parent
                 cursorShape: Qt.PointingHandCursor
-                onClicked: root.open("calendar")
+                onClicked: root.open("home")
             }
         },
         VolumeSlider {

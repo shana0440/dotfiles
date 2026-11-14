@@ -113,6 +113,8 @@ first `make home`.
 - `Ctrl+F1` / `Ctrl+F2` / `Ctrl+F3`: English / Mozc / Chewing.
 - `Ctrl+Space`: cycle input methods.
 - `Super+Ctrl+Space`: toggle Hiragana ↔ Katakana in Mozc.
+- The bar shows the current one beside the notification bell; click it, or open
+  the dashboard's home tab (tap `Super`), to pick another.
 - Engine list and shortcuts live in `hyprland/hyprland.nix`; other preferences
   in `fcitx5-configtool`.
 
@@ -135,7 +137,7 @@ Nix store.
 - **iPhone webcam:** see [`nixos/iphone-webcam.md`](nixos/iphone-webcam.md).
 - **NAS mount:** see [`nixos/nas/`](nixos/nas/README.md).
 - **Weather:** the pill left of the bar's clock shows the current weather from
-  [wttr.in](https://wttr.in), located by your public IP; hover it for details.
-  It stays hidden while offline.
+  [wttr.in](https://wttr.in), located by your public IP; hover it for details, or click it to open
+  the dashboard's home tab. It stays hidden while offline.
 - **Agent usage:** the Quickshell dashboard's usage tab shows Claude and Codex
   subscription limits (`agent-usage` on the command line).

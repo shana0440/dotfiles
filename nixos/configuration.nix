@@ -57,7 +57,7 @@
   };
   programs.mosh.enable = true;
 
-  # Controlled from the Quickshell right island, which also runs the pairing agent.
+  # Controlled from the Quickshell dashboard's Bluetooth tab; Quickshell also runs the pairing agent.
   hardware.bluetooth = {
     enable = true;
     powerOnBoot = true;

@@ -15,12 +15,11 @@ PanelWindow {
     readonly property int compactIslandHeight: 32
     readonly property int islandSpacing: 8
     readonly property int reservedTopHeight: islandMargin + compactIslandHeight
-    readonly property bool menuOpen: centerIsland.expanded || rightIsland.expanded
-    readonly property bool menuNeedsKeyboardFocus: centerIsland.expanded || rightIsland.keyboardFocusRequired
+    readonly property bool menuOpen: centerIsland.expanded
+    readonly property bool menuNeedsKeyboardFocus: centerIsland.keyboardFocusRequired
 
     function closeMenus() {
         centerIsland.close()
-        rightIsland.close()
     }
 
     Connections {
@@ -34,22 +33,21 @@ PanelWindow {
         }
     }
 
-    // The expanded center island; toggling opens it on the calendar.
+    // The expanded center island; toggling opens it on the home tab.
     IpcHandler {
         target: "dashboard"
         function toggle(): void {
             if (centerIsland.expanded)
                 root.closeMenus()
             else
-                root.openDashboard("calendar")
+                root.openDashboard("home")
         }
         function open(tab: string): void { root.openDashboard(tab) }
         function close(): void { centerIsland.close() }
     }
 
     function openDashboard(tab) {
-        rightIsland.close()
-        centerIsland.open(["calendar", "media", "audio", "notifications", "network", "bluetooth", "system", "usage", "power"].includes(tab) ? tab : "calendar")
+        centerIsland.open(["home", "media", "audio", "notifications", "network", "bluetooth", "system", "usage", "power"].includes(tab) ? tab : "home")
     }
 
     // Pairing prompts can arrive while the dashboard is closed, e.g. from a remote
@@ -62,12 +60,10 @@ PanelWindow {
         }
     }
 
+    // Escape, bound in Hyprland while the input method page holds no keyboard.
     IpcHandler {
         target: "inputMenu"
-        function close() {
-            if (rightIsland.mode === "input")
-                rightIsland.close()
-        }
+        function close() { root.closeMenus() }
     }
 
     // When a layer drops exclusive keyboard focus without unmapping, Hyprland clears
@@ -75,7 +71,9 @@ PanelWindow {
     // is a no-op and the keyboard goes nowhere. Unmapping an exclusive layer takes the
     // working path, so a throwaway one hands focus back to the previous window.
     onMenuNeedsKeyboardFocusChanged: {
-        if (!menuNeedsKeyboardFocus)
+        if (menuNeedsKeyboardFocus)
+            grabKeyboard()
+        else
             focusCheck.restart()
     }
 
@@ -134,13 +132,13 @@ PanelWindow {
         }
     }
 
-    onMenuOpenChanged: {
-        if (menuOpen) {
-            Qt.callLater(() => {
-                if (root.menuOpen && root.menuNeedsKeyboardFocus)
-                    barContent.forceActiveFocus()
-            })
-        }
+    // Also when the dashboard takes the keyboard back from the input method page.
+    onMenuOpenChanged: grabKeyboard()
+    function grabKeyboard() {
+        Qt.callLater(() => {
+            if (root.menuOpen && root.menuNeedsKeyboardFocus)
+                barContent.forceActiveFocus()
+        })
     }
 
     anchors {
@@ -182,7 +180,7 @@ PanelWindow {
         Region { item: mediaIsland.visible ? mediaIsland : null }
         Region { item: weatherIsland.visible ? weatherIsland : null }
         Region { item: notificationIsland.visible ? notificationIsland : null }
-        Region { item: rightIsland }
+        Region { item: inputIsland.visible ? inputIsland : null }
     }
 
     Variants {
@@ -257,10 +255,9 @@ PanelWindow {
                     || containsBarPoint(mediaIsland, position)
                     || containsBarPoint(weatherIsland, position)
                     || containsBarPoint(notificationIsland, position)
+                    || containsBarPoint(inputIsland, position)
                 if (centerIsland.expanded && !onCenterGroup)
                     centerIsland.close()
-                if (rightIsland.expanded && !containsBarPoint(rightIsland, position))
-                    rightIsland.close()
             }
         }
 
@@ -272,12 +269,10 @@ PanelWindow {
 
         BarComponents.AppsIsland {
             id: appsIsland
-            anchors.right: rightIsland.left
-            anchors.rightMargin: root.islandSpacing
+            anchors.right: parent.right
             height: root.compactIslandHeight
-            availableWidth: Math.max(0, rightIsland.x - root.islandSpacing
-                - (notificationIsland.visible ? notificationIsland.x + notificationIsland.width
-                    : centerIsland.x + centerIsland.width) - root.islandSpacing)
+            availableWidth: Math.max(0, parent.width - root.islandSpacing
+                - (inputIsland.visible ? inputIsland.x + inputIsland.width : centerIsland.x + centerIsland.width))
         }
 
         // Declared first so it paints beneath the islands it draws.
@@ -286,7 +281,8 @@ PanelWindow {
             target: centerIsland
             leading: mediaIsland
             trailing: notificationIsland
-            outer: weatherIsland
+            leadingOuter: weatherIsland
+            trailingOuter: inputIsland
         }
 
         BarComponents.CenterIsland {
@@ -315,6 +311,7 @@ PanelWindow {
             anchors.rightMargin: offset
             gap: root.islandSpacing
             merged: centerIsland.sideIslandsMerged
+            onClicked: centerIsland.open("home")
         }
 
         BarComponents.NotificationIsland {
@@ -327,10 +324,16 @@ PanelWindow {
             onClicked: centerIsland.open("notifications")
         }
 
-        BarComponents.RightIsland {
-            id: rightIsland
-            anchors.right: parent.right
-            availableHeight: Math.max(200, root.height - root.islandMargin * 2)
+        // Rides the notification dot's right edge, which rests inside the center
+        // island while the dot is hidden, so it flows beside whichever is outermost.
+        BarComponents.InputIsland {
+            id: inputIsland
+            bare: centerGoo.ready
+            anchors.left: notificationIsland.right
+            anchors.leftMargin: offset
+            gap: root.islandSpacing
+            merged: centerIsland.sideIslandsMerged
+            onClicked: centerIsland.openInputMethods()
         }
     }
 }

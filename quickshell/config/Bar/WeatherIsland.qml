@@ -4,12 +4,24 @@ import "../Services" as Services
 import "../Theme" as Theme
 
 // The current temperature, flowing out of the island beside it like the side dots.
+// Clicking opens the dashboard's home tab, which shows the weather too.
 Components.MergeableCircle {
     id: root
 
+    signal clicked()
     available: Services.Weather.loaded
     width: content.implicitWidth + 20
+    Accessible.role: Accessible.Button
     Accessible.name: tooltip.text
+    activeFocusOnTab: shown
+    Keys.onReturnPressed: root.clicked()
+    Keys.onSpacePressed: root.clicked()
+
+    Rectangle {
+        anchors.fill: parent
+        radius: height / 2
+        color: mouse.containsMouse || root.activeFocus ? Theme.Colors.highlight : Theme.Colors.transparent
+    }
 
     Row {
         id: content
@@ -37,6 +49,8 @@ Components.MergeableCircle {
         id: mouse
         anchors.fill: parent
         hoverEnabled: true
+        cursorShape: Qt.PointingHandCursor
+        onClicked: root.clicked()
     }
 
     Components.Tooltip {
@@ -45,7 +59,7 @@ Components.MergeableCircle {
             "Feels " + Services.Weather.feelsLike + "°",
             "H " + Services.Weather.high + "° L " + Services.Weather.low + "°"]
             .filter(part => part.length > 0).join(" · ")
-        shown: mouse.containsMouse
+        shown: mouse.containsMouse || root.activeFocus
         alignment: Qt.AlignHCenter
     }
 }

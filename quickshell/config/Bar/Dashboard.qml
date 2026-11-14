@@ -7,11 +7,13 @@ import "../Services" as Services
 Item {
     id: root
 
-    property string tab: "calendar"
+    property string tab: "home"
     property bool active: false
     property date today: new Date()
     property int maximumHeight: 560
-    readonly property alias calendar: calendar
+    readonly property alias calendar: homeView.calendar
+    // Fcitx actions need the editor focused, so the dashboard lets go of the keyboard.
+    readonly property bool inputMethodsOpen: tab === "home" && homeView.inputMethodsOpen
     readonly property Item currentPage: tab === "media" ? mediaView
         : tab === "audio" ? audioView
         : tab === "notifications" ? notificationList
@@ -19,20 +21,20 @@ Item {
         : tab === "bluetooth" ? bluetoothView
         : tab === "system" ? systemView
         : tab === "usage" ? usageView
-        : tab === "power" ? powerView : calendarPage
+        : tab === "power" ? powerView : homeView
     signal tabRequested(string tab)
     signal closeRequested()
 
     readonly property int sidebarWidth: 52
 
     // Every page shares one width so the tabs stay put while the height morphs.
-    readonly property int pageWidth: calendarPage.implicitWidth
+    readonly property int pageWidth: homeView.implicitWidth
 
     width: sidebarWidth + 1 + pageWidth
     height: Math.max(tabs.implicitHeight + 16, currentPage.height)
 
     readonly property var tabList: [
-        { tab: "calendar", icon: "calendar", tooltip: "Calendar" },
+        { tab: "home", icon: "home", tooltip: "Home" },
         { tab: "media", icon: "disc", tooltip: "Now playing" },
         { tab: "audio", icon: "speaker", tooltip: "Audio" },
         { tab: "notifications", icon: "notifications", tooltip: "Notifications" },
@@ -42,6 +44,10 @@ Item {
         { tab: "usage", icon: "usage", tooltip: "Usage" },
         { tab: "power", icon: "poweroff", tooltip: "Power" }
     ]
+
+    function showInputMethods() {
+        homeView.inputMethodsOpen = true
+    }
 
     // Moves to the next (1) or previous (-1) tab, wrapping around.
     function cycle(step) {
@@ -148,17 +154,11 @@ Item {
         activeView: root.currentPage
 
         views: [
-            Row {
-                id: calendarPage
-
-                Calendar {
-                    id: calendar
-                    today: root.today
-                    onCloseRequested: root.closeRequested()
-                }
-                ClockFace {
-                    active: root.active && root.tab === "calendar"
-                }
+            HomeView {
+                id: homeView
+                today: root.today
+                active: root.active && root.tab === "home"
+                onCloseRequested: root.closeRequested()
             },
             MediaView {
                 id: mediaView

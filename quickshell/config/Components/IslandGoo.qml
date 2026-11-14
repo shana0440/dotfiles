@@ -3,9 +3,9 @@ import Quickshell
 import Quickshell.Io
 import "../Theme" as Theme
 
-// Paints an island, its two side circles and an outer pill as one liquid surface: a signed
-// distance field with a smooth union, so a circle leaving or entering the island
-// pulls a neck of the surface with it until it pinches off. While the shader is
+// Paints an island, its two side circles and a rounded box beyond each as one
+// liquid surface: a signed distance field with a smooth union, so a shape leaving
+// or entering the island pulls a neck of the surface with it until it pinches off. While the shader is
 // unavailable the surfaces paint themselves (see `ready`).
 ShaderEffect {
     id: root
@@ -14,8 +14,9 @@ ShaderEffect {
     required property Item target
     required property Item leading
     required property Item trailing
-    // A MergeableCircle pill beyond `leading`.
-    required property Item outer
+    // Wider MergeableCircles beyond `leading` and `trailing`.
+    required property Item leadingOuter
+    required property Item trailingOuter
     // Room for the drop shadow around the shapes.
     property real padding: 28
     readonly property bool ready: shaderFile !== "" && status === ShaderEffect.Compiled
@@ -24,15 +25,22 @@ ShaderEffect {
     readonly property real islandLeft: target.x + target.shift.x
     readonly property real islandTop: target.y + target.shift.y
 
-    x: Math.min(islandLeft, leading.x, outer.x) - padding
-    y: Math.min(islandTop, leading.y, trailing.y) - padding
-    width: Math.max(islandLeft + target.width, trailing.x + trailing.width) + padding - x
-    height: Math.max(islandTop + target.height, leading.y + leading.height, trailing.y + trailing.height)
-        + padding - y
+    x: Math.min(islandLeft, leading.x, leadingOuter.x) - padding
+    y: Math.min(islandTop, leading.y, trailing.y, leadingOuter.y, trailingOuter.y) - padding
+    width: Math.max(islandLeft + target.width, trailing.x + trailing.width, trailingOuter.x + trailingOuter.width)
+        + padding - x
+    height: Math.max(islandTop + target.height, leading.y + leading.height, trailing.y + trailing.height,
+        leadingOuter.y + leadingOuter.height, trailingOuter.y + trailingOuter.height) + padding - y
     visible: shaderFile !== ""
 
     function circle(item) {
         return Qt.vector4d(item.x + item.width / 2 - x, item.y + item.height / 2 - y, item.diameter, item.blend)
+    }
+
+    // Center xy and painted size zw.
+    function box(item) {
+        return Qt.vector4d(item.x + item.width / 2 - x, item.y + item.height / 2 - y,
+            item.paintedWidth, item.paintedHeight)
     }
 
     property vector2d resolution: Qt.vector2d(width, height)
@@ -43,10 +51,10 @@ ShaderEffect {
     property real islandRadius: target.radius
     property vector4d leftCircle: circle(leading)
     property vector4d rightCircle: circle(trailing)
-    // Center xy and painted size zw.
-    property vector4d outerPill: Qt.vector4d(outer.x + outer.width / 2 - x, outer.y + outer.height / 2 - y,
-        outer.paintedWidth, outer.paintedHeight)
-    property real outerBlend: outer.blend
+    property vector4d leftOuter: box(leadingOuter)
+    property vector2d leftOuterShape: Qt.vector2d(leadingOuter.paintedRadius, leadingOuter.blend)
+    property vector4d rightOuter: box(trailingOuter)
+    property vector2d rightOuterShape: Qt.vector2d(trailingOuter.paintedRadius, trailingOuter.blend)
 
     fragmentShader: shaderFile ? "file://" + shaderFile.split("/").map(encodeURIComponent).join("/") : ""
 
