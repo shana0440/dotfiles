@@ -85,6 +85,32 @@ class LibraryTests(unittest.TestCase):
         self.assertEqual(run.call_args.args[0][:3], ["awww", "img", str(image)])
         self.assertTrue(run.call_args.kwargs["check"])
 
+    def test_publish_login_writes_readable_jpeg(self):
+        image = self.image()
+        target = self.root / "login" / "wallpaper.jpg"
+        target.parent.mkdir()
+        with patch.dict(os.environ, {"LOGIN_WALLPAPER": str(target)}):
+            library.publish_login(image)
+        self.assertEqual(target.read_bytes()[:3], b"\xff\xd8\xff")
+        self.assertEqual(target.stat().st_mode & 0o777, 0o644)
+        self.assertEqual(list(target.parent.iterdir()), [target])
+
+    def test_publish_login_skips_missing_folder(self):
+        target = self.root / "absent" / "wallpaper.jpg"
+        with patch.dict(os.environ, {"LOGIN_WALLPAPER": str(target)}):
+            library.publish_login(self.image())
+        self.assertFalse(target.parent.exists())
+
+    def test_set_survives_failed_login_publish(self):
+        image = self.image()
+        with patch.object(sys, "argv", ["library", "set", str(image)]), patch.object(
+            library, "set_wallpaper"
+        ) as applied, patch.object(
+            library, "publish_login", side_effect=OSError("read-only")
+        ):
+            library.main()
+        applied.assert_called_once_with(image)
+
     def test_set_propagates_daemon_failure(self):
         image = self.image()
         with patch.object(sys, "argv", ["library", "set", str(image)]), patch.object(

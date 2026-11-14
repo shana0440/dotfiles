@@ -37,6 +37,8 @@ small pool is kept and each map is replaced after use.
 
 - Thumbnails: `${XDG_CACHE_HOME:-~/.cache}/wallpaper/thumbnails`
 - Transition maps: `${XDG_CACHE_HOME:-~/.cache}/wallpaper/colonies`
+- Login screen copy: `/var/lib/login-ui/wallpaper.jpg` (`LOGIN_WALLPAPER`), a
+  1440p JPEG the SDDM greeter can read; skipped when the folder is missing.
 - `WALLPAPER_DIR` overrides the wallpaper folder.
 - `WALLPAPER_SHELL` / `WALLPAPER_SHADER` override the Quickshell config and
   shader paths (useful for testing in isolation).
