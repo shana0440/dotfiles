@@ -14,6 +14,12 @@ Components.MergeableCircle {
     Keys.onReturnPressed: root.clicked()
     Keys.onSpacePressed: root.clicked()
 
+    Rectangle {
+        anchors.fill: parent
+        radius: height / 2
+        color: mouse.containsMouse || root.activeFocus ? Theme.Colors.highlight : Theme.Colors.transparent
+    }
+
     Components.Icon {
         anchors.centerIn: parent
         action: "notifications"
@@ -42,6 +48,7 @@ Components.MergeableCircle {
 
     Components.Tooltip {
         text: "Notifications · " + Services.Notifications.count
-        shown: mouse.containsMouse
+        shown: mouse.containsMouse || root.activeFocus
+        alignment: Qt.AlignHCenter
     }
 }

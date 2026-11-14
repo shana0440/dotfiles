@@ -2,26 +2,32 @@ import QtQuick
 import QtQuick.Effects
 import "../Theme" as Theme
 
-// A floating surface in Ding's style: a hairline edge and a soft drop shadow.
+// A floating surface in Ding's style: a hairline edge and a soft drop shadow. The
+// transparent theme clears the fill and edge, and with the fill the shadow.
 Rectangle {
     id: root
 
     // Another item paints this surface (see IslandGoo); keep only the content.
     property bool bare: false
+    // How far the theme clears this surface; the center island's group follows
+    // Colors.centerClearness instead.
+    property real clearness: Theme.Colors.clearness
 
-    color: bare ? Theme.Colors.transparent : Theme.Colors.background
+    color: bare ? Theme.Colors.transparent : Theme.Colors.surfaceFill(clearness)
     border.width: bare ? 0 : 1
-    border.color: Theme.Colors.edge
+    border.color: Theme.Colors.surfaceEdge(clearness)
 
     // Negative z draws beneath the surface itself.
     RectangularShadow {
         z: -1
         anchors.fill: parent
-        visible: !root.bare && root.visible && root.opacity > 0 && root.width > 0
+        visible: !root.bare && root.color.a > 0 && root.visible && root.opacity > 0 && root.width > 0
         radius: root.radius
         offset.y: 4
         blur: 12
         spread: -4
-        color: Theme.Colors.shadow
+        // Fades with the fill, so a surface clearing for the transparent theme
+        // takes its shadow with it.
+        color: Qt.alpha(Theme.Colors.shadow, Theme.Colors.shadow.a * root.color.a)
     }
 }

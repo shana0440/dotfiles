@@ -70,7 +70,7 @@ Item {
         height: Math.max(112, (root.fillHeight - 40 - header.height - content.spacing - grid.rowSpacing) / 2)
         radius: 12
         color: armed ? Theme.Colors.foreground
-            : tileMouse.containsMouse || activeFocus ? Qt.lighter(Theme.Colors.surface, 1.35) : Theme.Colors.surface
+            : tileMouse.containsMouse || activeFocus ? Theme.Colors.surfaceHover : Theme.Colors.surface
         activeFocusOnTab: true
         Accessible.role: Accessible.Button
         Accessible.name: armed ? armedLabel : label

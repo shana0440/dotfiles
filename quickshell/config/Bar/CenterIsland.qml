@@ -101,6 +101,12 @@ Components.Island {
             width: dateTime.implicitWidth + 24
             height: 32
 
+            Rectangle {
+                anchors.fill: parent
+                radius: height / 2
+                color: clockMouse.containsMouse ? Theme.Colors.highlight : Theme.Colors.transparent
+            }
+
             Text {
                 id: dateTime
                 font.family: Theme.Fonts.family
@@ -112,7 +118,9 @@ Components.Island {
             }
 
             MouseArea {
+                id: clockMouse
                 anchors.fill: parent
+                hoverEnabled: true
                 cursorShape: Qt.PointingHandCursor
                 onClicked: root.open("home")
             }

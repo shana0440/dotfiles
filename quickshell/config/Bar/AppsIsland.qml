@@ -141,14 +141,19 @@ Components.Surface {
     }
 
     // Keep the wheel target outside the scrolling content so it never scrolls away.
-    MouseArea {
+    // A handler rather than a MouseArea: a MouseArea above the buttons would set the
+    // arrow cursor over them and hide their pointing hand.
+    Item {
         anchors.fill: parent
-        acceptedButtons: Qt.NoButton
-        onWheel: event => {
-            const delta = event.angleDelta.y || event.angleDelta.x
-            appList.contentX = Math.max(0, Math.min(appList.contentWidth - appList.width,
-                appList.contentX - delta / 120 * (root.buttonSize + root.buttonSpacing)))
-            event.accepted = true
+
+        WheelHandler {
+            acceptedDevices: PointerDevice.Mouse | PointerDevice.TouchPad
+            onWheel: event => {
+                const delta = event.angleDelta.y || event.angleDelta.x
+                appList.contentX = Math.max(0, Math.min(appList.contentWidth - appList.width,
+                    appList.contentX - delta / 120 * (root.buttonSize + root.buttonSpacing)))
+                event.accepted = true
+            }
         }
     }
 }

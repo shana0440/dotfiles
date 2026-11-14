@@ -3,8 +3,8 @@ import Quickshell.Hyprland
 import "../Theme" as Theme
 import "../Components" as Components
 
-// One workspace as a numbered dot: white and stretched when focused, grey when it
-// has windows. Empty workspaces hide unless focused, so the row lists only what is
+// One workspace as a numbered dot: white and stretched when focused, half-clear
+// white when it has windows, so it takes on what lies behind the island. Empty workspaces hide unless focused, so the row lists only what is
 // in use. The item is a little wider than the dot to give an easy target.
 Item {
     id: root
@@ -28,8 +28,14 @@ Item {
         height: 20
         radius: height / 2
         // White is the shell's emphasis; hover brightens without looking focused.
+        // On the black island the others are a faint white chip with white digits;
+        // over the wallpaper they are half-clear white with dark digits. Both follow
+        // the theme's clearness, so they shift with it when the theme changes.
+        readonly property real clear: Theme.Colors.clearness
         color: root.focused ? Theme.Colors.foreground
-            : mouse.containsMouse ? Qt.rgba(0.98, 0.98, 0.98, 0.7) : Theme.Colors.muted
+            : Qt.alpha(Theme.Colors.foreground, mouse.containsMouse
+                ? 0.28 + (0.7 - 0.28) * clear
+                : 0.18 + (0.5 - 0.18) * clear)
 
         Behavior on color {
             ColorAnimation { duration: 150 }
@@ -55,11 +61,16 @@ Item {
             y: (dot.height - ink.tightBoundingRect.height) / 2 - ink.tightBoundingRect.y - baselineOffset
             // Workspace 10 is Alt+0, so it reads as 0 like its key.
             text: root.workspaceId % 10
-            color: Theme.Colors.background
+            color: root.focused ? Theme.Colors.background
+                : Theme.Colors.themed(Theme.Colors.foreground, Theme.Colors.background)
             font.family: Theme.Fonts.family
             font.weight: Theme.Fonts.weight
             font.pixelSize: 12
             font.features: ({ "tnum": 1 })
+
+            Behavior on color {
+                ColorAnimation { duration: 150 }
+            }
         }
     }
 

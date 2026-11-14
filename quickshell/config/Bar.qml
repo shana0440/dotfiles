@@ -25,6 +25,13 @@ PanelWindow {
         value: root.menuNeedsKeyboardFocus
     }
 
+    // The center island turns solid while the dashboard or a notification is open.
+    Binding {
+        target: Theme.Colors
+        property: "centerHeld"
+        value: root.menuOpen || centerIsland.notificationVisible
+    }
+
     function closeMenus() {
         centerIsland.close()
     }
@@ -303,6 +310,7 @@ PanelWindow {
         BarComponents.CenterIsland {
             id: centerIsland
             bare: centerGoo.ready
+            clearness: Theme.Colors.centerClearness
             anchors.horizontalCenter: parent.horizontalCenter
             availableHeight: Math.min(560, Math.max(144, root.height - root.islandMargin * 2))
         }
@@ -310,6 +318,7 @@ PanelWindow {
         BarComponents.MediaIsland {
             id: mediaIsland
             bare: centerGoo.ready
+            clearness: Theme.Colors.centerClearness
             anchors.right: centerIsland.left
             anchors.rightMargin: offset
             gap: root.islandSpacing
@@ -324,6 +333,7 @@ PanelWindow {
         BarComponents.WeatherIsland {
             id: weatherIsland
             bare: centerGoo.ready
+            clearness: Theme.Colors.centerClearness
             anchors.right: mediaIsland.left
             anchors.rightMargin: offset
             gap: root.islandSpacing
@@ -334,6 +344,7 @@ PanelWindow {
         BarComponents.NotificationIsland {
             id: notificationIsland
             bare: centerGoo.ready
+            clearness: Theme.Colors.centerClearness
             anchors.left: centerIsland.right
             anchors.leftMargin: offset
             gap: root.islandSpacing
@@ -348,6 +359,7 @@ PanelWindow {
         BarComponents.InputIsland {
             id: inputIsland
             bare: centerGoo.ready
+            clearness: Theme.Colors.centerClearness
             anchors.left: notificationIsland.right
             anchors.leftMargin: offset
             gap: root.islandSpacing

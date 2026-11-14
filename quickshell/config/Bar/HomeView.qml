@@ -132,6 +132,20 @@ Item {
             ClockFace {
                 id: clockFace
                 active: root.active && !root.inputMethodsOpen
+
+                // Switches the shell between the solid and transparent themes.
+                Components.IconButton {
+                    anchors.top: parent.top
+                    anchors.right: parent.right
+                    anchors.margins: 8
+                    width: 32
+                    height: 32
+                    iconSize: 18
+                    icon: "theme"
+                    iconColor: Theme.Colors.muted
+                    tooltip: Theme.Colors.transparentTheme ? "Use solid theme" : "Use transparent theme"
+                    onClicked: Theme.Colors.toggleTheme()
+                }
             }
         }
 

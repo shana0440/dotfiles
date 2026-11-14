@@ -30,6 +30,7 @@ Item {
         pause: "pause",
         close: "x",
         settings: "settings",
+        theme: "palette",
         systemStatus: "activity",
         screenshot: "camera",
         screenshotRegion: "scan",

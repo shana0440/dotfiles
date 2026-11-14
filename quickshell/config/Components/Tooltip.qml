@@ -68,6 +68,10 @@ Item {
             width: Math.min(label.implicitWidth + 16, parent.width)
             height: 26
             radius: 6
+            // A label with no fill would be lost against the wallpaper; stay solid in
+            // every theme.
+            color: Theme.Colors.background
+            border.color: Theme.Colors.edge
 
             Text {
                 id: label
