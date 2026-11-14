@@ -1,0 +1,71 @@
+# Sunset — 1280x720, with proportional positioning for fallback video modes.
+title-text: ""
+desktop-image: "background.png"
+desktop-image-scale-method: "stretch"
+desktop-color: "#0c0c0d"
+terminal-font: "DejaVu Sans Regular 18"
+terminal-left: "5%"
+terminal-top: "15%"
+terminal-width: "90%"
+terminal-height: "70%"
+
++ label {
+  left = 5%
+  top = 15%
+  width = 46%
+  height = 40
+  text = "NixOS"
+  font = "DejaVu Sans Regular 28"
+  color = "#fafafa"
+}
+
++ label {
+  left = 5%
+  top = 22%
+  width = 46%
+  height = 24
+  text = "Choose an operating system"
+  font = "DejaVu Sans Regular 18"
+  color = "#a3a29d"
+}
+
++ boot_menu {
+  left = 5%-32
+  top = 30%
+  width = 46%+48
+  height = 44%
+  item_font = "DejaVu Sans Regular 18"
+  item_color = "#fafafa"
+  selected_item_color = "#fafafa"
+  item_height = 40
+  item_padding = 16
+  item_spacing = 16
+  icon_width = 0
+  icon_height = 0
+  item_icon_space = 0
+  # Same-size transparent frame keeps text in place when the selection moves.
+  item_pixmap_style = "item_*.png"
+  selected_item_pixmap_style = "selected_*.png"
+  scrollbar = true
+}
+
++ label {
+  id = "__timeout__"
+  left = 5%
+  top = 79%
+  width = 46%
+  height = 24
+  text = "Starting in %d seconds"
+  font = "DejaVu Sans Regular 18"
+  color = "#a3a29d"
+}
+
++ label {
+  left = 5%
+  top = 87%
+  width = 48%
+  height = 24
+  text = "↑ ↓  Select     Enter  Boot     E  Edit     C  Console"
+  font = "DejaVu Sans Regular 14"
+  color = "#a3a29d"
+}
