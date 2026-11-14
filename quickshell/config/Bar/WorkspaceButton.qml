@@ -24,7 +24,8 @@ Item {
         id: dot
         anchors.centerIn: parent
         width: widthSpring.value
-        height: 16
+        // Matches the apps island's icons.
+        height: 20
         radius: height / 2
         // White is the shell's emphasis; hover brightens without looking focused.
         color: root.focused ? Theme.Colors.foreground
@@ -36,7 +37,7 @@ Item {
 
         Components.Spring {
             id: widthSpring
-            to: root.focused ? 32 : 16
+            to: root.focused ? 40 : 20
             stiffness: Theme.Motion.morphStiffness
             damping: Theme.Motion.morphDamping
         }
@@ -52,11 +53,12 @@ Item {
             id: label
             x: (dot.width - ink.tightBoundingRect.width) / 2 - ink.tightBoundingRect.x
             y: (dot.height - ink.tightBoundingRect.height) / 2 - ink.tightBoundingRect.y - baselineOffset
-            text: root.workspaceId
+            // Workspace 10 is Alt+0, so it reads as 0 like its key.
+            text: root.workspaceId % 10
             color: Theme.Colors.background
             font.family: Theme.Fonts.family
             font.weight: Theme.Fonts.weight
-            font.pixelSize: root.workspaceId >= 10 ? 9 : 10
+            font.pixelSize: 12
             font.features: ({ "tnum": 1 })
         }
     }
