@@ -21,6 +21,7 @@ Item {
         : tab === "bluetooth" ? bluetoothView
         : tab === "system" ? systemView
         : tab === "usage" ? usageView
+        : tab === "pomodoro" ? pomodoroView
         : tab === "power" ? powerView : homeView
     signal tabRequested(string tab)
     signal closeRequested()
@@ -42,6 +43,7 @@ Item {
         { tab: "bluetooth", icon: "bluetooth", tooltip: "Bluetooth" },
         { tab: "system", icon: "systemStatus", tooltip: "System" },
         { tab: "usage", icon: "usage", tooltip: "Usage" },
+        { tab: "pomodoro", icon: "timer", tooltip: "Pomodoro" },
         { tab: "power", icon: "poweroff", tooltip: "Power" }
     ]
 
@@ -134,6 +136,16 @@ Item {
                     color: Theme.Colors.success
                     visible: tabButton.modelData.tab === "media" && Services.Media.playing
                 }
+                Rectangle {
+                    anchors.top: parent.top
+                    anchors.right: parent.right
+                    anchors.margins: 7
+                    width: 7
+                    height: 7
+                    radius: 4
+                    color: Theme.Colors.foreground
+                    visible: tabButton.modelData.tab === "pomodoro" && Services.Pomodoro.running
+                }
             }
         }
     }
@@ -198,6 +210,11 @@ Item {
                 id: usageView
                 width: root.pageWidth
                 active: root.active && root.tab === "usage"
+            },
+            PomodoroView {
+                id: pomodoroView
+                width: root.pageWidth
+                active: root.active && root.tab === "pomodoro"
             },
             PowerView {
                 id: powerView

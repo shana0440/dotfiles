@@ -98,7 +98,8 @@ Components.Island {
     views: [
         Item {
             id: clockView
-            width: dateTime.implicitWidth + 24
+            readonly property bool pomodoroShown: Services.Pomodoro.running
+            width: clockRow.implicitWidth + 24
             height: 32
 
             Rectangle {
@@ -107,22 +108,53 @@ Components.Island {
                 color: clockMouse.containsMouse ? Theme.Colors.highlight : Theme.Colors.transparent
             }
 
-            Text {
-                id: dateTime
-                font.family: Theme.Fonts.family
-                font.weight: Theme.Fonts.weight
-                anchors.centerIn: parent
-                text: Qt.formatDateTime(clock.date, "ddd d MMM · hh:mm A")
-                color: Theme.Colors.foreground
-                font.pixelSize: 14
-            }
-
             MouseArea {
                 id: clockMouse
                 anchors.fill: parent
                 hoverEnabled: true
                 cursorShape: Qt.PointingHandCursor
                 onClicked: root.open("home")
+            }
+
+            Row {
+                id: clockRow
+                anchors.centerIn: parent
+                spacing: 6
+
+                Text {
+                    anchors.verticalCenter: parent.verticalCenter
+                    font.family: Theme.Fonts.family
+                    font.weight: Theme.Fonts.weight
+                    text: Qt.formatDateTime(clock.date, "ddd d MMM · hh:mm A")
+                    color: Theme.Colors.foreground
+                    font.pixelSize: 14
+                }
+                Text {
+                    anchors.verticalCenter: parent.verticalCenter
+                    visible: clockView.pomodoroShown
+                    font.family: Theme.Fonts.family
+                    font.weight: Theme.Fonts.weight
+                    text: "·"
+                    color: Theme.Colors.foreground
+                    font.pixelSize: 14
+                }
+                // The running pomodoro, which opens its tab.
+                Item {
+                    anchors.verticalCenter: parent.verticalCenter
+                    visible: clockView.pomodoroShown
+                    width: pomodoroRing.implicitWidth
+                    height: pomodoroRing.implicitHeight
+
+                    PomodoroRing {
+                        id: pomodoroRing
+                    }
+                    MouseArea {
+                        anchors.fill: parent
+                        anchors.margins: -4
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: root.open("pomodoro")
+                    }
+                }
             }
         },
         VolumeSlider {

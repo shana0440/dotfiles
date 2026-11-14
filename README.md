@@ -141,3 +141,6 @@ Nix store.
   the dashboard's home tab. It stays hidden while offline.
 - **Agent usage:** the Quickshell dashboard's usage tab shows Claude and Codex
   subscription limits (`agent-usage` on the command line).
+- **Pomodoro:** the dashboard's pomodoro tab runs 25-minute focus sessions with
+  5-minute breaks and a 15-minute break after every fourth. A notification marks
+  the end of each phase. `quickshell ipc call pomodoro toggle` starts or pauses it.

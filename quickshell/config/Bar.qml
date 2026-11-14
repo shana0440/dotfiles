@@ -61,7 +61,7 @@ PanelWindow {
     }
 
     function openDashboard(tab) {
-        centerIsland.open(["home", "media", "audio", "notifications", "network", "bluetooth", "system", "usage", "power"].includes(tab) ? tab : "home")
+        centerIsland.open(["home", "media", "audio", "notifications", "network", "bluetooth", "system", "usage", "pomodoro", "power"].includes(tab) ? tab : "home")
     }
 
     // Pairing prompts can arrive while the dashboard is closed, e.g. from a remote
