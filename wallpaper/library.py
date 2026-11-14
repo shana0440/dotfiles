@@ -143,23 +143,16 @@ def set_wallpaper(image):
                         "--transition-duration", "0.35"], check=True, timeout=5)
 
 
-def publish_login(image):
-    # The login screen runs before the session, as another user that cannot
-    # read ~, so it shows a copy kept at LOGIN_WALLPAPER. Hosts without that
-    # folder (nixos/login.nix creates it) have no such login screen.
-    target = os.environ.get("LOGIN_WALLPAPER")
-    if not target or not Path(target).parent.is_dir():
-        return
-    target = Path(target)
-    fd, temp = tempfile.mkstemp(suffix=".jpg", dir=target.parent)
-    os.close(fd)
+def record_current(image):
+    # The current wallpaper, for anything that follows it: one absolute path,
+    # replaced atomically so a watcher never reads half a file.
+    state = Path(os.environ.get("XDG_STATE_HOME", str(Path.home() / ".local/state"))) / "wallpaper"
+    state.mkdir(parents=True, exist_ok=True)
+    fd, temp = tempfile.mkstemp(dir=state)
     try:
-        subprocess.run([
-            "magick", f"{image}[0]", "-auto-orient", "-resize", "2560x1440^",
-            "-strip", "-quality", "90", temp,
-        ], check=True, capture_output=True, timeout=60)
-        os.chmod(temp, 0o644)
-        os.replace(temp, target)
+        with os.fdopen(fd, "w") as file:
+            file.write(f"{image}\n")
+        os.replace(temp, state / "current")
     finally:
         Path(temp).unlink(missing_ok=True)
 
@@ -172,11 +165,7 @@ def main():
         if not image.is_file() or image.suffix.lower() not in EXTENSIONS:
             raise ValueError("Choose a JPG, PNG, or WebP image")
         set_wallpaper(image)
-        try:
-            publish_login(image)
-        except (OSError, subprocess.SubprocessError) as error:
-            # The desktop changed; a stale login wallpaper is not worth failing over.
-            print(f"Login wallpaper not updated: {error}", file=sys.stderr)
+        record_current(image)
         return
     directory = Path(os.environ["WALLPAPER_DIR"]).expanduser().resolve()
     cache = Path(os.environ.get("XDG_CACHE_HOME", str(Path.home() / ".cache"))) / "wallpaper/thumbnails"

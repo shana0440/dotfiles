@@ -25,10 +25,8 @@ let
   '';
   setWallpaper = pkgs.writeShellApplication {
     name = "wallpaper-set";
-    runtimeInputs = [ pkgs.awww pkgs.quickshell pkgs.imagemagick colonies ];
+    runtimeInputs = [ pkgs.awww pkgs.quickshell colonies ];
     text = ''
-      # Copy for the login screen; nixos/login.nix creates the folder.
-      export LOGIN_WALLPAPER=/var/lib/login-ui/wallpaper.jpg
       exec ${python}/bin/python3 ${./library.py} set "$@"
     '';
   };
