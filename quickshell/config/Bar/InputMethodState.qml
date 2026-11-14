@@ -1,13 +1,11 @@
 import QtQuick
-import Quickshell.Services.SystemTray
+import "../Services" as Services
 
-// The current Fcitx input method, read from its tray icon.
+// Labels for the current Fcitx input method (see Services/InputMethod).
 QtObject {
     id: root
 
-    // Fcitx publishes engine AND Mozc kana-mode changes through its tray icon.
-    // Its tooltip title can be stale, so do not use it as the current state.
-    readonly property var inputItem: SystemTray.items.values.find(item => item.id === "Fcitx") ?? null
+    readonly property var inputItem: Services.InputMethod.inputItem
     readonly property var states: ({
         "input-keyboard-symbolic": ["EN", "English"],
         "input-keyboard": ["EN", "English"],
@@ -20,7 +18,7 @@ QtObject {
         "fcitx_mozc_direct": ["A", "Japanese · Direct input"],
         "fcitx-chewing": ["注音", "Traditional Chinese · Zhuyin"]
     })
-    readonly property var stateInfo: states[inputItem?.icon.replace("image://icon/", "") ?? ""] ?? null
+    readonly property var stateInfo: states[Services.InputMethod.icon] ?? null
     readonly property string label: !inputItem ? "IM?" : stateInfo?.[0] ?? "IM"
     readonly property string description: !inputItem ? "Fcitx5 unavailable" : stateInfo?.[1] ?? "Input method"
 }

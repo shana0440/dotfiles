@@ -18,6 +18,13 @@ PanelWindow {
     readonly property bool menuOpen: centerIsland.expanded
     readonly property bool menuNeedsKeyboardFocus: centerIsland.keyboardFocusRequired
 
+    // Holding the keyboard unfocuses the editor whose input method Fcitx reports.
+    Binding {
+        target: Services.InputMethod
+        property: "held"
+        value: root.menuNeedsKeyboardFocus
+    }
+
     function closeMenus() {
         centerIsland.close()
     }
@@ -227,6 +234,14 @@ PanelWindow {
         anchors.rightMargin: root.islandMargin
         focus: true
         Keys.onEscapePressed: root.closeMenus()
+        // Fcitx's cycling hotkey (hyprland.nix), which it cannot see from here.
+        Keys.onPressed: event => {
+            if (root.menuNeedsKeyboardFocus && event.key === Qt.Key_Space
+                    && (event.modifiers & ~Qt.KeypadModifier) === Qt.ControlModifier) {
+                Services.InputMethod.next()
+                event.accepted = true
+            }
+        }
         // Tab and Shift+Tab step through the dashboard tabs while it is open.
         Keys.onTabPressed: event => {
             if (centerIsland.expanded)

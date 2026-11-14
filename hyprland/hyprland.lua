@@ -442,9 +442,11 @@ hl.bind("CTRL + right", function() focusAdjacentWorkspace(1) end)
 -- Mission Control: every workspace and the current one's windows, like macOS.
 hl.bind("CTRL + up", hl.dsp.exec_cmd("quickshell --path ~/.config/quickshell ipc call overview toggle"))
 
--- Select an input method directly without cycling or changing workspaces.
+-- Select an input method directly without cycling or changing workspaces. The bar
+-- is told too, since Fcitx cannot report it while the dashboard holds the keyboard.
 for key, inputMethod in ipairs({ "keyboard-us", "mozc", "chewing" }) do
-    hl.bind("CTRL + F" .. key, hl.dsp.exec_cmd("fcitx5-remote -s " .. inputMethod))
+    hl.bind("CTRL + F" .. key, hl.dsp.exec_cmd("fcitx5-remote -s " .. inputMethod
+        .. " && quickshell --path ~/.config/quickshell ipc call inputMethod selected " .. inputMethod))
 end
 
 hl.bind(mainMod .. " + CTRL + SPACE", hl.dsp.exec_cmd("hypr-toggle-kana"))

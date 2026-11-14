@@ -4,6 +4,7 @@ import Quickshell.Io
 import Quickshell.Hyprland
 import "../Theme" as Theme
 import "../Components" as Components
+import "../Services" as Services
 
 // Fcitx's input methods and, for Mozc, its kana modes, chosen through Fcitx's own
 // tray menu actions.
@@ -13,7 +14,7 @@ Item {
     property bool active: false
     property var inputItem: null
     readonly property bool available: inputItem?.hasMenu === true
-    readonly property bool japanese: inputItem?.icon.startsWith("image://icon/fcitx_mozc") === true
+    readonly property bool japanese: Services.InputMethod.icon.startsWith("fcitx_mozc")
     // Keep Fcitx as the only writer of input state; these are its live menu actions.
     property var inputEntries: inputMenu.children.values.filter(entry => entry.buttonType === QsMenuButtonType.RadioButton)
     readonly property var mozcMenu: inputMenu.children.values.find(entry => entry.icon.endsWith("/fcitx_mozc_tool")) ?? null
