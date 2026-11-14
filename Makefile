@@ -12,9 +12,10 @@ NIX_ARCH = $(firstword $(subst -, ,$(NIX_SYSTEM)))
 
 IS_WSL = $(shell if [ -n "$$WSL_DISTRO_NAME" ] || grep -qi microsoft /proc/sys/kernel/osrelease 2>/dev/null; then printf true; else printf false; fi)
 
-# Refresh every flake dependency, bypassing cached downloads; apply with make home.
+# Refresh every flake dependency, bypassing cached downloads, then apply it.
 update:
 	nix $(NIX_FLAGS) flake update --refresh --flake "$(DOTFILES)"
+	$(MAKE) home
 
 nixos:
 	sudo nixos-rebuild switch -I "nixos-config=$(DOTFILES)/nixos/configuration.nix"
