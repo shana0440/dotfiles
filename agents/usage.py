@@ -4,7 +4,8 @@ Reads the OAuth logins saved by Pi, falling back to Claude Code's and Codex CLI'
 own files, and asks the usage endpoints behind Claude Code's /usage and Codex's
 /status. Logins are only read, never refreshed: refreshing rotates the saved
 refresh token and would sign the owning tool out. Output carries limits only,
-never tokens, emails or account IDs.
+never tokens, emails or account IDs. With --stream, flushes one JSON line per
+provider as it finishes instead of waiting for both.
 
 `agent-usage reset-codex [CREDIT_ID]` redeems one of Codex's earned limit resets
 (the next available one when no ID is given), as Codex's /usage menu does, and
@@ -18,7 +19,7 @@ import time
 import urllib.error
 import urllib.request
 import uuid
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -193,6 +194,14 @@ def main():
     if sys.argv[1:2] == ["reset-codex"]:
         json.dump(safely(lambda: reset_codex(sys.argv[2] if len(sys.argv) > 2 else None)), sys.stdout)
         sys.stdout.write("\n")
+        return
+    if sys.argv[1:2] == ["--stream"]:
+        with ThreadPoolExecutor(max_workers=2) as pool:
+            pending = {pool.submit(safely, provider): name
+                       for name, provider in [("claude", claude), ("codex", codex)]}
+            for future in as_completed(pending):
+                print(json.dumps({"checkedAt": datetime.now(timezone.utc).isoformat(),
+                                  pending[future]: future.result()}), flush=True)
         return
     with ThreadPoolExecutor(max_workers=2) as pool:
         claude_result, codex_result = pool.map(safely, [claude, codex])

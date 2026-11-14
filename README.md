@@ -288,7 +288,8 @@ The same module installs `agent-usage`, which prints the Claude and Codex
 back to Claude Code and Codex CLI). It only reads those logins and never
 refreshes them. It also lists the limit resets Codex has granted, and
 `agent-usage reset-codex` redeems one. The Quickshell dashboard's usage tab runs
-it and offers each reset with a two-click "Use reset" button, enabled only when
+it with `--stream`, updating each provider as soon as it responds, and offers
+each reset with a two-click "Use reset" button, enabled only when
 Codex says a reset would help (a limit is spent enough to need it).
 
 ## NixOS system configuration

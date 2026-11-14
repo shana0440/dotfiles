@@ -46,12 +46,16 @@ Item {
     function apply(output) {
         const data = JSON.parse(output)
         checkedAt = new Date(data.checkedAt)
-        if (data.claude.available)
-            claude = data.claude
-        claudeError = data.claude.available ? "" : data.claude.error
-        if (data.codex.available)
-            codex = data.codex
-        codexError = data.codex.available ? "" : data.codex.error
+        if (data.claude) {
+            if (data.claude.available)
+                claude = data.claude
+            claudeError = data.claude.available ? "" : data.claude.error
+        }
+        if (data.codex) {
+            if (data.codex.available)
+                codex = data.codex
+            codexError = data.codex.available ? "" : data.codex.error
+        }
     }
 
     Timer {
@@ -65,16 +69,21 @@ Item {
     Process {
         id: query
         property bool started: false
-        command: ["agent-usage"]
+        command: ["agent-usage", "--stream"]
         onStarted: started = true
-        stdout: StdioCollector { id: queryOutput }
+        stdout: SplitParser {
+            onRead: data => {
+                try {
+                    root.apply(data)
+                } catch (error) {
+                    root.fail("unexpected agent-usage response")
+                }
+            }
+        }
         stderr: StdioCollector {}
         onExited: code => {
-            if (code === 0) {
-                root.apply(queryOutput.text)
-                return
-            }
-            root.fail("agent-usage failed")
+            if (code !== 0)
+                root.fail("agent-usage failed")
         }
         // FailedToStart (not installed) emits runningChanged but not exited.
         onRunningChanged: {
