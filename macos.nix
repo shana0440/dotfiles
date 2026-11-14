@@ -6,7 +6,6 @@
     ./config.nix
     ./git/git.nix
     ./neovim/neovim.nix
-    ./nodejs/nodejs.nix
     ./agents/agents.nix
     ./tmux/tmux.nix
     ./shell/shell.nix

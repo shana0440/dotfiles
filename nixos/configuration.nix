@@ -112,7 +112,6 @@
   environment.systemPackages = with pkgs; [
     git
     curl
-    nodejs
   ];
 
   fonts.packages = with pkgs; [
