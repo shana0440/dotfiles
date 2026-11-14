@@ -18,11 +18,17 @@ Scope {
     property string wallpaper: ""
     property string pending: ""
     // PAM service that checks the password; tests point it elsewhere.
-    property string pamConfig: "hyprlock"
+    property string pamConfig: "quickshell-lock"
     property string pamDirectory: "/etc/pam.d"
 
     function lock() {
         if (sessionLock.locked) return
+        // Without the PAM service no password could unlock it again.
+        pamService.reload()
+        if (!pamService.text().length) {
+            console.warn("Lock: no PAM service at", pamService.path, "- not locking")
+            return
+        }
         authState = "idle"
         message = ""
         wallpaperQuery.running = true
@@ -94,6 +100,13 @@ Scope {
                 } catch (_) {}
             }
         }
+    }
+
+    FileView {
+        id: pamService
+        path: root.pamDirectory + "/" + root.pamConfig
+        blockLoading: true
+        printErrors: false
     }
 
     FileView {

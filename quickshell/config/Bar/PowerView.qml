@@ -40,7 +40,7 @@ Item {
         armedAction = ""
         closeRequested()
         if (action === "lock")
-            Quickshell.execDetached(["hyprlock"])
+            Quickshell.execDetached(["quickshell", "ipc", "--pid", String(Quickshell.processId), "call", "lock", "lock"])
         else if (action === "reboot" || action === "poweroff")
             Quickshell.execDetached(["systemctl", action])
         else if (action === "logout")
