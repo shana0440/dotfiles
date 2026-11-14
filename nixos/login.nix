@@ -16,7 +16,7 @@ let
       [ -f "$image" ] || { echo "login-wallpaper: $image is gone" >&2; exit 0; }
       temp="$(mktemp -p "$(dirname ${wallpaper})" .wallpaper.XXXXXX)"
       trap 'rm -f "$temp"' EXIT
-      magick "$image[0]" -auto-orient -resize "2560x1440^" -strip -quality 90 "jpg:$temp"
+      magick "''${image}[0]" -auto-orient -resize "2560x1440^" -strip -quality 90 "jpg:$temp"
       chmod 644 "$temp"
       mv -f "$temp" ${wallpaper}
     '';
