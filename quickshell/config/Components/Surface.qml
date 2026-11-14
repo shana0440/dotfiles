@@ -23,6 +23,8 @@ Rectangle {
         offset.y: 4
         blur: 12
         spread: -4
-        color: Theme.Colors.shadow
+        // Fades with the fill, so a surface clearing for the transparent theme
+        // takes its shadow with it.
+        color: Qt.alpha(Theme.Colors.shadow, Theme.Colors.shadow.a * root.color.a)
     }
 }
