@@ -3,6 +3,7 @@ import "../Theme" as Theme
 
 // A side dot that flows out of its neighbour while shown and back into it while
 // hidden or merged. IslandGoo paints the liquid neck from `diameter` and `blend`.
+// A wider dot is a pill; IslandGoo paints that from `paintedWidth` and `paintedHeight`.
 Surface {
     id: root
 
@@ -17,9 +18,11 @@ Surface {
     readonly property real progress: (offset + width) / (gap + width)
     // The painted circle: it shrinks to half size as it sinks into the neighbour.
     readonly property real diameter: visible ? width * scale : 0
+    readonly property real paintedWidth: diameter
+    readonly property real paintedHeight: visible ? height * scale : 0
     // Smooth-union radius for the goo. Zero while buried, so the neighbour does not
     // swell, and zero at rest, so the neck pinches off just before the dot settles.
-    readonly property real blend: width * smoothstep(0.15, 0.45, progress) * (1 - smoothstep(0.8, 1.1, progress))
+    readonly property real blend: height * smoothstep(0.15, 0.45, progress) * (1 - smoothstep(0.8, 1.1, progress))
 
     function smoothstep(from, to, value) {
         const t = Math.max(0, Math.min(1, (value - from) / (to - from)))

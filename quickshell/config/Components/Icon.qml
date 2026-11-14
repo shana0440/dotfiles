@@ -52,7 +52,17 @@ Item {
         speakerMuted: "volume-x",
         microphoneMuted: "mic-off",
         check: "check",
-        clearNotifications: "list-x"
+        clearNotifications: "list-x",
+        weatherClear: "sun",
+        weatherClearNight: "moon",
+        weatherPartly: "cloud-sun",
+        weatherPartlyNight: "cloud-moon",
+        weatherCloudy: "cloud",
+        weatherFog: "cloud-fog",
+        weatherDrizzle: "cloud-drizzle",
+        weatherRain: "cloud-rain",
+        weatherSnow: "cloud-snow",
+        weatherStorm: "cloud-lightning"
     })[action] ?? "power"
     readonly property string themedSvg: {
         const svg = svgTemplate.text().replace(/currentColor/g, iconColor.toString())

@@ -134,5 +134,8 @@ Nix store.
   computer under **Screen Mirroring** on an Apple device on the same LAN.
 - **iPhone webcam:** see [`nixos/iphone-webcam.md`](nixos/iphone-webcam.md).
 - **NAS mount:** see [`nixos/nas/`](nixos/nas/README.md).
+- **Weather:** the pill left of the bar's clock shows the current weather from
+  [wttr.in](https://wttr.in), located by your public IP; hover it for details.
+  It stays hidden while offline.
 - **Agent usage:** the Quickshell dashboard's usage tab shows Claude and Codex
   subscription limits (`agent-usage` on the command line).

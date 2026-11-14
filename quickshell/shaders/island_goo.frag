@@ -16,6 +16,9 @@ layout(std140, binding = 0) uniform buf {
     // Side circles: center xy, diameter z and blend radius w.
     vec4 leftCircle;
     vec4 rightCircle;
+    // A pill beyond the left circle: center xy and size zw, with its blend radius.
+    vec4 outerPill;
+    float outerBlend;
 } ubuf;
 
 float roundedBox(vec2 point, vec4 box, float radius)
@@ -33,6 +36,13 @@ float circle(vec2 point, vec4 shape)
     return length(point - shape.xy) - shape.z * 0.5;
 }
 
+float pill(vec2 point, vec4 shape)
+{
+    if (shape.z <= 0.001 || shape.w <= 0.001)
+        return 1e5;
+    return roundedBox(point, vec4(shape.xy - shape.zw * 0.5, shape.zw), shape.w * 0.5);
+}
+
 // Polynomial smooth minimum: shapes closer than `radius` fuse with a liquid neck.
 float smoothMinimum(float first, float second, float radius)
 {
@@ -46,7 +56,8 @@ float field(vec2 point)
 {
     float surface = roundedBox(point, ubuf.island, ubuf.islandRadius);
     surface = smoothMinimum(surface, circle(point, ubuf.leftCircle), ubuf.leftCircle.w);
-    return smoothMinimum(surface, circle(point, ubuf.rightCircle), ubuf.rightCircle.w);
+    surface = smoothMinimum(surface, circle(point, ubuf.rightCircle), ubuf.rightCircle.w);
+    return smoothMinimum(surface, pill(point, ubuf.outerPill), ubuf.outerBlend);
 }
 
 void main()

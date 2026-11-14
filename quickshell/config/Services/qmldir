@@ -5,3 +5,4 @@ singleton Media 1.0 Media.qml
 singleton LauncherBadges 1.0 LauncherBadges.qml
 singleton Notifications 1.0 Notifications.qml
 singleton Bluetooth 1.0 Bluetooth.qml
+singleton Weather 1.0 Weather.qml

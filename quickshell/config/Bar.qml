@@ -180,6 +180,7 @@ PanelWindow {
         Region { item: appsIsland.visible ? appsIsland : null }
         Region { item: centerIsland }
         Region { item: mediaIsland.visible ? mediaIsland : null }
+        Region { item: weatherIsland.visible ? weatherIsland : null }
         Region { item: notificationIsland.visible ? notificationIsland : null }
         Region { item: rightIsland }
     }
@@ -254,6 +255,7 @@ PanelWindow {
                 const position = eventPoint.position
                 const onCenterGroup = containsBarPoint(centerIsland, position)
                     || containsBarPoint(mediaIsland, position)
+                    || containsBarPoint(weatherIsland, position)
                     || containsBarPoint(notificationIsland, position)
                 if (centerIsland.expanded && !onCenterGroup)
                     centerIsland.close()
@@ -284,6 +286,7 @@ PanelWindow {
             target: centerIsland
             leading: mediaIsland
             trailing: notificationIsland
+            outer: weatherIsland
         }
 
         BarComponents.CenterIsland {
@@ -301,6 +304,17 @@ PanelWindow {
             gap: root.islandSpacing
             merged: centerIsland.sideIslandsMerged
             onClicked: centerIsland.open("media")
+        }
+
+        // Rides the media dot's left edge, which rests inside the center island while
+        // the dot is hidden, so it flows beside whichever is outermost.
+        BarComponents.WeatherIsland {
+            id: weatherIsland
+            bare: centerGoo.ready
+            anchors.right: mediaIsland.left
+            anchors.rightMargin: offset
+            gap: root.islandSpacing
+            merged: centerIsland.sideIslandsMerged
         }
 
         BarComponents.NotificationIsland {
