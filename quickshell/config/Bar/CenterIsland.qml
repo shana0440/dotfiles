@@ -138,14 +138,16 @@ Components.Island {
                     color: Theme.Colors.foreground
                     font.pixelSize: 14
                 }
-                // The running pomodoro: the ring is what is left of the phase,
-                // the number the minutes left, rounded up. It opens its tab.
-                PomodoroRing {
+                // The running pomodoro, which opens its tab.
+                Item {
                     anchors.verticalCenter: parent.verticalCenter
                     visible: clockView.pomodoroShown
-                    width: 22
-                    height: 22
+                    width: pomodoroRing.implicitWidth
+                    height: pomodoroRing.implicitHeight
 
+                    PomodoroRing {
+                        id: pomodoroRing
+                    }
                     MouseArea {
                         anchors.fill: parent
                         anchors.margins: -4
