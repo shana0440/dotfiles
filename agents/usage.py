@@ -12,6 +12,7 @@ prints {"outcome": ...}.
 """
 
 import json
+import socket
 import sys
 import time
 import urllib.error
@@ -23,6 +24,13 @@ from pathlib import Path
 
 HOME = Path.home()
 TIMEOUT = 10
+
+# Try IPv4 addresses first. urllib tries addresses in order, waiting the full
+# timeout on each, so a network that hands out IPv6 addresses without routing
+# them would stall every request by 10 seconds per IPv6 address.
+_getaddrinfo = socket.getaddrinfo
+socket.getaddrinfo = lambda *args, **kwargs: sorted(
+    _getaddrinfo(*args, **kwargs), key=lambda entry: entry[0] != socket.AF_INET)
 
 
 def read_json(path):
