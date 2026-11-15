@@ -83,7 +83,7 @@ Singleton {
         advance(true)
         const body = ended === "focus" ? label + " for " + phases[phase].minutes + " minutes"
             : "Next: " + phases.focus.minutes + " minutes of focus"
-        Quickshell.execDetached(["notify-send", "--app-name=Pomodoro", "--icon=alarm-symbolic",
+        Quickshell.execDetached(["notify-send", "--app-name=Pomodoro",
             ended === "focus" ? "Focus done" : "Break over", body])
     }
 
@@ -109,6 +109,7 @@ Singleton {
     FileView {
         path: Quickshell.statePath("pomodoro.json")
         blockLoading: true
+        blockWrites: true
         watchChanges: false
         printErrors: false
         onAdapterUpdated: writeAdapter()
