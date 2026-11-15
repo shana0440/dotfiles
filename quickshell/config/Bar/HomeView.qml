@@ -134,7 +134,8 @@ Item {
                     width: 32
                     height: 32
                     iconSize: 18
-                    icon: "theme"
+                    icon: Theme.Colors.transparentTheme ? "themeTransparent" : "themeSolid"
+                    iconFilled: !Theme.Colors.transparentTheme
                     iconColor: Theme.Colors.muted
                     tooltip: Theme.Colors.transparentTheme ? "Use solid theme" : "Use transparent theme"
                     onClicked: Theme.Colors.toggleTheme()
