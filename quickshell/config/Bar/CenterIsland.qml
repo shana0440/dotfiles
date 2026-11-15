@@ -52,6 +52,10 @@ Components.Island {
         dashboard.cycle(step)
     }
 
+    function typeIntoSearch(text) {
+        return expanded && dashboard.typeIntoSearch(text)
+    }
+
     Connections {
         target: Services.Notifications
         function onReceived() {

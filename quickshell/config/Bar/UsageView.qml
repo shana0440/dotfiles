@@ -6,7 +6,15 @@ Item {
     id: root
 
     property bool active: false
+    property string query: ""
     property date now: new Date()
+    readonly property var providers: ["Claude", "Codex"]
+    readonly property bool queryNamesProvider: query.length > 0
+        && providers.some(name => name.toLowerCase().includes(query))
+
+    function showsProvider(name) {
+        return !queryNamesProvider || name.toLowerCase().includes(query)
+    }
 
     implicitWidth: 480
     implicitHeight: content.implicitHeight + 40
@@ -381,11 +389,13 @@ Item {
 
         ProviderCard {
             name: "Claude"
+            visible: root.showsProvider(name)
             reading: usage.claude
             error: usage.claudeError
         }
         ProviderCard {
             name: "Codex"
+            visible: root.showsProvider(name)
             plan: usage.codex && usage.codex.plan ? usage.codex.plan.charAt(0).toUpperCase() + usage.codex.plan.slice(1) + " plan" : ""
             reading: usage.codex
             error: usage.codexError

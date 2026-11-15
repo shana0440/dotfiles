@@ -229,6 +229,9 @@ PanelWindow {
                     && (event.modifiers & ~Qt.KeypadModifier) === Qt.ControlModifier) {
                 Services.InputMethod.next()
                 event.accepted = true
+            } else if (!(event.modifiers & (Qt.ControlModifier | Qt.AltModifier | Qt.MetaModifier))
+                    && event.text.length > 0 && !/[\x00-\x1f\x7f]/.test(event.text)) {
+                event.accepted = centerIsland.typeIntoSearch(event.text)
             }
         }
         Keys.onTabPressed: event => {
