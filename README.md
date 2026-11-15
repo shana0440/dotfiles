@@ -105,6 +105,9 @@ All bindings are in `hyprland/hyprland.lua`. The main ones:
 - `Super+Shift+S`: screen capture ([details](quickshell/config/Capture/README.md)).
 - `Super+Shift+L`: lock the screen.
 - `Super+Shift+W`: wallpaper picker ([details](wallpaper/README.md)).
+- Tap `Super` to open the dashboard, then type to search it: `wifi` jumps to
+  the network tab and hides the rest. `Tab` steps through matches, `Enter`
+  keeps the current tab, `Esc` clears the search.
 
 ### Input methods
 

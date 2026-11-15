@@ -59,6 +59,16 @@ Item {
     ]
     readonly property string normalizedQuery: query.trim().toLowerCase()
     readonly property var matchingTabs: normalizedQuery ? rankMatches(normalizedQuery) : tabList
+    readonly property var shownTabs: tabList.filter(entry => matchingTabs.some(match => match.tab === entry.tab))
+
+    onMatchingTabsChanged: {
+        if (!normalizedQuery || matchingTabs.length === 0)
+            return
+        const best = matchingTabs[0]
+        const current = tabList.find(entry => entry.tab === tab)
+        if (matchRank(current, normalizedQuery) !== matchRank(best, normalizedQuery))
+            tabRequested(best.tab)
+    }
 
     function matchRank(entry, needle) {
         const names = [entry.tab, entry.tooltip.toLowerCase()]
@@ -92,8 +102,10 @@ Item {
     }
 
     function cycle(step) {
-        const index = tabList.findIndex(entry => entry.tab === tab)
-        tabRequested(tabList[(index + step + tabList.length) % tabList.length].tab)
+        if (shownTabs.length === 0)
+            return
+        const index = shownTabs.findIndex(entry => entry.tab === tab)
+        tabRequested(shownTabs[(index + step + shownTabs.length) % shownTabs.length].tab)
     }
 
     Rectangle {
@@ -130,11 +142,18 @@ Item {
             font.pixelSize: 13
             clip: true
             Keys.onEscapePressed: clear()
-            onAccepted: {
-                if (root.matchingTabs.length > 0)
-                    root.tabRequested(root.matchingTabs[0].tab)
-                clear()
+
+            Text {
+                anchors.right: parent.right
+                anchors.verticalCenter: parent.verticalCenter
+                visible: root.matchingTabs.length === 0
+                text: "No results"
+                color: Theme.Colors.muted
+                font.family: Theme.Fonts.family
+                font.weight: Theme.Fonts.weight
+                font.pixelSize: 12
             }
+            onAccepted: clear()
             onTextChanged: if (!text) focus = false
         }
     }
@@ -186,6 +205,7 @@ Item {
                 required property var modelData
                 readonly property bool current: root.tab === modelData.tab
 
+                visible: root.shownTabs.some(entry => entry.tab === modelData.tab)
                 icon: modelData.icon
                 tooltip: modelData.tooltip
                 selected: current
