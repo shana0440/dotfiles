@@ -29,6 +29,7 @@ Item {
         play: "play",
         pause: "pause",
         close: "x",
+        search: "search",
         settings: "settings",
         theme: "palette",
         systemStatus: "activity",

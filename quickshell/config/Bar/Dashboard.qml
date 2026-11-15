@@ -27,9 +27,13 @@ Item {
     readonly property int sidebarWidth: 52
 
     readonly property int pageWidth: homeView.implicitWidth
+    readonly property string query: searchField.text
+    readonly property int searchHeight: searchBar.visible ? searchBar.height + 8 : 0
 
     width: sidebarWidth + 1 + pageWidth
-    height: Math.max(tabs.implicitHeight + 16, currentPage.height)
+    height: searchHeight + Math.max(tabs.implicitHeight + 16, currentPage.height)
+
+    onActiveChanged: if (!active) searchField.clear()
 
     readonly property var tabList: [
         { tab: "home", icon: "home", tooltip: "Home" },
@@ -48,17 +52,63 @@ Item {
         homeView.inputMethodsOpen = true
     }
 
+    function typeIntoSearch(text) {
+        if (!query && !text.trim())
+            return false
+        searchField.insert(searchField.cursorPosition, text)
+        searchField.forceActiveFocus()
+        return true
+    }
+
     function cycle(step) {
         const index = tabList.findIndex(entry => entry.tab === tab)
         tabRequested(tabList[(index + step + tabList.length) % tabList.length].tab)
     }
 
+    Rectangle {
+        id: searchBar
+        x: 8
+        y: 8
+        width: root.width - 16
+        height: 36
+        radius: 8
+        visible: root.query.length > 0
+        color: Theme.Colors.background
+        border.width: 1
+        border.color: searchField.activeFocus ? Theme.Colors.muted : Theme.Colors.ring
+
+        Components.Icon {
+            id: searchIcon
+            x: 12
+            anchors.verticalCenter: parent.verticalCenter
+            width: 16
+            height: 16
+            action: "search"
+            iconColor: Theme.Colors.muted
+        }
+        TextInput {
+            id: searchField
+            anchors.left: searchIcon.right
+            anchors.right: parent.right
+            anchors.leftMargin: 8
+            anchors.rightMargin: 12
+            anchors.verticalCenter: parent.verticalCenter
+            color: Theme.Colors.foreground
+            font.family: Theme.Fonts.family
+            font.weight: Theme.Fonts.weight
+            font.pixelSize: 13
+            clip: true
+            Keys.onEscapePressed: clear()
+            onTextChanged: if (!text) focus = false
+        }
+    }
+
     MouseArea {
         z: 1
         x: 0
-        y: 0
+        y: root.searchHeight
         width: root.sidebarWidth
-        height: root.height
+        height: root.height - root.searchHeight
         acceptedButtons: Qt.NoButton
         property real pending: 0
         onWheel: wheel => {
@@ -73,8 +123,9 @@ Item {
     MouseArea {
         z: 1
         x: root.sidebarWidth + 1
+        y: root.searchHeight
         width: root.pageWidth
-        height: root.height
+        height: root.height - root.searchHeight
         acceptedButtons: Qt.BackButton | Qt.ForwardButton
         onPressed: mouse => {
             const page = root.currentPage
@@ -88,7 +139,7 @@ Item {
     Column {
         id: tabs
         x: 8
-        y: 8
+        y: root.searchHeight + 8
         spacing: 4
 
         Repeater {
@@ -143,16 +194,17 @@ Item {
 
     Rectangle {
         x: root.sidebarWidth
-        y: 8
+        y: root.searchHeight + 8
         width: 1
-        height: root.height - 16
+        height: root.height - root.searchHeight - 16
         color: Theme.Colors.ring
     }
 
     Components.ViewStack {
         x: root.sidebarWidth + 1
+        y: root.searchHeight
         width: root.pageWidth
-        height: root.height
+        height: root.height - root.searchHeight
         alignment: Qt.AlignLeft
         activeView: root.currentPage
 
@@ -171,24 +223,24 @@ Item {
             AudioView {
                 id: audioView
                 width: root.pageWidth
-                maximumHeight: root.maximumHeight
+                maximumHeight: root.maximumHeight - root.searchHeight
             },
             NotificationView {
                 id: notificationList
                 width: root.pageWidth
-                maximumHeight: root.maximumHeight
+                maximumHeight: root.maximumHeight - root.searchHeight
             },
             NetworkView {
                 id: networkView
                 width: root.pageWidth
-                maximumHeight: root.maximumHeight
+                maximumHeight: root.maximumHeight - root.searchHeight
                 active: root.active && root.tab === "network"
                 onCloseRequested: root.closeRequested()
             },
             BluetoothView {
                 id: bluetoothView
                 width: root.pageWidth
-                maximumHeight: root.maximumHeight
+                maximumHeight: root.maximumHeight - root.searchHeight
                 active: root.active && root.tab === "bluetooth"
                 onCloseRequested: root.closeRequested()
             },
