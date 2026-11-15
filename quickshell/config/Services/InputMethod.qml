@@ -7,33 +7,22 @@ import Quickshell.Services.SystemTray
 Singleton {
     id: root
 
-    property bool held: false
+    property bool dashboardOpen: false
     readonly property var inputItem: SystemTray.items.values.find(item => item.id === "Fcitx") ?? null
     readonly property string trayIcon: inputItem?.icon.replace("image://icon/", "") ?? ""
-    readonly property string icon: frozen ? heldIcon : trayIcon
+    readonly property string icon: iconOf(name)
 
-    property bool frozen: false
-    property string heldIcon: ""
+    property string name: "keyboard-us"
     property string mozcIcon: "fcitx_mozc_hiragana"
     property var order: ["keyboard-us", "mozc", "chewing"]
 
-    onHeldChanged: {
-        if (held) {
-            heldIcon = trayIcon
-            frozen = true
+    onDashboardOpenChanged: {
+        if (dashboardOpen)
             groupQuery.running = true
-        }
     }
     onTrayIconChanged: {
         if (trayIcon.startsWith("fcitx_mozc_"))
             mozcIcon = trayIcon
-        if (!held)
-            frozen = false
-    }
-
-    function nameOf(icon) {
-        return icon.startsWith("fcitx_mozc") ? "mozc"
-            : icon === "fcitx-chewing" ? "chewing" : "keyboard-us"
     }
 
     function iconOf(name) {
@@ -41,9 +30,10 @@ Singleton {
             : name === "chewing" ? "fcitx-chewing" : "input-keyboard-symbolic"
     }
 
-    function selected(name) {
-        if (frozen)
-            heldIcon = iconOf(name)
+    function selected(name, modeIcon) {
+        if (modeIcon)
+            mozcIcon = modeIcon
+        root.name = name
     }
 
     function select(name) {
@@ -52,8 +42,32 @@ Singleton {
     }
 
     function next() {
-        const index = order.indexOf(nameOf(icon))
+        const index = order.indexOf(name)
         select(order[(index + 1) % order.length])
+    }
+
+    Timer {
+        interval: 1000
+        repeat: true
+        running: !root.dashboardOpen
+        onTriggered: currentQuery.running = true
+    }
+
+    Process {
+        id: currentQuery
+        command: ["busctl", "--user", "--json=short", "call", "org.fcitx.Fcitx5",
+            "/controller", "org.fcitx.Fcitx.Controller1", "CurrentInputMethod"]
+        stdout: StdioCollector {
+            onStreamFinished: {
+                if (root.dashboardOpen)
+                    return
+                try {
+                    const name = JSON.parse(text).data[0]
+                    if (name)
+                        root.name = name
+                } catch (error) {}
+            }
+        }
     }
 
     Process {

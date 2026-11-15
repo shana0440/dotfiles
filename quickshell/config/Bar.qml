@@ -20,8 +20,8 @@ PanelWindow {
 
     Binding {
         target: Services.InputMethod
-        property: "held"
-        value: root.menuNeedsKeyboardFocus
+        property: "dashboardOpen"
+        value: root.menuOpen
     }
 
     Binding {

@@ -69,18 +69,30 @@ Item {
         property string label: entry?.text ?? ""
         property string description: entry?.text ?? label
         property bool compact: false
+        property string methodName: ""
+        property bool selected: entry?.checkState === Qt.Checked
+        signal activated()
+
+        function activate() {
+            if (methodName)
+                Services.InputMethod.select(methodName)
+            else {
+                entry.triggered()
+                activated()
+            }
+        }
         width: content.width
         height: 40
         radius: 8
         enabled: root.available && (entry?.enabled ?? false)
         opacity: enabled ? 1 : 0.4
-        color: entry?.checkState === Qt.Checked || mouse.containsMouse || activeFocus
+        color: selected || mouse.containsMouse || activeFocus
             ? Theme.Colors.highlight : Theme.Colors.transparent
         activeFocusOnTab: true
         Accessible.role: Accessible.Button
         Accessible.name: description
-        Keys.onReturnPressed: entry.triggered()
-        Keys.onSpacePressed: entry.triggered()
+        Keys.onReturnPressed: activate()
+        Keys.onSpacePressed: activate()
 
         Text {
             font.family: Theme.Fonts.family
@@ -103,14 +115,14 @@ Item {
             width: 16
             height: 16
             action: "check"
-            visible: !choice.compact && choice.entry?.checkState === Qt.Checked
+            visible: !choice.compact && choice.selected
         }
         MouseArea {
             id: mouse
             anchors.fill: parent
             hoverEnabled: true
             cursorShape: Qt.PointingHandCursor
-            onClicked: choice.entry.triggered()
+            onClicked: choice.activate()
         }
         Components.Tooltip {
             text: choice.description
@@ -141,6 +153,8 @@ Item {
                 required property var modelData
                 required property int index
                 entry: modelData
+                methodName: Services.InputMethod.order[index] ?? ""
+                selected: Services.InputMethod.name === methodName
             }
         }
 
@@ -172,6 +186,8 @@ Item {
                     label: modelData.label
                     description: modelData.description
                     compact: true
+                    selected: Services.InputMethod.icon === modelData.icon
+                    onActivated: Services.InputMethod.selected("mozc", modelData.icon)
                 }
             }
         }
