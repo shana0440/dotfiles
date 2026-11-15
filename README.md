@@ -84,7 +84,7 @@ required).
 | `config.nix` | Shared user settings |
 | `home.nix` / `macos.nix` / `wsl.nix` | Per-platform module imports |
 | `programs.nix`, `shell/`, `git/`, `neovim/`, `tmux/`, `agents/` | Shared CLI tools, Fish, editors, coding agents |
-| `applications.nix` | Desktop apps (Home Manager) and Firefox/Steam (NixOS) |
+| `applications.nix` | Desktop apps including Brave (Home Manager) and Steam (NixOS) |
 | `hyprland/`, `quickshell/`, `kitty/`, `wallpaper/`, `screen-capture/` | Desktop Linux session |
 | `nixos/` | System configuration |
 | [`vpn/`](vpn/README.md), [`file-manager/`](file-manager/README.md), [`eagle/`](eagle/README.md), [`nexon/`](nexon/README.md) | Optional apps |

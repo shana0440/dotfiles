@@ -4,7 +4,6 @@
     # Required for Steam.
     nixpkgs.config.allowUnfree = true;
 
-    programs.firefox.enable = true;
     programs.steam.enable = true;
 
     # UxPlay advertises its AirPlay receiver over mDNS.
@@ -21,6 +20,7 @@
   homeManager = { lib, pkgs, ... }:
     let
       applications = with pkgs; [
+        brave
         discord
         bitwarden-desktop
         telegram-desktop
