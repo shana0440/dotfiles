@@ -14,3 +14,9 @@
   rather than checking only the final state. Do not claim success if a required
   step is missing or fails in the recording.
 - Give the user the evidence file path and state any remaining failures honestly.
+
+# Documentation
+
+- When changing a dashboard tab or its search keywords (`tabList` in
+  `config/Bar/Dashboard.qml`), update the keyword table under "Dashboard
+  search" in the root `README.md` to match.
