@@ -36,17 +36,48 @@ Item {
     onActiveChanged: if (!active) searchField.clear()
 
     readonly property var tabList: [
-        { tab: "home", icon: "home", tooltip: "Home" },
-        { tab: "media", icon: "disc", tooltip: "Now playing" },
-        { tab: "audio", icon: "speaker", tooltip: "Audio" },
-        { tab: "notifications", icon: "notifications", tooltip: "Notifications" },
-        { tab: "network", icon: "wifi", tooltip: "Network" },
-        { tab: "bluetooth", icon: "bluetooth", tooltip: "Bluetooth" },
-        { tab: "system", icon: "systemStatus", tooltip: "System" },
-        { tab: "usage", icon: "usage", tooltip: "Usage" },
-        { tab: "pomodoro", icon: "timer", tooltip: "Pomodoro" },
-        { tab: "power", icon: "poweroff", tooltip: "Power" }
+        { tab: "home", icon: "home", tooltip: "Home",
+            keywords: ["calendar", "date", "weather", "input method", "keyboard", "theme"] },
+        { tab: "media", icon: "disc", tooltip: "Now playing",
+            keywords: ["media", "music", "song", "track", "player"] },
+        { tab: "audio", icon: "speaker", tooltip: "Audio",
+            keywords: ["volume", "sound", "speaker", "headphones", "microphone", "mic", "output", "input"] },
+        { tab: "notifications", icon: "notifications", tooltip: "Notifications",
+            keywords: ["alerts", "messages"] },
+        { tab: "network", icon: "wifi", tooltip: "Network",
+            keywords: ["wifi", "wi-fi", "wlan", "ethernet", "internet", "ssid", "connections"] },
+        { tab: "bluetooth", icon: "bluetooth", tooltip: "Bluetooth",
+            keywords: ["bt", "pair", "devices", "headphones"] },
+        { tab: "system", icon: "systemStatus", tooltip: "System",
+            keywords: ["cpu", "gpu", "memory", "ram", "vram", "storage", "disk"] },
+        { tab: "usage", icon: "usage", tooltip: "Usage",
+            keywords: ["claude", "codex", "agent", "limit", "quota"] },
+        { tab: "pomodoro", icon: "timer", tooltip: "Pomodoro",
+            keywords: ["timer", "focus", "break"] },
+        { tab: "power", icon: "poweroff", tooltip: "Power",
+            keywords: ["shutdown", "power off", "restart", "reboot", "lock", "log out", "logout"] }
     ]
+    readonly property string normalizedQuery: query.trim().toLowerCase()
+    readonly property var matchingTabs: normalizedQuery ? rankMatches(normalizedQuery) : tabList
+
+    function matchRank(entry, needle) {
+        const names = [entry.tab, entry.tooltip.toLowerCase()]
+        if (names.some(name => name.startsWith(needle)))
+            return 0
+        if (entry.keywords.some(keyword => keyword.startsWith(needle)))
+            return 1
+        if (names.concat(entry.keywords).some(term => term.includes(needle)))
+            return 2
+        return -1
+    }
+
+    function rankMatches(needle) {
+        return tabList
+            .map((entry, order) => ({ entry, order, rank: matchRank(entry, needle) }))
+            .filter(match => match.rank >= 0)
+            .sort((a, b) => a.rank - b.rank || a.order - b.order)
+            .map(match => match.entry)
+    }
 
     function showInputMethods() {
         homeView.inputMethodsOpen = true
@@ -99,6 +130,11 @@ Item {
             font.pixelSize: 13
             clip: true
             Keys.onEscapePressed: clear()
+            onAccepted: {
+                if (root.matchingTabs.length > 0)
+                    root.tabRequested(root.matchingTabs[0].tab)
+                clear()
+            }
             onTextChanged: if (!text) focus = false
         }
     }
