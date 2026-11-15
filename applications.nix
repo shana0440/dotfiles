@@ -14,7 +14,7 @@
     networking.firewall.allowedUDPPorts = [ 6000 6001 7011 ];
   };
 
-  homeManager = { lib, pkgs, ... }:
+  homeManager = { lib, pkgs, zen-browser, ... }:
     let
       applications = with pkgs; [
         brave
@@ -23,6 +23,16 @@
         telegram-desktop
         signal-desktop
         uxplay
+        zen-browser.packages.${pkgs.stdenv.hostPlatform.system}.beta
+        (pkgs.anki.withAddons [
+          (pkgs.ankiAddons.anki-connect.withConfig {
+            config = {
+              webBindAddress = "127.0.0.1";
+              webBindPort = 8765;
+              webCorsOriginList = [ "http://localhost" ];
+            };
+          })
+        ])
       ] ++ lib.optionals (pkgs.stdenv.hostPlatform.system == "x86_64-linux") [
         (import ./eagle/package.nix { inherit pkgs; })
         (import ./nexon/package.nix { inherit pkgs; })
