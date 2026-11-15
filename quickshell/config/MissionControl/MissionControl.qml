@@ -30,6 +30,7 @@ Scope {
     }
     function focusWorkspace(id) {
         dispatch("hl.dsp.focus({ workspace = " + id + " })")
+        monitorRefresh.restart()
     }
     function moveWindow(address, workspaceId) {
         dispatch("hl.dsp.window.move({ workspace = " + workspaceId
@@ -41,6 +42,12 @@ Scope {
         id: refresh
         interval: 120
         onTriggered: Hyprland.refreshToplevels()
+    }
+
+    Timer {
+        id: monitorRefresh
+        interval: 120
+        onTriggered: Hyprland.refreshMonitors()
     }
 
     Process {
