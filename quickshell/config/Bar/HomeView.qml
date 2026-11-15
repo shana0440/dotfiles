@@ -134,10 +134,9 @@ Item {
                     width: 32
                     height: 32
                     iconSize: 18
-                    icon: Theme.Colors.transparentTheme ? "themeTransparent" : "themeSolid"
-                    iconFilled: !Theme.Colors.transparentTheme
-                    iconColor: Theme.Colors.muted
-                    tooltip: Theme.Colors.transparentTheme ? "Use solid theme" : "Use transparent theme"
+                    icon: Theme.Colors.transparentTheme ? "themeTransparent" : "themeDark"
+                    iconColor: Theme.Colors.foreground
+                    tooltip: Theme.Colors.transparentTheme ? "Use dark theme" : "Use transparent theme"
                     onClicked: Theme.Colors.toggleTheme()
                 }
             }

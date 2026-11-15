@@ -10,11 +10,11 @@ Scope {
         watchChanges: false
         printErrors: false
         onAdapterUpdated: writeAdapter()
-        onLoaded: Theme.Colors.theme = settings.theme === "transparent" ? "transparent" : "solid"
+        onLoaded: Theme.Colors.theme = settings.theme === "transparent" ? "transparent" : "dark"
 
         JsonAdapter {
             id: settings
-            property string theme: "solid"
+            property string theme: "dark"
         }
     }
 

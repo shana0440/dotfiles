@@ -4,11 +4,11 @@ import QtQuick
 QtObject {
     id: root
 
-    property string theme: "solid"
+    property string theme: "dark"
     readonly property bool transparentTheme: theme === "transparent"
 
     function toggleTheme() {
-        theme = transparentTheme ? "solid" : "transparent"
+        theme = transparentTheme ? "dark" : "transparent"
     }
 
     property real clearness: transparentTheme ? 1 : 0
