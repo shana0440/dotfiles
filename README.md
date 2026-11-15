@@ -105,10 +105,30 @@ All bindings are in `hyprland/hyprland.lua`. The main ones:
 - `Super+Shift+S`: screen capture ([details](quickshell/config/Capture/README.md)).
 - `Super+Shift+L`: lock the screen.
 - `Super+Shift+W`: wallpaper picker ([details](wallpaper/README.md)).
-- Tap `Super` to open the dashboard, then type to search it: `wifi` jumps to
-  the network tab and hides the rest, `codex` shows only the Codex card on the
-  usage tab. `Tab` steps through matches, `Enter` keeps the current tab, `Esc`
-  clears the search.
+- Tap `Super` to open the dashboard; type to [search it](#dashboard-search).
+
+### Dashboard search
+
+With the dashboard open, start typing to search it. Only matching tabs stay in
+the sidebar, and the best match opens: `wifi` jumps to the network tab. On the
+usage tab, `claude` or `codex` shows only that card. `Tab` steps through
+matches, `Enter` keeps the current tab, `Esc` clears the search.
+
+Each tab matches its name and these keywords (`tabList` in
+`quickshell/config/Bar/Dashboard.qml`):
+
+| Tab | Keywords |
+|---|---|
+| Home | calendar, date, weather, input method, keyboard, theme |
+| Now playing | media, music, song, track, player |
+| Audio | volume, sound, speaker, headphones, microphone, mic, output, input |
+| Notifications | alerts, messages |
+| Network | wifi, wi-fi, wlan, ethernet, internet, ssid, connections |
+| Bluetooth | bt, pair, devices, headphones |
+| System | cpu, gpu, memory, ram, vram, storage, disk |
+| Usage | claude, codex, agent, limit, quota |
+| Pomodoro | timer, focus, break |
+| Power | shutdown, power off, restart, reboot, lock, log out, logout |
 
 ### Input methods
 
