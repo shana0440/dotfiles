@@ -55,7 +55,7 @@ if it is missing).
 ```sh
 make home          # Apply Home Manager; detects macOS / Linux / WSL. No sudo.
 make nixos         # Rebuild NixOS from nixos/configuration.nix (sudo).
-make update        # Update flake.lock (nixpkgs, Home Manager, Zen, Pi-Bolt), then make home.
+make update        # Update flake.lock, apply Home Manager, then sync Neovim plugins.
 make nixos-update  # Update the NixOS channel and rebuild.
 ```
 

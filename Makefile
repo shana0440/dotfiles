@@ -12,6 +12,7 @@ IS_WSL = $(shell if [ -n "$$WSL_DISTRO_NAME" ] || grep -qi microsoft /proc/sys/k
 update:
 	nix $(NIX_FLAGS) flake update --refresh --flake "$(DOTFILES)"
 	$(MAKE) home
+	nvim --headless "+Lazy! sync" +qa
 
 nixos:
 	sudo nixos-rebuild switch -I "nixos-config=$(DOTFILES)/nixos/configuration.nix"

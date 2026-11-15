@@ -280,7 +280,7 @@ require("lazy").setup({
     end,
   },
 }, {
-  checker = { enabled = true, notify = false },
+  checker = { enabled = false },
   ui = {
     icons = {
       cmd = "C",
@@ -297,13 +297,4 @@ require("lazy").setup({
       lazy = "L",
     },
   },
-})
-
-vim.api.nvim_create_autocmd("User", {
-  pattern = "LazyCheck",
-  callback = function()
-    if require("lazy.status").has_updates() then
-      require("lazy").sync({ wait = false })
-    end
-  end,
 })
