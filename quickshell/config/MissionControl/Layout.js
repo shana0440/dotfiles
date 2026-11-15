@@ -1,9 +1,5 @@
 .pragma library
 
-// Spreads windows over an area without overlap, keeping their reading order (top to
-// bottom, left to right) like Mission Control. Each window keeps its aspect ratio;
-// one shared scale fits every row, never above `maxScale`. Returns one rect per
-// input window, in input order.
 function spread(windows, area, gap, maxScale) {
     const count = windows.length
     if (!count) return []
@@ -16,7 +12,6 @@ function spread(windows, area, gap, maxScale) {
         const perRow = Math.ceil(count / rows)
         const groups = []
         for (let i = 0; i < count; i += perRow) {
-            // Each row reads left to right by the windows' own positions.
             groups.push(order.slice(i, i + perRow).sort((a, b) => windows[a].x - windows[b].x))
         }
         const rowWidths = groups.map(g => g.reduce((sum, i) => sum + windows[i].width, 0))

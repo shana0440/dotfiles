@@ -1,14 +1,17 @@
 set -euo pipefail
+
+slurp_without_rectangle_suggestions() {
+    slurp </dev/null
+}
 umask 077
 
 recording_mode() {
     local output query_status=0 states
+    local units_exist_but_none_active=3 units_already_collected=4
     output=$(systemctl --user is-active \
         screen-capture-record-full.service screen-capture-record-region.service screen-capture-record-window.service) || query_status=$?
-    # Collected transient units may no longer exist: is-active returns 4 then,
-    # or 3 when the units exist but none are active.
     case "$query_status" in
-        0|3|4) ;;
+        0|"$units_exist_but_none_active"|"$units_already_collected") ;;
         *) return "$query_status" ;;
     esac
     mapfile -t states <<< "$output"
@@ -24,14 +27,13 @@ recording_mode() {
     printf 'none\n'
 }
 
-# Tell the Quickshell capture UI immediately (e.g. for recordings started from
-# the CLI) so it need not wait for its polling fallback. Best effort and
-# detached: capture must work with no Quickshell running.
-notify_bar() {
+forget_quickshell_crash_relaunch_environment() {
+    unset "${!__QUICKSHELL_CRASH_@}"
+}
+
+notify_quickshell_without_waiting_for_its_poll() {
     {
-        # A crash-restarted Quickshell exports __QUICKSHELL_CRASH_* to its
-        # children; an IPC client inheriting them aborts, so drop them.
-        unset "${!__QUICKSHELL_CRASH_@}"
+        forget_quickshell_crash_relaunch_environment
         timeout 2s quickshell --path "${XDG_CONFIG_HOME:-$HOME/.config}/quickshell" \
             ipc call screenCapture changed
     } >/dev/null 2>&1 &
@@ -73,7 +75,7 @@ case "$mode" in
         active_mode=$(recording_mode)
         if [[ "$active_mode" != none ]]; then
             systemctl --user stop "screen-capture-record-$active_mode.service"
-            notify_bar
+            notify_quickshell_without_waiting_for_its_poll
         fi
         exit 0
         ;;
@@ -113,8 +115,7 @@ geometry=""
 if [[ "$mode" == region ]]; then
     geometry="${3:-}"
     if [[ -z "$geometry" ]]; then
-        # slurp reads piped stdin as rectangle suggestions; GUI launches supply none.
-        if ! geometry=$(slurp </dev/null); then
+        if ! geometry=$(slurp_without_rectangle_suggestions); then
             exit 0
         fi
         [[ -n "$geometry" ]] || exit 0
@@ -137,16 +138,16 @@ printf '%s\0%s\0%s\0' "$recording_path" "$geometry" "$window_identifier" > "$ses
 if [[ "$mode" == window ]]; then
     recorder_command=("$(command -v screen-capture-window-record)" "$2" "$recording_path")
 else
+    playback_only_without_microphone=@DEFAULT_MONITOR@
     recorder_command=("$(command -v wf-recorder)" --overwrite
-        --audio-backend=pulse --audio=@DEFAULT_MONITOR@ --audio-codec=aac
+        --audio-backend=pulse --audio="$playback_only_without_microphone" --audio-codec=aac
         "${recorder_args[@]}" -f "$recording_path")
 fi
 
-# The recorder outlives shell reloads; SIGINT lets it finalize the MP4 when stopped.
-# Select the playback monitor explicitly so the microphone stays excluded.
+finalize_mp4_on_stop=SIGINT
 if ! systemd-run --user --quiet --collect --service-type=exec \
     --unit="screen-capture-record-$mode.service" \
-    --property=KillSignal=SIGINT --property=TimeoutStopSec=15s \
+    --property=KillSignal="$finalize_mp4_on_stop" --property=TimeoutStopSec=15s \
     --property="ExecStopPost=$(command -v screen-capture-recording-finished) $mode" \
     --setenv="XDG_CONFIG_HOME=${XDG_CONFIG_HOME:-$HOME/.config}" \
     --setenv="XDG_CACHE_HOME=${XDG_CACHE_HOME:-$HOME/.cache}" \
@@ -157,5 +158,5 @@ if ! systemd-run --user --quiet --collect --service-type=exec \
     rm -f -- "$recording_path" "$session_file"
     exit 1
 fi
-notify_bar
+notify_quickshell_without_waiting_for_its_poll
 printf '%s\n' "$recording_path"

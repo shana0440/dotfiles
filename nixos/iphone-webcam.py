@@ -1,4 +1,3 @@
-"""Launch a dedicated OBS setup with paired VDO.Ninja push/view links."""
 import fcntl
 import json
 import os
@@ -17,7 +16,6 @@ def main():
     config_home = Path(os.environ.get("XDG_CONFIG_HOME", Path.home() / ".config"))
     root = config_home / "iphone-webcam"
     root.mkdir(parents=True, exist_ok=True)
-    # Keep this lock for the whole meeting, including OBS shutdown.
     with (root / "launcher.lock").open("w") as lock:
         try:
             fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
@@ -69,7 +67,6 @@ def main():
                     },
                 ],
             }, indent=2))
-            # These files belong only to the launcher's dedicated OBS setup.
             (obs_dir / "global.ini").write_text(
                 "[General]\nFirstRun=false\n\n[Basic]\nProfile=iPhone Webcam\n"
                 "ProfileDir=iPhone_Webcam\nSceneCollection=iPhone Webcam\n"
@@ -101,7 +98,6 @@ def main():
         obs = None
         with (log_dir / "obs.log").open("a") as log:
             try:
-                # OBS has its own session; this supervisor owns its lifetime.
                 obs = subprocess.Popen([
                     "obs", "--multi", "--disable-shutdown-check",
                     "--collection", "iPhone Webcam", "--profile", "iPhone Webcam",
@@ -131,7 +127,6 @@ def main():
                             except ProcessLookupError:
                                 pass
                             obs.wait()
-                    # Clean up any browser helpers left in OBS's private group.
                     try:
                         os.killpg(obs.pid, signal.SIGKILL)
                     except ProcessLookupError:

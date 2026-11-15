@@ -141,7 +141,10 @@ Nix store.
   [wttr.in](https://wttr.in), located by your public IP; hover it for details, or click it to open
   the dashboard's home tab. It stays hidden while offline.
 - **Agent usage:** the Quickshell dashboard's usage tab shows Claude and Codex
-  subscription limits (`agent-usage` on the command line).
+  subscription limits (`agent-usage` on the command line). It reads the logins
+  saved by Pi, Claude Code, or Codex CLI without refreshing them, so those tools
+  stay signed in. `agent-usage reset-codex [CREDIT_ID]` redeems an earned Codex
+  limit reset.
 - **Pomodoro:** the dashboard's pomodoro tab runs 25-minute focus sessions with
   5-minute breaks and a 15-minute break after every fourth. A notification marks
   the end of each phase. `quickshell ipc call pomodoro toggle` starts or pauses it.

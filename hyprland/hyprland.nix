@@ -40,7 +40,6 @@
     })
   ];
 
-  # Keep addon preferences writable alongside the managed profile and hotkeys.
   xdg.configFile.fcitx5.recursive = true;
 
   xdg.configFile."hypr/hyprland.lua" = lib.mkIf pkgs.stdenv.isLinux {

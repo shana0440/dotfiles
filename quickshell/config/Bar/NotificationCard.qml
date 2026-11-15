@@ -4,16 +4,11 @@ import "../Components" as Components
 import "../Theme" as Theme
 import "../Services" as Services
 
-// A notification in the list, styled like the open Ding toast it came from: status
-// icon, title with the app as trailing meta, a quieter description, and Ding's
-// primary and secondary buttons.
 Rectangle {
     id: root
 
     required property var notification
     readonly property string status: notification ? Services.Notifications.statusOf(notification) : "info"
-    // As in the toast, an image takes the icon's place, except a capture's, which
-    // shows in full under the text.
     readonly property bool imageReady: picture.status === Image.Ready
     readonly property bool showsPreview: status === "success" && imageReady
 
@@ -60,7 +55,6 @@ Rectangle {
                     id: picture
                     anchors.fill: parent
                     source: root.notification ? root.notification.image : ""
-                    // The icon provider (image://icon) needs both dimensions; it keeps the aspect.
                     sourceSize: Qt.size(56, 56)
                     asynchronous: true
                     fillMode: Image.PreserveAspectCrop
@@ -128,7 +122,6 @@ Rectangle {
 
             ClippingRectangle {
                 width: Math.min(parent.width, 240)
-                // Collapsed rather than hidden: a clipping surface created hidden never paints.
                 height: root.showsPreview
                     ? Math.min(width * (picture.implicitWidth > 0 ? picture.implicitHeight / picture.implicitWidth : 0.5625), 160) : 0
                 radius: 10

@@ -2,8 +2,6 @@
   description = "kwguo's standalone Home Manager configuration";
 
   inputs = {
-    # Upstream has no flake. Track latest release archives as non-flake inputs.
-    # flake.lock pins their content hashes; make update refreshes them.
     pi-bolt-linux-x64 = {
       url = "https://github.com/opensec-git/Pi-Bolt/releases/latest/download/pi-bolt-linux-x64-baseline.tar.gz";
       flake = false;
@@ -64,7 +62,6 @@
       };
 
       homeConfigurations = {
-        # Compatibility alias for the original NixOS VM.
         kwguo = mkHome "x86_64-linux" ./home.nix;
 
         "kwguo-x86_64-linux" = mkHome "x86_64-linux" ./home.nix;

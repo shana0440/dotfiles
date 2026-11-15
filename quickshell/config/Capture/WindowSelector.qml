@@ -11,7 +11,6 @@ Item {
     readonly property real windowY: selected ? selected.y - screenInfo.y : 0
     readonly property bool intersects: selected !== null && windowX < width && windowY < height
         && windowX + selected.width > 0 && windowY + selected.height > 0
-    // The highlighted window is cut out of the dimmed screen, like a selected range.
     readonly property real clearX: Math.max(0, windowX)
     readonly property real clearY: Math.max(0, windowY)
     readonly property real clearRight: selected ? Math.min(width, windowX + selected.width) : 0
@@ -40,7 +39,6 @@ Item {
         }
     }
 
-    // Dim everything except the highlighted window (this screen has none: dim all).
     Repeater {
         model: root.intersects ? [
             { x: 0, y: 0, width: root.width, height: root.clearY },

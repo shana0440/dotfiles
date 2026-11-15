@@ -1,5 +1,3 @@
-"""Window list/frames for the frozen preview; compose and save screenshots."""
-
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
 import json
@@ -22,7 +20,6 @@ def snapshot_path(value):
 
 
 def visible_windows(screens):
-    """Freeze geometry/stacking from Hyprland before our layer surfaces appear."""
     try:
         def query(name):
             return json.loads(subprocess.check_output(
@@ -55,19 +52,21 @@ def visible_windows(screens):
                 "screenName": screen["name"], "floating": client.get("floating", False),
                 "focusOrder": client.get("focusHistoryID", 999),
             })
-        # Floating windows cover tiles; recent focus determines overlapping floats.
-        windows.sort(key=lambda window: (not window["floating"], window["focusOrder"]))
+        windows.sort(key=topmost_first)
         error = "" if windows else "No visible windows with native capture identifiers."
         return windows, error
     except (OSError, ValueError, KeyError, subprocess.SubprocessError):
         return [], "Window capture requires Hyprland with native toplevel capture support."
 
 
+def topmost_first(window):
+    return (not window["floating"], window["focusOrder"])
+
+
 def freeze_window(directory, window):
     target = directory / f"window-{window['identifier']}.png"
     temporary = target.with_suffix(".tmp")
     try:
-        # Native capture excludes occluding windows and our frozen preview surfaces.
         subprocess.run(["grim", "-t", "png", "-l", "0", "-T", window["identifier"], str(temporary)],
                                 timeout=5, capture_output=True, check=True)
         temporary.replace(target)
@@ -80,8 +79,6 @@ def freeze_window(directory, window):
 
 
 def freeze(screens):
-    """Prepare the frame directory and window list. Desktop pixels come from the
-    compositor screencopy shown by the UI, so launch need not wait for an image."""
     if not screens:
         raise ValueError("No screens available")
     left = min(screen["x"] for screen in screens)
@@ -95,8 +92,6 @@ def freeze(screens):
                     "width": width, "height": height, "screens": screens,
                     "windows": windows, "windowError": window_error}
         (directory / "manifest.json").write_text(json.dumps(manifest))
-        # Show the toolbar as soon as the list is known; native window frames
-        # finish in parallel without delaying full-screen/region users.
         print(json.dumps(manifest), flush=True)
         with ThreadPoolExecutor(max_workers=4) as workers:
             for window in windows:
@@ -122,7 +117,6 @@ def write_png(image):
                          stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
                          start_new_session=True)
     except OSError:
-        # Notification delivery is independent of saving and clipboard delivery.
         pass
     try:
         with open(target, "rb") as stream:
@@ -132,7 +126,6 @@ def write_png(image):
 
 
 def save_screens(directory, frames_json, geometry=""):
-    """Compose per-output frozen frames like grim: highest scale wins."""
     from PIL import Image
 
     directory = snapshot_path(directory)

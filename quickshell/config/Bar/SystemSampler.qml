@@ -1,8 +1,6 @@
 import QtQuick
 import Quickshell.Io
 
-// Polls system-status-snapshot every 2 seconds while active and derives CPU usage
-// and transfer rates from consecutive snapshots.
 Item {
     id: root
 
@@ -80,7 +78,6 @@ Item {
                     root.diskRates = root.rates(next.disks || [], previous ? previous.disks || [] : [], seconds, "read", "write")
                     root.snapshot = next
                 } catch (error) {
-                    // Invalidate the UI at the subprocess boundary, then report the bad snapshot.
                     root.failed = true
                     root.clearReadings()
                     throw new Error("Invalid system-status snapshot: " + error)
@@ -90,7 +87,6 @@ Item {
                 root.clearReadings()
         }
         onRunningChanged: {
-            // FailedToStart emits runningChanged but not exited; old stdout is irrelevant.
             if (!running && !startedSuccessfully && root.active) {
                 root.failed = true
                 root.clearReadings()

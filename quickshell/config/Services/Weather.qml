@@ -2,8 +2,6 @@ pragma Singleton
 import QtQuick
 import Quickshell
 
-// Current weather from wttr.in, located by the network's public IP, so it needs no
-// key or configuration. Refreshes every 20 minutes and retries a failure after one.
 Singleton {
     id: root
 
@@ -16,7 +14,6 @@ Singleton {
     property string place: ""
     property int code: 0
     property bool night: false
-    // An Icon action for the current condition.
     readonly property string icon: {
         const c = code
         if ([200, 386, 389, 392, 395].includes(c))
@@ -59,14 +56,13 @@ Singleton {
                 retry.restart()
             }
         }
-        // j2 is the JSON report without the hourly forecast.
-        xhr.open("GET", "https://wttr.in/?format=j2")
+        const jsonWithoutHourlyForecast = "j2"
+        xhr.open("GET", "https://wttr.in/?format=" + jsonWithoutHourlyForecast)
         xhr.send()
         requestTimeout.restart()
     }
 
-    // "06:10 AM" to minutes after midnight.
-    function minutes(clock) {
+    function minutesAfterMidnight(clock) {
         const match = /(\d+):(\d+)\s*(AM|PM)/i.exec(clock ?? "")
         if (!match)
             return -1
@@ -77,9 +73,8 @@ Singleton {
         const current = data.current_condition[0]
         const today = data.weather[0]
         const country = data.nearest_area?.[0]?.country?.[0]?.value ?? ""
-        // Fahrenheit only where the reported place uses it; a Linux locale is too
-        // often en_US regardless of where the machine is.
-        const fahrenheit = ["United States of America", "Liberia", "Myanmar"].includes(country)
+        const countriesUsingFahrenheit = ["United States of America", "Liberia", "Myanmar"]
+        const fahrenheit = countriesUsingFahrenheit.includes(country)
         const unit = fahrenheit ? "F" : "C"
         temperature = Number(current["temp_" + unit])
         feelsLike = Number(current["FeelsLike" + unit])
@@ -90,8 +85,8 @@ Singleton {
         code = Number(current.weatherCode)
         const now = new Date()
         const time = now.getHours() * 60 + now.getMinutes()
-        const sunrise = minutes(today.astronomy?.[0]?.sunrise)
-        const sunset = minutes(today.astronomy?.[0]?.sunset)
+        const sunrise = minutesAfterMidnight(today.astronomy?.[0]?.sunrise)
+        const sunset = minutesAfterMidnight(today.astronomy?.[0]?.sunset)
         night = sunrise >= 0 && sunset >= 0 && (time < sunrise || time >= sunset)
         loaded = true
     }

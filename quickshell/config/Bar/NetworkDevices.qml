@@ -1,19 +1,13 @@
 import QtQuick
 import Quickshell.Io
 
-// Network devices from NetworkManager, polled every 5 seconds while active.
 Item {
     id: root
 
     property bool active: false
-    // Ethernet, Wi-Fi, VPN tunnels and WireGuard. Each:
-    // { device, type, kind, connection, state, connected, carrier, speed,
-    //   address, gateway, dns, defaultMetric }
     property var devices: []
     property bool failed: false
-    // At least one poll has finished.
     property bool loaded: false
-    // The connected device whose default route wins (lowest metric), or null.
     readonly property var primary: {
         const routed = devices.filter(device => device.connected && device.defaultMetric !== null)
         return routed.sort((a, b) => a.defaultMetric - b.defaultMetric)[0] ?? null
@@ -53,14 +47,12 @@ Item {
                     continue
                 const key = line.slice(0, separator).replace(/\[\d+\]$/, "")
                 const value = line.slice(separator + 1)
-                // "dst = 0.0.0.0/0, nh = 192.168.1.1, mt = 100"
                 if (key === "IP4.ROUTE") {
                     const route = value.match(/dst = 0\.0\.0\.0\/0,.*mt = (\d+)/)
                     if (route)
                         defaultMetric = Math.min(defaultMetric ?? Infinity, Number(route[1]))
                     continue
                 }
-                // IP4.ADDRESS[1], IP4.DNS[2], …: keep the first of each.
                 if (!(key in fields))
                     fields[key] = value
             }
@@ -68,7 +60,6 @@ Item {
             if (!shownTypes.includes(type))
                 continue
             const name = fields["GENERAL.DEVICE"] || ""
-            // "100 (connected)", "100 (connected (externally))" → "connected"
             const state = (fields["GENERAL.STATE"] || "").replace(/^\d+\s*\(/, "").replace(/\)$/, "").replace(/ \(externally\)$/, "")
             const speed = Number.parseInt(fields["CAPABILITIES.SPEED"] || "")
             parsed.push({

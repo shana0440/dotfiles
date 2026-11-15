@@ -3,9 +3,6 @@ import Quickshell
 import "../Theme" as Theme
 import "../Components" as Components
 
-// The dashboard's network tab, read like a router's front panel: the connection
-// carrying the default route with its recent traffic, the other live links, then
-// Wi-Fi networks to join or leave.
 Item {
     id: root
 
@@ -16,7 +13,6 @@ Item {
 
     readonly property var primary: devices.primary
     readonly property var primaryRates: primary ? sampler.networkRates.find(rate => rate.label === primary.device) ?? null : null
-    // Live links besides the primary one, then wired ports with nothing plugged in.
     readonly property var others: devices.devices.filter(device => device.connected && device !== primary)
     readonly property var unplugged: devices.devices.filter(device => device.type === "ethernet" && !device.connected)
     readonly property var activeNetwork: {
@@ -28,7 +24,6 @@ Item {
         return null
     }
 
-    // Two minutes of primary traffic at the sampler's 2-second step.
     readonly property int historyLength: 60
     property var history: []
     property string historyDevice: ""
@@ -36,12 +31,10 @@ Item {
     readonly property int rowHeight: 40
     readonly property int rowSpacing: 2
 
-    // The Wi-Fi list is a page of its own, so status reads without it.
     property bool wifiOpen: false
 
     implicitWidth: 480
     implicitHeight: (wifiOpen ? wifiPage.implicitHeight : content.implicitHeight) + 40
-    // The pages shift a little as they cross; keep that inside the tab.
     clip: true
 
     onActiveChanged: {
@@ -102,7 +95,6 @@ Item {
         return megabits >= 1000 ? (megabits / 1000) + " Gb/s" : megabits + " Mb/s"
     }
 
-    // What follows the kind: the Wi-Fi network, or the port and its speed.
     function detailOf(device) {
         if (device.type === "wifi")
             return device.connection + (activeNetwork ? " · " + activeNetwork.strength + "%" : "")
@@ -144,7 +136,6 @@ Item {
         }
     }
 
-    // A port light: lit while the link is up.
     component LinkLight: Rectangle {
         property bool lit: false
         width: 8
@@ -216,7 +207,6 @@ Item {
         font.pixelSize: 12
     }
 
-    // A rate right-aligned in mono; the arrow comes from the UI face, which has the glyph.
     component Rate: Item {
         id: rateItem
         property bool upload: false
@@ -245,7 +235,6 @@ Item {
         }
     }
 
-    // 0 shows status, 1 the Wi-Fi page; each fades and shifts toward where it lives.
     Components.Spring {
         id: pageSpring
         to: root.wifiOpen ? 1 : 0
@@ -311,7 +300,6 @@ Item {
             }
         }
 
-        // The connection carrying the default route, and its last two minutes.
         Rectangle {
             id: hero
             width: parent.width
@@ -431,7 +419,6 @@ Item {
                                 })
                             }
 
-                            // Download carries the weight: a line with a faint fill below it.
                             trace("down")
                             context.lineTo(width, height)
                             context.lineTo(left, height)
@@ -452,7 +439,6 @@ Item {
                         }
                     }
 
-                    // The scale, top left, clear of the newest samples on the right.
                     Text {
                         anchors.left: parent.left
                         anchors.top: parent.top
@@ -465,7 +451,6 @@ Item {
             }
         }
 
-        // Other live links, each with its address and traffic.
         Column {
             id: links
             width: parent.width
@@ -478,7 +463,6 @@ Item {
             }
 
             Repeater {
-                // A count model keeps the rows across polls.
                 model: root.others.length
 
                 Item {
@@ -550,7 +534,6 @@ Item {
                 }
             }
 
-            // Empty ports collapse into one dim line.
             Item {
                 width: links.width
                 height: 16
@@ -571,7 +554,6 @@ Item {
             }
         }
 
-        // The way into the Wi-Fi page.
         Rectangle {
             id: wifiEntry
             width: parent.width
@@ -628,7 +610,6 @@ Item {
         }
     }
 
-    // The nested Wi-Fi page: networks to join or leave.
     Column {
         id: wifiPage
         x: 20 + 24 * (1 - pageSpring.value)
@@ -714,7 +695,6 @@ Item {
 
             ListView {
                 id: networkList
-                // Whatever the page cap leaves after everything else, at least two rows.
                 readonly property real room: root.maximumHeight - 40 - wifiHeader.height - wifiPage.spacing
                     - (message.visible ? message.height + networksSection.spacing : 0)
                     - (form.visible ? form.height + networksSection.spacing : 0)
@@ -772,8 +752,6 @@ Item {
                         }
                     }
 
-                    // Status, and on the current network a Disconnect that asks twice:
-                    // nothing moves under the pointer, and one stray click cannot drop Wi-Fi.
                     Row {
                         id: trailing
                         anchors.right: parent.right
@@ -828,7 +806,6 @@ Item {
                 }
             }
 
-            // Joining a secured network: its password, or blank for saved credentials.
             Column {
                 id: form
                 width: parent.width
@@ -894,8 +871,6 @@ Item {
         }
     }
 
-    // Mouse side buttons, routed here by the dashboard from anywhere over the page:
-    // Back returns to status, Forward goes into Wi-Fi.
     function navigateBack() {
         if (wifiOpen)
             closeWifi()

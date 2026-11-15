@@ -12,22 +12,15 @@ Singleton {
     readonly property var notifications: server.trackedNotifications.values
     readonly property int count: notifications.length
     property var preview: null
-    // The popup collapses before it hides; it stays visible while closing, even if
-    // the notification itself is already gone.
     property bool previewClosing: false
     readonly property bool previewVisible: preview !== null || previewClosing
-    // Repeats of the popup's notification count up instead of replacing it.
     property int previewCount: 1
-    // Lifetime of the popup in ms; 0 keeps it until dismissed.
     property int previewDuration: 0
     property bool previewPaused: false
-    // Restarts the popup's countdown (a new notification or a repeat).
     signal previewRestarted()
     signal previewRepeated()
     signal received()
-    // Menus holding exclusive keyboard focus must close so the compositor can focus the sender.
     signal actionInvoked()
-    // Set by a closing menu until it has handed the keyboard back; it then calls flushFocus().
     property bool focusBlocked: false
     property var pendingSender: []
 
@@ -39,7 +32,6 @@ Singleton {
         preview = null
     }
 
-    // Collapse first, then hide (Ding's closing phase).
     function dismissPreview() {
         if (!previewVisible || previewClosing)
             return
@@ -48,7 +40,6 @@ Singleton {
         closeTimer.restart()
     }
 
-    // Hovering the popup holds its countdown.
     function pausePreview(paused) {
         if (paused === previewPaused || previewClosing || previewDuration === 0)
             return
@@ -61,8 +52,6 @@ Singleton {
         }
     }
 
-    // Ding status of a notification: critical is an error, a saved screenshot or
-    // recording (screen-capture's own notification) is a success, the rest is info.
     function statusOf(notification) {
         if (notification.urgency === NotificationUrgency.Critical)
             return "error"
@@ -74,15 +63,14 @@ Singleton {
     }
 
     function dismissAll() {
-        // Dismissing mutates the server model; iterate a snapshot.
-        notifications.slice().forEach(notification => notification.dismiss())
+        const snapshotBeforeDismissMutatesModel = notifications.slice()
+        snapshotBeforeDismissMutatesModel.forEach(notification => notification.dismiss())
     }
 
     function invokeAction(notification, action) {
-        // Read the sender first: invoking may close and destroy the notification.
-        const names = [notification?.desktopEntry, notification?.appName].filter(name => name)
+        const senderReadBeforeInvokeDestroysNotification = [notification?.desktopEntry, notification?.appName].filter(name => name)
         action.invoke()
-        pendingSender = names
+        pendingSender = senderReadBeforeInvokeDestroysNotification
         actionInvoked()
         if (!focusBlocked)
             Qt.callLater(flushFocus)
@@ -94,8 +82,6 @@ Singleton {
         focusSender(names)
     }
 
-    // Hyprland ignores apps' own activation requests (focus_on_activate is off),
-    // so the shell brings the sender forward itself, launching it if needed.
     function focusSender(names) {
         if (names.length === 0)
             return
@@ -116,12 +102,10 @@ Singleton {
         if (windows.length > 0)
             windows[0].activate()
         else if (entry)
-            launch(entry)
+            launchOnTheUsersWorkspace(entry)
     }
 
-    // Hyprland places windows from the shell's own process tree on the workspace the
-    // shell started on; launching through the compositor opens them where the user is.
-    function launch(entry) {
+    function launchOnTheUsersWorkspace(entry) {
         if (entry.runInTerminal || entry.command.length === 0) {
             entry.execute()
             return
@@ -151,7 +135,6 @@ Singleton {
             root.previewClosing = false
             root.previewPaused = false
             previewTimer.stop()
-            // Expiry hides the popup, not the notification history.
             const sticky = notification.expireTimeout === 0 || notification.urgency === NotificationUrgency.Critical
             root.previewDuration = sticky ? 0 : notification.expireTimeout > 0 ? notification.expireTimeout : 5000
             if (!sticky) {
@@ -182,7 +165,6 @@ Singleton {
         onTriggered: root.dismissPreview()
     }
 
-    // Matches the toast's collapse: text erases and the pill shrinks back to its dot.
     Timer {
         id: closeTimer
         interval: 340

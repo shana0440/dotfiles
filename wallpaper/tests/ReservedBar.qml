@@ -1,6 +1,3 @@
-// Visual regression fixture: a transparent top bar with an exclusive zone.
-// Like the real bar, it idles on the Bottom layer: the transition must cover
-// the wallpaper behind the whole reserved strip yet stay below this bar.
 import QtQuick
 import Quickshell
 import Quickshell.Wayland

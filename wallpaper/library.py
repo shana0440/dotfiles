@@ -1,4 +1,3 @@
-"""Wallpaper picker backend; external tools are provided by wallpaper.nix."""
 import concurrent.futures
 import hashlib
 import json
@@ -38,7 +37,6 @@ def catalog(directory, cache):
                      key=lambda p: p.name.casefold())
     cache.mkdir(parents=True, exist_ok=True)
     items, errors = [], []
-    # Bound both decoder concurrency and individual conversion time.
     with concurrent.futures.ThreadPoolExecutor(max_workers=4) as pool:
         jobs = [(p, pool.submit(thumbnail, p, cache)) for p in sources]
         for source, job in jobs:
@@ -46,18 +44,18 @@ def catalog(directory, cache):
                 items.append(job.result())
             except (OSError, subprocess.SubprocessError) as error:
                 errors.append(f"{source.name}: {error}")
-    # Only our hash-named thumbnails live in this dedicated cache.
     live = {Path(item["thumbnail"].split("/")[-1]).name for item in items}
     for old in cache.glob("*.jpg"):
-        if old.name not in live and len(old.stem.split("-")[0]) == 64:
+        if old.name not in live and is_hash_named_thumbnail(old):
             old.unlink(missing_ok=True)
     return {"items": items, "directory": str(directory), "errors": errors}
 
 
-def ipc_environment():
-    # A Quickshell restarted after a crash exports __QUICKSHELL_CRASH_* to its
-    # children (e.g. the picker running wallpaper-set). An IPC client that
-    # inherits them treats itself as the crash relaunch and aborts.
+def is_hash_named_thumbnail(path):
+    return len(path.stem.split("-")[0]) == 64
+
+
+def ipc_environment_without_quickshell_crash_relaunch():
     return {k: v for k, v in os.environ.items() if not k.startswith("__QUICKSHELL_CRASH_")}
 
 
@@ -67,7 +65,7 @@ def transition_ipc(action, *arguments):
     result = subprocess.run(["quickshell", "--path", shell, "ipc", "call",
                              "wallpaperTransition", action, *arguments],
                             check=True, capture_output=True, text=True, timeout=1,
-                            env=ipc_environment())
+                            env=ipc_environment_without_quickshell_crash_relaunch())
     return result.stdout.strip()
 
 
@@ -89,7 +87,6 @@ def colonies(*arguments):
 
 
 def colony_transition(image):
-    """Run the Quickshell colony transition; False means "use a fade instead"."""
     token = None
     complete = False
     try:
@@ -102,8 +99,8 @@ def colony_transition(image):
         request = {"image": str(image), "map": colony_map, "ember": colonies("accent", str(image)),
                    "outputs": outputs}
         token = transition_ipc("prepare", json.dumps(request))
-        if token == "same":
-            # Already shown, or the newest running change already heads there.
+        already_heading_there = token == "same"
+        if already_heading_there:
             token = None
             complete = True
             print("transition-ready", flush=True)
@@ -112,15 +109,12 @@ def colony_transition(image):
             token = None
             return False
         wait_transition(token, "ready", 3)
-        # The picker closes before the effect starts. A successful exit still
-        # means the whole hand-over to awww has finished.
         print("transition-ready", flush=True)
         time.sleep(0.15)
         if transition_ipc("go", token) != "ok":
             raise RuntimeError("Colony transition did not start")
         wait_transition(token, "done", 8)
         complete = True
-        # Replace the used map in the background so patterns never repeat.
         subprocess.Popen(["wallpaper-colonies", "renew", colony_map], stdin=subprocess.DEVNULL,
                          stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, start_new_session=True)
         return True
@@ -136,16 +130,12 @@ def colony_transition(image):
 
 
 def set_wallpaper(image):
-    # Changes may overlap: Quickshell stacks each transition above the ones
-    # still running and switches awww in order as each one completes.
     if not colony_transition(image):
         subprocess.run(["awww", "img", str(image), "--transition-type", "fade",
                         "--transition-duration", "0.35"], check=True, timeout=5)
 
 
 def record_current(image):
-    # The current wallpaper, for anything that follows it: one absolute path,
-    # replaced atomically so a watcher never reads half a file.
     state = Path(os.environ.get("XDG_STATE_HOME", str(Path.home() / ".local/state"))) / "wallpaper"
     state.mkdir(parents=True, exist_ok=True)
     fd, temp = tempfile.mkstemp(dir=state)
@@ -169,8 +159,6 @@ def main():
         return
     directory = Path(os.environ["WALLPAPER_DIR"]).expanduser().resolve()
     cache = Path(os.environ.get("XDG_CACHE_HOME", str(Path.home() / ".cache"))) / "wallpaper/thumbnails"
-    # A single refresh at a time prevents another refresh's cleanup from
-    # deleting a thumbnail that is still being generated.
     import fcntl
     cache.mkdir(parents=True, exist_ok=True)
     with (cache.parent / "refresh.lock").open("w") as lock:

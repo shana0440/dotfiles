@@ -1,7 +1,6 @@
 import QtQuick
 import "../Theme" as Theme
 
-// A surface that springs to the size of its active view.
 Surface {
     id: root
 
@@ -18,9 +17,6 @@ Surface {
     height: heightSpring.value
     radius: Math.min(radiusSpring.value, height / 2)
 
-    // Ding's morph: growing squeezes in a little and springs open; shrinking swells
-    // first and settles on a firmer spring without overshoot. Small changes (a clock
-    // tick) just glide.
     function moveTo(spring, target, anticipate) {
         const delta = target - spring.to
         const opening = delta > 0
@@ -31,8 +27,6 @@ Surface {
             spring.impulse(opening ? Theme.Motion.anticipation : Theme.Motion.swell)
     }
 
-    // Content-aware motion from Ding: a push that springs back to rest. An error
-    // shakes its head (sideways on a loose spring), a repeat nudges it down.
     function kick(sideways, down) {
         shakeSpring.impulse(sideways)
         nudgeSpring.impulse(down)
@@ -42,7 +36,6 @@ Surface {
 
     onTargetWidthChanged: moveTo(widthSpring, targetWidth, true)
     onTargetHeightChanged: moveTo(heightSpring, targetHeight, false)
-    // Change handlers skip the initial value; start at rest at the first size.
     Component.onCompleted: {
         widthSpring.to = targetWidth
         heightSpring.to = targetHeight

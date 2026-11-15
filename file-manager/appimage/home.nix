@@ -31,7 +31,6 @@ in {
       };
       Install.WantedBy = [ "default.target" ];
     };
-    # Also notices writes to existing files and retries downloads after they settle.
     systemd.user.timers.appimage-integrate = {
       Unit.Description = "Refresh AppImage launcher entries";
       Timer = {

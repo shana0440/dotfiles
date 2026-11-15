@@ -3,8 +3,6 @@ import Quickshell
 import Quickshell.Wayland
 import "../Theme" as Theme
 
-// One workspace in the Mission Control strip: the wallpaper with a still capture
-// of each window where it sits, and its name below.
 Item {
     id: root
 
@@ -13,7 +11,6 @@ Item {
     required property real thumbHeight
     required property var screenInfo
     property url wallpaper
-    // Captures are taken while Mission Control is open, fresh on every open.
     property bool live: false
     property int generation: 0
     property bool current: false
@@ -55,7 +52,6 @@ Item {
                         y: ((ipc?.at?.[1] ?? 0) - root.screenInfo.y) * root.ratio
                         width: (ipc?.size?.[0] ?? 0) * root.ratio
                         height: (ipc?.size?.[1] ?? 0) * root.ratio
-                        // Most recently focused on top.
                         z: 1000 - (ipc?.focusHistoryID ?? 0)
 
                         Rectangle {

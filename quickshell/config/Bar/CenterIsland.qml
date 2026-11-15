@@ -14,7 +14,6 @@ Components.Island {
     readonly property bool notificationVisible: Services.Notifications.previewVisible
     readonly property bool showingRecording: activeView === recordingView
     readonly property bool sideIslandsMerged: expanded || notificationVisible || Services.Capture.recording
-    // The dashboard holds the keyboard, except while choosing an input method.
     readonly property bool keyboardFocusRequired: expanded && !dashboard.inputMethodsOpen
 
     activeView: {
@@ -29,7 +28,6 @@ Components.Island {
         return clockView
     }
 
-    // Compact views are pills; cap rounding on the taller dashboard and toast.
     targetRadius: showingRecording ? recordingView.height / 2
         : activeView === toast ? Math.min(22, toast.height / 2)
         : Math.min(16, targetHeight / 2)
@@ -45,13 +43,11 @@ Components.Island {
         expanded = true
     }
 
-    // The home tab's nested input method page.
     function openInputMethods() {
         open("home")
         dashboard.showInputMethods()
     }
 
-    // Next (1) or previous (-1) dashboard tab.
     function cycleTab(step) {
         dashboard.cycle(step)
     }
@@ -66,7 +62,6 @@ Components.Island {
     }
 
     function showVolume() {
-        // The audio tab shows the change itself; collapsing would close it mid-drag.
         if (expanded && expandedView === "audio")
             return
         expanded = false
@@ -138,7 +133,6 @@ Components.Island {
                     color: Theme.Colors.foreground
                     font.pixelSize: 14
                 }
-                // The running pomodoro, which opens its tab.
                 Item {
                     anchors.verticalCenter: parent.verticalCenter
                     visible: clockView.pomodoroShown

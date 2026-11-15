@@ -2,8 +2,6 @@ import QtQuick
 import QtQuick.Effects
 import "../Theme" as Theme
 
-// The authentication card: the user, the password field and the power actions.
-// It only reports what was asked for; the wrapper (SDDM or the lock) does the work.
 Rectangle {
     id: root
 
@@ -13,13 +11,10 @@ Rectangle {
     property string authState: "idle"
     property string message: ""
     property bool capsLock: false
-    // Login only: the session to start, cycled with nextSession().
     property string sessionName: ""
-    // Session file without .desktop, for the command line; the name otherwise.
     property string sessionId: ""
 
     signal submit(string password)
-    // Typing after a failure; the wrapper returns to idle.
     signal edited()
     signal nextSession()
     signal suspend()
@@ -56,7 +51,6 @@ Rectangle {
         color: Theme.Colors.shadow
     }
 
-    // A wrong password shakes the card sideways.
     transform: Translate { id: shift }
     SequentialAnimation {
         id: shake
@@ -117,7 +111,6 @@ Rectangle {
         width: parent.width - 64
         spacing: 0
 
-        // Header: section label and the current state.
         Item {
             width: parent.width
             height: 28
@@ -172,7 +165,6 @@ Rectangle {
 
         Item { width: 1; height: 14 }
 
-        // Divider with a short bright segment at the start.
         Item {
             width: parent.width
             height: 2
@@ -218,7 +210,6 @@ Rectangle {
 
         Item { width: 1; height: 28 }
 
-        // Password field.
         Rectangle {
             id: field
             width: parent.width
@@ -258,7 +249,6 @@ Rectangle {
                 font.letterSpacing: 3
                 clip: true
                 focus: true
-                // Read-only rather than disabled: disabling drops the keyboard focus.
                 readOnly: root.authState === "busy" || root.authState === "granted"
                 onAccepted: if (text.length && !readOnly) root.submit(text)
                 onTextEdited: root.edited()
@@ -273,7 +263,6 @@ Rectangle {
                 }
             }
 
-            // Ding's primary action: filled with the foreground, glyph inverted.
             Rectangle {
                 id: submitButton
                 anchors.right: parent.right
@@ -306,7 +295,6 @@ Rectangle {
 
         Item { width: 1; height: 12 }
 
-        // Hint line: the error, Caps Lock, or how to continue.
         Text {
             x: 4
             width: parent.width - 8
@@ -329,7 +317,6 @@ Rectangle {
 
         Item { width: 1; height: 20 }
 
-        // Session (login only) and power actions.
         Item {
             width: parent.width
             height: 40

@@ -1,7 +1,6 @@
 { pkgs, ... }:
 
 {
-  # Keep GRUB on the NixOS EFI partition and chainload the Windows EFI partition.
   boot.loader = {
     systemd-boot.enable = false;
 
@@ -16,7 +15,6 @@
       device = "nodev";
       configurationLimit = 5;
 
-      # The firmware exposes 720p, but not the monitor's native 4K mode.
       gfxmodeEfi = "1280x720,auto";
       theme = pkgs.runCommand "grub-sunset-theme" {
         nativeBuildInputs = [ pkgs.grub2 ];

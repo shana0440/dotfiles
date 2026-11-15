@@ -6,8 +6,6 @@ import "../Theme" as Theme
 import "../Components" as Components
 import "../Services" as Services
 
-// Fcitx's input methods and, for Mozc, its kana modes, chosen through Fcitx's own
-// tray menu actions.
 Item {
     id: root
 
@@ -15,19 +13,14 @@ Item {
     property var inputItem: null
     readonly property bool available: inputItem?.hasMenu === true
     readonly property bool japanese: Services.InputMethod.icon.startsWith("fcitx_mozc")
-    // Keep Fcitx as the only writer of input state; these are its live menu actions.
     property var inputEntries: inputMenu.children.values.filter(entry => entry.buttonType === QsMenuButtonType.RadioButton)
     readonly property var mozcMenu: inputMenu.children.values.find(entry => entry.icon.endsWith("/fcitx_mozc_tool")) ?? null
     property var modeEntries: kanaMenu.children.values.filter(entry =>
         entry.icon.endsWith("/fcitx_mozc_hiragana") || entry.icon.endsWith("/fcitx_mozc_katakana_full"))
-    // Visibility follows the selected engine, not editor-specific action availability.
     readonly property bool showKanaModes: japanese
 
     implicitHeight: content.implicitHeight
 
-    // The editor must retain its input context for Fcitx's native actions, so the
-    // dashboard gives up the keyboard while this list shows. Intercept Escape in
-    // Hyprland only meanwhile.
     function syncEscapeBinding() {
         if (escapeBinding.running)
             return

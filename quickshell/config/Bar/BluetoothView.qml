@@ -5,8 +5,6 @@ import "../Theme" as Theme
 import "../Components" as Components
 import "../Services" as Services
 
-// The dashboard's Bluetooth tab: power and visibility, pairing prompts, your
-// devices, then nearby ones to pair. Scans while the tab is open.
 Item {
     id: root
 
@@ -18,17 +16,14 @@ Item {
     readonly property bool powered: Services.Bluetooth.enabled
     readonly property var request: Services.Bluetooth.request
     readonly property bool needsValue: request !== null && (request.type === "pin" || request.type === "passkey")
-    // Scan while the tab is open, unless the user stopped it.
     property bool scanRequested: true
     property string message: ""
     property string expandedAddress: ""
-    // Devices to trust and connect once pairing succeeds.
     property var pairTargets: ({})
 
     readonly property var pairedDevices: Services.Bluetooth.devices
         .filter(device => device.paired)
         .sort((a, b) => Number(b.connected) - Number(a.connected) || a.name.localeCompare(b.name))
-    // Unnamed devices are usually beacons and other non-pairable noise.
     readonly property var nearbyDevices: Services.Bluetooth.devices
         .filter(device => !device.paired && device.deviceName.length > 0)
         .sort((a, b) => a.name.localeCompare(b.name))
@@ -242,7 +237,6 @@ Item {
 
         Connections {
             target: row.device
-            // Rows move between lists when pairing succeeds, so let BlueZ settle first.
             function onPairingChanged() {
                 if (!row.device.pairing)
                     Qt.callLater(root.pairingFinished, row.device)
@@ -414,7 +408,6 @@ Item {
                 }
             }
 
-            // Visibility to other devices, and what just happened.
             Column {
                 width: parent.width
                 spacing: 8
@@ -461,7 +454,6 @@ Item {
                 }
             }
 
-            // A pairing prompt from the BlueZ agent.
             Rectangle {
                 width: parent.width
                 height: prompt.implicitHeight + 32
@@ -609,7 +601,6 @@ Item {
                         anchors.rightMargin: 10
                         anchors.verticalCenter: parent.verticalCenter
                         label: Services.Bluetooth.discovering ? "Stop scan" : "Scan"
-                        // One request per click: a changed scanRequested already updates discovery.
                         onClicked: {
                             const wanted = !Services.Bluetooth.discovering
                             if (root.scanRequested !== wanted)

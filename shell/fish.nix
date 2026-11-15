@@ -1,4 +1,3 @@
-# Fish configuration managed entirely through Home Manager.
 { ... }:
 
 {

@@ -1,11 +1,8 @@
-# Login manager: SDDM showing the Quickshell lock screen (quickshell/config/Login).
 { config, pkgs, ... }:
 
 let
   wallpaper = "/var/lib/login-ui/wallpaper.jpg";
   quickshell = ../quickshell/config;
-  # The greeter runs before the session, as another user that cannot read ~,
-  # so it shows a copy of the desktop wallpaper made here.
   copyWallpaper = pkgs.writeShellApplication {
     name = "login-wallpaper-copy";
     runtimeInputs = [ pkgs.imagemagick pkgs.coreutils ];
@@ -21,8 +18,6 @@ let
       mv -f "$temp" ${wallpaper}
     '';
   };
-  # The shared screen imports ../Theme and ../Icons, so the theme mirrors the
-  # Quickshell config's layout around SDDM's Main.qml.
   theme = pkgs.runCommand "login-ui-sddm-theme" { } ''
     dir=$out/share/sddm/themes/login-ui
     mkdir -p $dir/Icons
@@ -39,15 +34,12 @@ let
   '';
 in
 {
-  services.xserver.enable = true; # X11 greeter; Hyprland uses Wayland.
+  services.xserver.enable = true;
   services.displayManager = {
     sddm = {
       enable = true;
       theme = "login-ui";
-      # SVG icons in the shared screen.
       extraPackages = [ pkgs.kdePackages.qtsvg ];
-      # Same logical size as the session (2560x1440 at 1.5), so the screen
-      # matches the lock.
       settings.General.GreeterEnvironment = "QT_SCREEN_SCALE_FACTORS=1.5";
     };
     autoLogin = {
@@ -58,13 +50,9 @@ in
   };
 
   environment.systemPackages = [ theme ];
-  # The greeter runs before the session, so it only sees system fonts.
   fonts.packages = [ pkgs.inter pkgs.adwaita-fonts ];
 
   systemd.tmpfiles.rules = [ "d /var/lib/login-ui 0755 ${config.user.name} users -" ];
-  # wallpaper-set records the current wallpaper (wallpaper/README.md); copy it
-  # on every change, and once at login to catch changes made while away.
-  # PathChanged= cannot expand $XDG_STATE_HOME, so this assumes the default.
   systemd.user.paths.login-wallpaper = {
     wantedBy = [ "default.target" ];
     unitConfig.ConditionUser = config.user.name;

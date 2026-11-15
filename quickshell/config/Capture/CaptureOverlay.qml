@@ -23,25 +23,15 @@ Scope {
             color: Theme.Colors.transparent
             exclusionMode: ExclusionMode.Ignore
             WlrLayershell.namespace: "quickshell-capture-region"
-            // One layer below the toolbar and the recording bar (both Overlay), so the
-            // recording shade never covers the bar's Stop.
             WlrLayershell.layer: WlrLayer.Top
-            // Hyprland routes pointer input only to exclusive layer surfaces while
-            // an exclusive toolbar is open. Include the selector in that group.
-            // Among exclusive surfaces Hyprland prefers the one that became
-            // exclusive last, not the higher layer: become exclusive while the
-            // frame is still capturing, so the toolbar (mapped once it is ready)
-            // always comes later and wins pointer input over this full-screen one.
-            WlrLayershell.keyboardFocus: Services.Capture.capturing || Services.Capture.previewActive
-                || Services.Capture.selectingRegion
+            readonly property bool exclusiveBeforeToolbarMapsSoToolbarWinsPointer: Services.Capture.capturing
+                || Services.Capture.previewActive || Services.Capture.selectingRegion
+            WlrLayershell.keyboardFocus: exclusiveBeforeToolbarMapsSoToolbarWinsPointer
                 ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
 
             anchors { top: true; bottom: true; left: true; right: true }
-            // The editor is hidden in full-screen mode; never derive the input
-            // region from its visibility when switching into region selection.
             mask: Region { item: Services.Capture.previewActive || Services.Capture.selectingRegion ? overlay.contentItem : null }
 
-            // A fresh view per capture: its first frame is the frozen desktop.
             Loader {
                 id: frameLoader
                 anchors.fill: parent
@@ -63,8 +53,6 @@ Scope {
                         Services.Capture.frameFailed("Could not save the screenshot.")
                         return
                     }
-                    // grabToImage scales the requested size by the window's pixel
-                    // ratio; ask for it divided so the file is exactly native size.
                     const size = view.sourceSize
                     const request = Qt.size(size.width / overlay.devicePixelRatio, size.height / overlay.devicePixelRatio)
                     const path = directory + "/screen-" + Quickshell.screens.indexOf(overlay.modelData) + ".ppm"
@@ -89,7 +77,6 @@ Scope {
             RegionEditor {
                 id: editor
                 anchors.fill: parent
-                // Hidden while capturing: its own dim would be photographed into the frozen frame.
                 visible: Services.Capture.selectingRegion || (!Services.Capture.previewActive && !Services.Capture.capturing)
                 editing: Services.Capture.selectingRegion
                 kind: Services.Capture.selectionKind

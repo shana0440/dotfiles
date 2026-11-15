@@ -3,21 +3,14 @@ import Quickshell
 import Quickshell.Io
 import "../Theme" as Theme
 
-// Paints an island, its two side circles and a rounded box beyond each as one
-// liquid surface: a signed distance field with a smooth union, so a shape leaving
-// or entering the island pulls a neck of the surface with it until it pinches off. While the shader is
-// unavailable the surfaces paint themselves (see `ready`).
 ShaderEffect {
     id: root
 
-    // Siblings of this item: an Island and two MergeableCircles beside it.
     required property Item target
     required property Item leading
     required property Item trailing
-    // Wider MergeableCircles beyond `leading` and `trailing`.
     required property Item leadingOuter
     required property Item trailingOuter
-    // Room for the drop shadow around the shapes.
     property real padding: 28
     readonly property bool ready: shaderFile !== "" && status === ShaderEffect.Compiled
 
@@ -38,8 +31,7 @@ ShaderEffect {
             item.diameter, item.blend)
     }
 
-    // Center xy and painted size zw.
-    function box(item) {
+    function centerAndPaintedSize(item) {
         return Qt.vector4d(item.x + item.drift + item.width / 2 - x, item.y + item.height / 2 - y,
             item.paintedWidth, item.paintedHeight)
     }
@@ -52,14 +44,13 @@ ShaderEffect {
     property real islandRadius: target.radius
     property vector4d leftCircle: circle(leading)
     property vector4d rightCircle: circle(trailing)
-    property vector4d leftOuter: box(leadingOuter)
+    property vector4d leftOuter: centerAndPaintedSize(leadingOuter)
     property vector2d leftOuterShape: Qt.vector2d(leadingOuter.paintedRadius, leadingOuter.blend)
-    property vector4d rightOuter: box(trailingOuter)
+    property vector4d rightOuter: centerAndPaintedSize(trailingOuter)
     property vector2d rightOuterShape: Qt.vector2d(trailingOuter.paintedRadius, trailingOuter.blend)
 
     fragmentShader: shaderFile ? "file://" + shaderFile.split("/").map(encodeURIComponent).join("/") : ""
 
-    // Home Manager publishes the compiled shader's store path here.
     FileView {
         id: shaderPath
         path: (Quickshell.env("XDG_CONFIG_HOME") || Quickshell.env("HOME") + "/.config")

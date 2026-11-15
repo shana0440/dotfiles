@@ -3,7 +3,6 @@ import "../Theme" as Theme
 import "../Components" as Components
 import "../Services" as Services
 
-// The expanded center island: tabs down the left, the selected page on the right.
 Item {
     id: root
 
@@ -12,7 +11,6 @@ Item {
     property date today: new Date()
     property int maximumHeight: 560
     readonly property alias calendar: homeView.calendar
-    // Fcitx actions need the editor focused, so the dashboard lets go of the keyboard.
     readonly property bool inputMethodsOpen: tab === "home" && homeView.inputMethodsOpen
     readonly property Item currentPage: tab === "media" ? mediaView
         : tab === "audio" ? audioView
@@ -28,7 +26,6 @@ Item {
 
     readonly property int sidebarWidth: 52
 
-    // Every page shares one width so the tabs stay put while the height morphs.
     readonly property int pageWidth: homeView.implicitWidth
 
     width: sidebarWidth + 1 + pageWidth
@@ -51,15 +48,11 @@ Item {
         homeView.inputMethodsOpen = true
     }
 
-    // Moves to the next (1) or previous (-1) tab, wrapping around.
     function cycle(step) {
         const index = tabList.findIndex(entry => entry.tab === tab)
         tabRequested(tabList[(index + step + tabList.length) % tabList.length].tab)
     }
 
-    // Scrolling over the tab rail moves one tab per notch; touchpads send small
-    // steps that add up to a notch.
-    // Above the tab buttons; it takes no buttons, so clicks and hover reach them.
     MouseArea {
         z: 1
         x: 0
@@ -77,8 +70,6 @@ Item {
         }
     }
 
-    // Mouse side buttons anywhere over the page go to pages with nested views,
-    // even below a page shorter than the dashboard. Other buttons pass through.
     MouseArea {
         z: 1
         x: root.sidebarWidth + 1

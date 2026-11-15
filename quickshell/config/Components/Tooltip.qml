@@ -3,7 +3,6 @@ import Quickshell
 import Quickshell.Wayland
 import "../Theme" as Theme
 
-// A separate overlay surface escapes both island clipping and the idle bar's bottom layer.
 Item {
     id: root
 
@@ -16,8 +15,6 @@ Item {
     readonly property var ownerWindow: root.target?.QsWindow.window ?? null
     readonly property bool eligible: root.shown && root.visible && root.ownerWindow !== null
         && root.target !== null && root.target.visible && root.target.enabled && root.text.length > 0
-    // The overlay covers the whole screen; place the owner layer surface on it from
-    // its anchors and margins (full-screen surfaces such as the bar sit at 0,0).
     readonly property point ownerOrigin: {
         const window = root.ownerWindow
         const screen = window?.screen
@@ -51,13 +48,10 @@ Item {
         mask: Region {}
 
         Surface {
-            // mapToItem is not reactive; depending on `eligible` re-reads the
-            // position each time the tooltip is shown, after layout has settled.
-            readonly property point local: root.eligible && root.target && root.ownerWindow
+            readonly property point targetPositionRereadOnEachShow: root.eligible && root.target && root.ownerWindow
                 ? root.target.mapToItem(root.ownerWindow.contentItem, 0, 0) : Qt.point(0, 0)
-            readonly property point position: Qt.point(root.ownerOrigin.x + local.x, root.ownerOrigin.y + local.y)
+            readonly property point position: Qt.point(root.ownerOrigin.x + targetPositionRereadOnEachShow.x, root.ownerOrigin.y + targetPositionRereadOnEachShow.y)
             readonly property real below: position.y + (root.target?.height ?? 0) + root.gap
-            // Flip above targets near the bottom edge (e.g. the capture toolbar).
             readonly property bool fitsBelow: below + height <= parent.height
             readonly property real horizontalOffset: root.alignment === Qt.AlignRight
                 ? (root.target?.width ?? 0) - width
@@ -68,8 +62,6 @@ Item {
             width: Math.min(label.implicitWidth + 16, parent.width)
             height: 26
             radius: 6
-            // A label with no fill would be lost against the wallpaper; stay solid in
-            // every theme.
             color: Theme.Colors.background
             border.color: Theme.Colors.edge
 

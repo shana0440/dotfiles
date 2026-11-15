@@ -7,11 +7,15 @@ import "." as Services
 Singleton {
     id: root
 
-    // Keep these values aligned with bars and ascii_max_range in cava.conf.
-    readonly property int barCount: 24
-    readonly property int asciiMaxRange: 100
+    readonly property int barCount: cavaSetting("bars")
+    readonly property int asciiMaxRange: cavaSetting("ascii_max_range")
     property real gain: 1.0
     property var bars: Array(barCount).fill(0)
+
+    function cavaSetting(key) {
+        const match = new RegExp("^" + key + "\\s*=\\s*(\\d+)", "m").exec(cavaConfig.text())
+        return match ? Number(match[1]) : 0
+    }
 
     function applyFrame(data) {
         const values = data.trim().split(";")
@@ -52,9 +56,15 @@ Singleton {
         function onPlayingChanged() { root.syncPlayback() }
     }
 
+    FileView {
+        id: cavaConfig
+        path: Quickshell.shellPath("Services/cava.conf")
+        blockLoading: true
+    }
+
     Process {
         id: cavaProcess
-        command: ["cava", "-p", Quickshell.shellPath("Services/cava.conf")]
+        command: ["cava", "-p", cavaConfig.path]
         stdout: SplitParser {
             onRead: data => root.applyFrame(data)
         }

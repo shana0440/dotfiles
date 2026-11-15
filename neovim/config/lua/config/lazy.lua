@@ -12,7 +12,6 @@ end
 vim.opt.rtp:prepend(lazypath)
 
 require("lazy").setup({
-  -- Theme
   {
     "rebelot/kanagawa.nvim",
     lazy = false,
@@ -25,7 +24,6 @@ require("lazy").setup({
     end,
   },
 
-  -- 2) File explorer
   {
     "nvim-tree/nvim-tree.lua",
     commit = vim.fn.has("nvim-0.10") == 1 and nil or "e16cd38962bc40c22a51ee004aa4f43726d74a16",
@@ -54,7 +52,6 @@ require("lazy").setup({
     end,
   },
 
-  -- 3) Fuzzy finder
   {
     "nvim-telescope/telescope.nvim",
     branch = "0.1.x",
@@ -73,7 +70,6 @@ require("lazy").setup({
     end,
   },
 
-  -- 4) Better syntax parsing/highlighting
   {
     "nvim-treesitter/nvim-treesitter",
     branch = vim.fn.has("nvim-0.10") == 1 and "main" or nil,
@@ -104,7 +100,6 @@ require("lazy").setup({
     end,
   },
 
-  -- 6) Autocompletion (nvim-cmp)
   {
     "hrsh7th/nvim-cmp",
     dependencies = {
@@ -132,7 +127,6 @@ require("lazy").setup({
     end,
   },
 
-  -- 10) Formatting (Prettier)
   {
     "stevearc/conform.nvim",
     opts = {
@@ -152,7 +146,6 @@ require("lazy").setup({
     },
   },
 
-  -- 9) Comment toggling
   {
     "numToStr/Comment.nvim",
     config = function()
@@ -160,7 +153,6 @@ require("lazy").setup({
     end,
   },
 
-  -- 11) Multiple cursors
   {
     "mg979/vim-visual-multi",
     branch = "master",
@@ -172,7 +164,6 @@ require("lazy").setup({
     end,
   },
 
-  -- 12) Floating terminal
   {
     "akinsho/toggleterm.nvim",
     version = "*",
@@ -186,7 +177,6 @@ require("lazy").setup({
     end,
   },
 
-  -- Buffer tabs
   {
     "akinsho/bufferline.nvim",
     version = "*",
@@ -194,7 +184,6 @@ require("lazy").setup({
     opts = {},
   },
 
-  -- 7) Statusline
   {
     "nvim-lualine/lualine.nvim",
     dependencies = { "nvim-tree/nvim-web-devicons" },
@@ -209,7 +198,6 @@ require("lazy").setup({
     end,
   },
 
-  -- 8) Git signs + inline blame
   {
     "lewis6991/gitsigns.nvim",
     config = function()
@@ -219,7 +207,6 @@ require("lazy").setup({
     end,
   },
 
-  -- 5) LSP + server manager
   {
     "williamboman/mason.nvim",
     config = function()

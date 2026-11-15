@@ -1,4 +1,3 @@
-# Shared Home Manager shell configuration.
 { ... }:
 
 {
@@ -6,7 +5,6 @@
 
   home.shellAliases.ll = "ls -lah";
 
-  # Keep Bash configured as a fallback shell.
   programs.bash = {
     enable = true;
   };

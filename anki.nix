@@ -1,4 +1,3 @@
-# Anki and its Nix-managed add-ons; keep existing profiles and decks writable.
 { pkgs, ... }:
 
 {

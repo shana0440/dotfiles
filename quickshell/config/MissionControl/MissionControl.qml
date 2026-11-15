@@ -7,16 +7,11 @@ import Quickshell.Hyprland
 import "../Theme" as Theme
 import "../Components" as Components
 
-// Mission Control: every monitor shows its workspaces as a strip of live thumbnails
-// along the top and spreads the current workspace's windows out below. Click a
-// window to focus it, a workspace to slide over to it, or drag a window onto a workspace to
-// move it.
 Scope {
     id: root
 
     property bool opened: false
     property string wallpaper: ""
-    // Bumped on every open so captures and layouts start fresh.
     property int generation: 0
 
     function show() {
@@ -42,8 +37,6 @@ Scope {
         refresh.restart()
     }
 
-    // Hyprland reports moves as events, but the window geometry in lastIpcObject
-    // only updates on a refresh.
     Timer {
         id: refresh
         interval: 120

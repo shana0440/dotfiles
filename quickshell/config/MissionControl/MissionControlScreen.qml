@@ -7,7 +7,6 @@ import "Layout.js" as Layout
 import "../Theme" as Theme
 import "../Components" as Components
 
-// Mission Control on one monitor.
 PanelWindow {
     id: win
 
@@ -20,12 +19,10 @@ PanelWindow {
     readonly property real progress: openSpring.value
     readonly property bool settled: controller.opened && !openSpring.moving
 
-    // Workspaces of this monitor, in order; special workspaces stay hidden.
     readonly property var workspaces: Hyprland.workspaces.values
         .filter(ws => ws.id > 0 && ws.monitor === monitor)
         .sort((a, b) => a.id - b.id)
 
-    // Windows of a workspace, in this monitor's coordinates.
     function windowsOf(workspace) {
         return Hyprland.toplevels.values
             .filter(t => workspace && t.workspace === workspace && t.lastIpcObject?.at && !t.lastIpcObject.hidden)
@@ -38,7 +35,6 @@ PanelWindow {
                 stack: t.lastIpcObject.focusHistoryID ?? 0
             }))
     }
-    // Spread rects by window address.
     function spreadOf(list) {
         const rects = Layout.spread(list, spreadArea, 28, 0.85)
         const byAddress = {}
@@ -47,9 +43,6 @@ PanelWindow {
     }
     readonly property var windows: windowsOf(activeWorkspace)
 
-    // Switching workspaces while open slides the spread sideways, like Spaces:
-    // the old workspace's windows leave on one side as the new ones come in from
-    // the other, by where the workspaces sit in the strip.
     property var shownWorkspace: null
     property var previousWorkspace: null
     property var previousSpread: ({})
@@ -78,22 +71,19 @@ PanelWindow {
     })
     readonly property var spread: spreadOf(windows)
 
-    // Keyboard selection (index into `windows` order by layout), hover, and drag state.
     property string selectedAddress: ""
-    property var dropTarget: null // a workspace id
+    property var dropWorkspaceId: null
 
     function chooseWindow(address) {
         controller.focusWindow(address)
         controller.close()
     }
-    // Mission Control stays open on the new workspace.
     function chooseWorkspace(id) {
         controller.focusWorkspace(id)
     }
     function dropWindow(address, target) {
         if (target !== null) controller.moveWindow(address, target)
     }
-    // The workspace drop target under a point in window coordinates.
     function targetAt(x, y) {
         for (let i = 0; i < thumbs.count; i++) {
             const item = thumbs.itemAt(i)
@@ -102,7 +92,6 @@ PanelWindow {
         }
         return null
     }
-    // Arrow keys move the selection to the nearest window in that direction.
     function moveSelection(dx, dy) {
         const rects = spread
         const current = rects[selectedAddress]
@@ -141,7 +130,6 @@ PanelWindow {
     Components.Spring {
         id: slideSpring
         to: 1
-        // Critically damped and a little slower than the other motion, like Spaces.
         stiffness: 220
         damping: 30
         precision: 0.001
@@ -150,7 +138,7 @@ PanelWindow {
     Connections {
         target: win.controller
         function onOpenedChanged() {
-            win.dropTarget = null
+            win.dropWorkspaceId = null
             if (win.controller.opened) {
                 win.shownWorkspace = win.activeWorkspace
                 win.previousWorkspace = null
@@ -181,7 +169,6 @@ PanelWindow {
             }
         }
 
-        // The desktop behind the windows, softened and dimmed as Mission Control opens.
         Image {
             id: backdrop
             anchors.fill: parent
@@ -198,7 +185,6 @@ PanelWindow {
             visible: backdrop.status === Image.Ready
             blurEnabled: true
             blurMax: 48
-            // No padding: the blur clamps at the screen edges instead of fading to black.
             autoPaddingEnabled: false
             blur: 0.8 * win.progress
             opacity: Math.min(1, win.progress * 4)
@@ -213,7 +199,6 @@ PanelWindow {
             onClicked: win.controller.close()
         }
 
-        // Workspaces strip.
         Item {
             id: strip
             width: parent.width
@@ -243,7 +228,7 @@ PanelWindow {
                         live: win.controller.opened
                         generation: win.controller.generation
                         current: modelData === win.activeWorkspace
-                        dropping: win.dropTarget === modelData.id
+                        dropping: win.dropWorkspaceId === modelData.id
                         onClicked: win.chooseWorkspace(modelData.id)
                     }
                 }
@@ -261,8 +246,6 @@ PanelWindow {
             font.pixelSize: 15
         }
 
-        // Windows of the active workspace, morphing from where they sit to the spread,
-        // and during a switch those of the workspace being left.
         Repeater {
             model: Hyprland.toplevels
 
@@ -286,12 +269,12 @@ PanelWindow {
                 selected: win.selectedAddress === modelData.address
                 onHoveredChanged: if (hovered) win.selectedAddress = modelData.address
                 onClicked: win.chooseWindow(modelData.address)
-                onDragMoved: (x, y) => win.dropTarget = win.targetAt(x, y)
+                onDragMoved: (x, y) => win.dropWorkspaceId = win.targetAt(x, y)
                 onDropped: (x, y) => {
                     const target = win.targetAt(x, y)
                     tile.parked = target !== null
                     win.dropWindow(modelData.address, target)
-                    win.dropTarget = null
+                    win.dropWorkspaceId = null
                 }
             }
         }

@@ -1,18 +1,14 @@
 .PHONY: nixos nixos-update home home-linux home-mac home-wsl update
 
-# Resolve paths relative to this Makefile, regardless of the working directory.
 DOTFILES := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
 
-# Bootstrap flakes even before Home Manager writes the user Nix configuration.
 NIX_FLAGS = --extra-experimental-features "nix-command flakes"
 
-# Select the host architecture using Nix's platform naming.
 NIX_SYSTEM ?= $(shell nix $(NIX_FLAGS) eval --impure --raw --expr builtins.currentSystem)
 NIX_ARCH = $(firstword $(subst -, ,$(NIX_SYSTEM)))
 
 IS_WSL = $(shell if [ -n "$$WSL_DISTRO_NAME" ] || grep -qi microsoft /proc/sys/kernel/osrelease 2>/dev/null; then printf true; else printf false; fi)
 
-# Refresh every flake dependency, bypassing cached downloads, then apply it.
 update:
 	nix $(NIX_FLAGS) flake update --refresh --flake "$(DOTFILES)"
 	$(MAKE) home
@@ -20,7 +16,6 @@ update:
 nixos:
 	sudo nixos-rebuild switch -I "nixos-config=$(DOTFILES)/nixos/configuration.nix"
 
-# Update the root NixOS channel and switch to the rebuilt system.
 nixos-update:
 	sudo nixos-rebuild switch --upgrade -I "nixos-config=$(DOTFILES)/nixos/configuration.nix"
 

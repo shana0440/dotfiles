@@ -1,4 +1,3 @@
-# Single source for the NixOS username.
 { lib, ... }:
 
 {

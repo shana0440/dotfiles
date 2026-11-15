@@ -12,7 +12,6 @@ Components.Surface {
     readonly property int buttonSize: 28
     readonly property int buttonSpacing: 4
     readonly property int padding: 8
-    // heuristicLookup() is not reactive; bump this when desktop entries (re)load.
     property int entriesRevision: 0
 
     Connections {
@@ -140,9 +139,6 @@ Components.Surface {
         }
     }
 
-    // Keep the wheel target outside the scrolling content so it never scrolls away.
-    // A handler rather than a MouseArea: a MouseArea above the buttons would set the
-    // arrow cursor over them and hide their pointing hand.
     Item {
         anchors.fill: parent
 

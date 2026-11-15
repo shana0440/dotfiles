@@ -1,4 +1,3 @@
-# Moshi's host helper (getmoshi.app), not the unrelated Kyutai voice AI.
 { config, lib, pkgs, ... }:
 
 let

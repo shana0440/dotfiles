@@ -1,5 +1,3 @@
-"""Integration tests; each test starts its own private D-Bus daemon."""
-
 import asyncio
 import json
 import os
@@ -14,7 +12,6 @@ from dbus_next.aio import MessageBus
 
 class BusTests(unittest.IsolatedAsyncioTestCase):
     async def asyncSetUp(self):
-        # Always isolate the test, even when invoked from a real desktop session.
         self.daemon = subprocess.Popen(
             ["dbus-daemon", "--session", "--nofork", "--print-address=1"],
             stdout=subprocess.PIPE, text=True,

@@ -1,4 +1,3 @@
-"""Colony map tests; run via wallpaper-check (dependencies from wallpaper.nix)."""
 import importlib.util
 import os
 from pathlib import Path
@@ -36,9 +35,8 @@ class ColonyTests(unittest.TestCase):
     def test_colonies_form_connected_regions_not_noise(self):
         moment = arrival(colonies.make_map(3, 96, 54))
         early = moment < 0.3
-        # Most early cells border other early cells: spreading fronts, not speckle.
-        neighbours = early[1:-1, 1:-1] & (early[:-2, 1:-1] | early[2:, 1:-1] | early[1:-1, :-2] | early[1:-1, 2:])
-        self.assertGreater(neighbours.sum() / max(early[1:-1, 1:-1].sum(), 1), 0.95)
+        early_with_early_neighbour = early[1:-1, 1:-1] & (early[:-2, 1:-1] | early[2:, 1:-1] | early[1:-1, :-2] | early[1:-1, 2:])
+        self.assertGreater(early_with_early_neighbour.sum() / max(early[1:-1, 1:-1].sum(), 1), 0.95)
 
     def test_maps_differ_by_seed_and_glow_channel_is_smooth(self):
         a, b = colonies.make_map(1, 96, 54), colonies.make_map(2, 96, 54)
@@ -66,7 +64,8 @@ class ColonyTests(unittest.TestCase):
     def test_accent_picks_the_vivid_colour_and_lifts_dark_ones(self):
         image = Path(self.temp.name) / "art # one.png"
         canvas = Image.new("RGB", (64, 64), (20, 20, 24))
-        canvas.paste((90, 0, 10), (0, 0, 20, 20))       # dark but vivid red
+        dark_vivid_red = (90, 0, 10)
+        canvas.paste(dark_vivid_red, (0, 0, 20, 20))
         canvas.save(image)
         colour = colonies.accent(image)
         r, g, b = (int(colour[i:i + 2], 16) for i in (1, 3, 5))

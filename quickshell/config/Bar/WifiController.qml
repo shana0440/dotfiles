@@ -1,7 +1,6 @@
 import QtQuick
 import Quickshell.Io
 
-// Wi-Fi through NetworkManager: scans while active, connects and disconnects.
 Item {
     id: root
 
@@ -12,7 +11,6 @@ Item {
     readonly property bool connecting: connectProcess.running
     readonly property bool busy: connectProcess.running || disconnectProcess.running
     property string pendingPassword: ""
-    // A connect or disconnect succeeded.
     signal connectionChanged()
 
     visible: false
@@ -73,7 +71,6 @@ Item {
             message = "No networks found. Check that Wi-Fi is enabled."
     }
 
-    // A blank password uses saved credentials.
     function connect(ssid, password) {
         if (!ssid || busy)
             return
@@ -87,7 +84,6 @@ Item {
     function disconnect(device) {
         if (!device || busy)
             return
-        // Leaving a network is disruptive; record who asked, to trace surprises.
         console.warn("Wi-Fi disconnect requested for", device)
         console.trace()
         message = "Disconnecting…"
@@ -115,7 +111,6 @@ Item {
         id: connectProcess
         environment: ({ LC_ALL: "C" })
         stdinEnabled: true
-        // Pass passwords through stdin to keep them out of process listings.
         onStarted: {
             if (root.pendingPassword)
                 write(root.pendingPassword + "\n")

@@ -1,4 +1,3 @@
-# WSL Home Manager profile: shared CLI tools, no desktop modules.
 { ... }:
 
 {

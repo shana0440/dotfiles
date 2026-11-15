@@ -1,6 +1,3 @@
-// Preview of the login/lock screen under plain Qt, the environment SDDM gives it.
-//   qml Preview.qml -- [login|lock] [WALLPAPER]
-// The password "test" succeeds; anything else fails.
 import QtQuick
 import QtQuick.Window
 import ".."

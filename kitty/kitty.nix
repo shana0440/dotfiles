@@ -1,4 +1,3 @@
-# Install Kitty and manage its native configuration through Home Manager.
 { config, pkgs, ... }:
 
 {

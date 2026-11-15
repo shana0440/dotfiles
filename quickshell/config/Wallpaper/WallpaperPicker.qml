@@ -14,18 +14,14 @@ Scope {
     property string directory: ""
     property string message: ""
     property string currentPath: ""
-    // One wallpaper-set per choice, oldest first. Changes overlap on screen:
-    // each starts at once over the ones still running.
     property var setters: []
     property int started: 0
     property int finishedOrder: 0
     property var chosenScreen: Quickshell.screens[0] ?? null
     readonly property bool busy: preparing || query.running || library.running
-    // The wallpaper the screen ends up on once all requested changes finish.
     readonly property string targetPath: setters.length ? setters[setters.length - 1].path : currentPath
 
     function show() {
-        // Reopened by hand: a change still starting must not close it again.
         for (const setter of setters) setter.closeOnReady = false
         chosenScreen = Quickshell.screens.find(s => s.name === Hyprland.focusedMonitor?.name)
             ?? Quickshell.screens[0] ?? null
@@ -43,7 +39,6 @@ Scope {
         carousel.forceLayout()
         if (carousel.currentIndex >= 0)
             carousel.positionViewAtIndex(carousel.currentIndex, ListView.Center)
-        // Keep the initial positioning out of the visible fade-in frame.
         Qt.callLater(() => {
             if (!opened || query.running || library.running) return
             preparing = false
@@ -63,7 +58,6 @@ Scope {
         const path = items[carousel.currentIndex].path
         message = ""
         if (path === targetPath) { close(); return }
-        // Closes the picker once its transition is about to start.
         const setter = setterComponent.createObject(root, { path: path, order: ++started })
         setters = setters.concat([setter])
         setter.running = true
@@ -121,7 +115,6 @@ Scope {
             Qt.callLater(root.finishOpening)
         }
     }
-    // Keeps the transition map pool full, off the UI thread (cheap when full).
     Process {
         id: colonyWarm
         command: ["wallpaper-colonies", "warm"]
@@ -253,9 +246,6 @@ Scope {
                                 anchors.margins: 3
                                 clip: true
 
-                                // The clip inherits the card's parallelogram, but
-                                // the inverse shear keeps the artwork upright.
-                                // Overscan covers both slanted edges without gaps.
                                 Image {
                                     id: artwork
                                     anchors.centerIn: parent

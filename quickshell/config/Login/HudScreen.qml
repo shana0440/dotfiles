@@ -2,25 +2,18 @@ import QtQuick
 import QtQuick.Effects
 import "../Theme" as Theme
 
-// The login and lock screen, shared by the SDDM greeter and the Quickshell lock.
-// Plain Qt Quick only: SDDM cannot load Quickshell modules. Wrappers set the
-// inputs and act on the signals; this item only draws.
 Item {
     id: root
 
-    // "login" (SDDM) or "lock" (Quickshell).
     property string mode: "lock"
     property string userName: ""
     property string hostName: ""
-    // idle | busy | denied | granted
     property string authState: "idle"
     property string message: ""
     property bool capsLock: false
     property string sessionName: ""
     property string sessionId: ""
-    // Image path or URL; empty shows the plain background.
     property string wallpaper: ""
-    // 0 = the card waits above the screen, 1 = the card is in place.
     property real cardProgress: 1
     readonly property real cardShift: -(1 - cardProgress) * (card.y + card.height + 40)
 
@@ -45,8 +38,6 @@ Item {
         onTriggered: root.now = new Date()
     }
 
-    // ---------------------------------------------------------------- background
-
     Rectangle { anchors.fill: parent; color: Theme.Colors.background }
 
     Image {
@@ -62,7 +53,6 @@ Item {
         visible: false
     }
 
-    // Blurred and dimmed; typing pulls it further back.
     MultiEffect {
         anchors.fill: parent
         source: wallpaperImage
@@ -77,7 +67,6 @@ Item {
         Behavior on brightness { NumberAnimation { duration: 600; easing.type: Easing.OutCubic } }
     }
 
-    // Darker at the sides, where the clock and the card sit.
     Rectangle {
         anchors.fill: parent
         gradient: Gradient {
@@ -89,7 +78,6 @@ Item {
         }
     }
 
-    // Dot grid.
     Canvas {
         anchors.fill: parent
         opacity: 0.07
@@ -106,7 +94,6 @@ Item {
         }
     }
 
-    // A faint band drifting down the screen.
     Rectangle {
         id: sweep
         width: parent.width
@@ -124,8 +111,6 @@ Item {
             loops: Animation.Infinite
         }
     }
-
-    // ---------------------------------------------------------------- frame
 
     component Bracket: Canvas {
         property int dx: 1
@@ -177,8 +162,6 @@ Item {
         color: Theme.Colors.foreground
     }
 
-    // ---------------------------------------------------------------- clock
-
     Column {
         id: clock
         x: Math.max(80, root.width * 0.065)
@@ -204,7 +187,6 @@ Item {
             font.letterSpacing: -2
         }
 
-        // Progress through the current minute.
         Item {
             width: time.width
             height: 3
@@ -230,8 +212,6 @@ Item {
         }
     }
 
-    // ---------------------------------------------------------------- card
-
     AuthCard {
         id: card
         anchors.right: parent.right
@@ -256,8 +236,6 @@ Item {
 
     Bracket { x: card.x - 12; y: card.y - 12 + root.cardShift; width: 28; height: 28 }
     Bracket { x: card.x + card.width - 16; y: card.y + card.height - 16 + root.cardShift; width: 28; height: 28; dx: -1; dy: -1 }
-
-    // ---------------------------------------------------------------- ruler
 
     Item {
         id: ruler
@@ -286,7 +264,6 @@ Item {
                 ctx.stroke()
             }
 
-            // Marker at the current second.
             Text {
                 x: parent.width * root.now.getSeconds() / 60 - width / 2
                 y: -12

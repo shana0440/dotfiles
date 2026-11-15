@@ -3,7 +3,6 @@ import Quickshell.Services.Pipewire
 import "../Theme" as Theme
 import "../Components" as Components
 
-// The dashboard's audio tab: volume and device for output, then for the microphone.
 Item {
     id: root
 
@@ -15,7 +14,6 @@ Item {
     implicitWidth: 480
     implicitHeight: Math.min(maximumHeight, content.implicitHeight + 40)
 
-    // Volume and mute are only live on bound nodes.
     PwObjectTracker {
         objects: [root.sink, root.source].filter(node => node)
     }
@@ -35,7 +33,6 @@ Item {
             Pipewire.preferredDefaultAudioSink = node
     }
 
-    // Volume and mute for one node; scroll nudges by 5%.
     component Level: Item {
         id: level
         property var node: null

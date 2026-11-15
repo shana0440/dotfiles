@@ -18,14 +18,12 @@ PanelWindow {
     readonly property bool menuOpen: centerIsland.expanded
     readonly property bool menuNeedsKeyboardFocus: centerIsland.keyboardFocusRequired
 
-    // Holding the keyboard unfocuses the editor whose input method Fcitx reports.
     Binding {
         target: Services.InputMethod
         property: "held"
         value: root.menuNeedsKeyboardFocus
     }
 
-    // The center island turns solid while the dashboard or a notification is open.
     Binding {
         target: Theme.Colors
         property: "centerHeld"
@@ -39,15 +37,12 @@ PanelWindow {
     Connections {
         target: Services.Notifications
         function onActionInvoked() {
-            // Hyprland refuses window focus while an exclusive layer exists, so the
-            // sender waits until the menu has handed the keyboard back.
             if (root.menuNeedsKeyboardFocus)
                 Services.Notifications.focusBlocked = true
             root.closeMenus()
         }
     }
 
-    // The expanded center island; toggling opens it on the home tab.
     IpcHandler {
         target: "dashboard"
         function toggle(): void {
@@ -64,8 +59,6 @@ PanelWindow {
         centerIsland.open(["home", "media", "audio", "notifications", "network", "bluetooth", "system", "usage", "pomodoro", "power"].includes(tab) ? tab : "home")
     }
 
-    // Pairing prompts can arrive while the dashboard is closed, e.g. from a remote
-    // device; the Bluetooth tab shows them.
     Connections {
         target: Services.Bluetooth
         function onRequestChanged() {
@@ -74,24 +67,18 @@ PanelWindow {
         }
     }
 
-    // Escape, bound in Hyprland while the input method page holds no keyboard.
     IpcHandler {
         target: "inputMenu"
         function close() { root.closeMenus() }
     }
 
-    // When a layer drops exclusive keyboard focus without unmapping, Hyprland clears
-    // the focused surface but keeps the focused window, so its refocus of that window
-    // is a no-op and the keyboard goes nowhere. Unmapping an exclusive layer takes the
-    // working path, so a throwaway one hands focus back to the previous window.
     onMenuNeedsKeyboardFocusChanged: {
         if (menuNeedsKeyboardFocus)
             grabKeyboard()
         else
-            focusCheck.restart()
+            restoreLostWindowFocus.restart()
     }
 
-    // An empty activewindowv2 means no window has the keyboard.
     property bool keyboardUnfocused: false
     Connections {
         target: Hyprland
@@ -102,11 +89,11 @@ PanelWindow {
     }
 
     Timer {
-        id: focusCheck
+        id: restoreLostWindowFocus
         interval: 50
         onTriggered: {
             if (!root.menuNeedsKeyboardFocus && root.keyboardUnfocused)
-                focusRelay.visible = true
+                focusRestoringExclusiveLayer.visible = true
             else
                 root.focusHandedBack()
         }
@@ -120,7 +107,7 @@ PanelWindow {
     }
 
     PanelWindow {
-        id: focusRelay
+        id: focusRestoringExclusiveLayer
         screen: root.screen
         visible: false
         anchors.top: true
@@ -140,13 +127,12 @@ PanelWindow {
             id: relayRelease
             interval: 50
             onTriggered: {
-                focusRelay.visible = false
+                focusRestoringExclusiveLayer.visible = false
                 Qt.callLater(root.focusHandedBack)
             }
         }
     }
 
-    // Also when the dashboard takes the keyboard back from the input method page.
     onMenuOpenChanged: grabKeyboard()
     function grabKeyboard() {
         Qt.callLater(() => {
@@ -162,15 +148,12 @@ PanelWindow {
         right: true
     }
 
-    // A fixed native surface keeps window resizing from interrupting island animations.
     exclusionMode: ExclusionMode.Ignore
     color: Theme.Colors.transparent
     WlrLayershell.keyboardFocus: menuNeedsKeyboardFocus ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
-    // Let overlapping floating windows cover the idle bar, but keep menus and alerts above apps.
-    WlrLayershell.layer: menuOpen || centerIsland.notificationVisible || Services.Capture.recording
-        ? WlrLayer.Overlay : WlrLayer.Bottom
+    readonly property bool showsAboveApps: menuOpen || centerIsland.notificationVisible || Services.Capture.recording
+    WlrLayershell.layer: showsAboveApps ? WlrLayer.Overlay : WlrLayer.Bottom
 
-    // Layer-shell infers the reservation edge from three-edge anchoring.
     PanelWindow {
         id: topReservation
         screen: root.screen
@@ -241,7 +224,6 @@ PanelWindow {
         anchors.rightMargin: root.islandMargin
         focus: true
         Keys.onEscapePressed: root.closeMenus()
-        // Fcitx's cycling hotkey (hyprland.nix), which it cannot see from here.
         Keys.onPressed: event => {
             if (root.menuNeedsKeyboardFocus && event.key === Qt.Key_Space
                     && (event.modifiers & ~Qt.KeypadModifier) === Qt.ControlModifier) {
@@ -249,7 +231,6 @@ PanelWindow {
                 event.accepted = true
             }
         }
-        // Tab and Shift+Tab step through the dashboard tabs while it is open.
         Keys.onTabPressed: event => {
             if (centerIsland.expanded)
                 centerIsland.cycleTab(1)
@@ -297,7 +278,6 @@ PanelWindow {
                 - (inputIsland.visible ? inputIsland.x + inputIsland.width : centerIsland.x + centerIsland.width))
         }
 
-        // Declared first so it paints beneath the islands it draws.
         Components.IslandGoo {
             id: centerGoo
             target: centerIsland
@@ -328,8 +308,6 @@ PanelWindow {
             onClicked: centerIsland.open("media")
         }
 
-        // Rides the media dot's left edge, which rests inside the center island while
-        // the dot is hidden, so it flows beside whichever is outermost.
         BarComponents.WeatherIsland {
             id: weatherIsland
             bare: centerGoo.ready
@@ -354,8 +332,6 @@ PanelWindow {
             onClicked: centerIsland.open("notifications")
         }
 
-        // Rides the notification dot's right edge, which rests inside the center
-        // island while the dot is hidden, so it flows beside whichever is outermost.
         BarComponents.InputIsland {
             id: inputIsland
             bare: centerGoo.ready

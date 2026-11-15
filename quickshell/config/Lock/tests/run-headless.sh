@@ -1,11 +1,17 @@
 #!/usr/bin/env nix-shell
 #! nix-shell -i bash -p sway awww grim wtype wf-recorder
-# Runs the lock in a headless sway on the GPU render node, so it never locks your
-# own session. PAM accepts only the password "test".
-#   run-headless.sh [WALLPAPER] [WIDTHxHEIGHT]
-# While it runs, drive it with the tools in its environment, e.g.
-#   . "$XDG_RUNTIME_DIR/lock-test.env"; wtype test; wtype -k Return; grim shot.png
 set -euo pipefail
+
+if [[ "${1:-}" == --help ]]; then
+    cat <<'USAGE'
+Usage: run-headless.sh [WALLPAPER] [WIDTHxHEIGHT]
+
+Runs the lock inside a headless sway, never in your own session.
+The only accepted password is "test". Drive it from another terminal:
+  . "$XDG_RUNTIME_DIR/lock-test.env"; wtype test; wtype -k Return; grim shot.png
+USAGE
+    exit 0
+fi
 
 here="$(cd "$(dirname "$0")" && pwd)"
 config="$(cd "$here/../.." && pwd)"
@@ -16,7 +22,6 @@ env_file="$XDG_RUNTIME_DIR/lock-test.env"
 trap 'rm -rf "$tmp"' EXIT
 
 pam_lib="$(nix-build --no-out-link '<nixpkgs>' -A pam)/lib/security"
-# pam_exec runs this with an empty environment: no PATH.
 cat > "$tmp/check-password" <<EOF
 #!/bin/sh
 [ "\$($(command -v tr) -d '\\000')" = test ]
@@ -28,13 +33,10 @@ auth required $pam_lib/pam_exec.so quiet expose_authtok $tmp/check-password
 account required $pam_lib/pam_permit.so
 EOF
 
-# Quickshell only imports from inside its config folder: link the real
-# folders next to the test shell.
 mkdir "$tmp/config"
 for dir in Lock Login Theme Icons; do ln -s "$config/$dir" "$tmp/config/$dir"; done
 cp "$here/shell.qml" "$tmp/config/shell.qml"
 
-# Inside sway: publish the environment, show the wallpaper, then lock over it.
 cat > "$tmp/session" <<EOF
 #!/bin/sh
 printf 'export WAYLAND_DISPLAY=%s PATH=%s\n' "\$WAYLAND_DISPLAY" "$PATH" > "$env_file"

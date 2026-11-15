@@ -7,7 +7,6 @@ import "../Services" as Services
 import "../Theme" as Theme
 import "../Components" as Components
 
-// Capture toolbar and selectors. Recording state and Stop live in the bar.
 Scope {
     id: root
 
@@ -31,7 +30,6 @@ Scope {
     function openMenu() {
         message = ""
         if (menuOpen && !Services.Capture.previewActive && !Services.Capture.recording) {
-            // Do not bake a recording/error toolbar into the next frozen frame.
             menuOpen = false
             reopenDelay.restart()
         } else {
@@ -74,7 +72,6 @@ Scope {
     }
 
     function capture() {
-        // Stopping must stay available even while another capture is finishing.
         if (Services.Capture.recording) {
             Services.Capture.stopRecording()
             return
@@ -174,7 +171,6 @@ Scope {
 
     PanelWindow {
         id: panel
-        // While recording, the bar shows elapsed time and Stop.
         visible: root.menuOpen
         screen: root.outputScreen
         anchors.bottom: true
@@ -188,7 +184,6 @@ Scope {
         WlrLayershell.layer: WlrLayer.Overlay
         WlrLayershell.keyboardFocus: WlrKeyboardFocus.Exclusive
 
-        // Only the rounded toolbar accepts pointer input.
         mask: Region { item: surface }
 
         Components.Surface {
@@ -293,8 +288,6 @@ Scope {
                 }
             }
         }
-        // The selector and toolbar are separate native windows; shortcuts must
-        // keep working after a drag gives the selector keyboard focus.
         Shortcut { sequence: "Escape"; context: Qt.ApplicationShortcut; enabled: root.menuOpen; onActivated: root.dismiss() }
         Shortcut { sequence: "Return"; context: Qt.ApplicationShortcut; enabled: root.menuOpen; onActivated: root.capture() }
         Shortcut { sequence: "Enter"; context: Qt.ApplicationShortcut; enabled: root.menuOpen; onActivated: root.capture() }

@@ -2,8 +2,6 @@ import QtQuick
 import "../Theme" as Theme
 import "../Services" as Services
 
-// The center island's pomodoro badge: a ring of what is left of the phase, then
-// the time left.
 Row {
     id: root
 

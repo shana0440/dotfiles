@@ -4,16 +4,11 @@ import Quickshell
 import Quickshell.Io
 import "../Capture/RegionGeometry.js" as Geometry
 
-// Capture state for the capture UI (Capture/) and the bar's recording indicator.
-// The work itself is done by the screen-capture-* commands (screen-capture/).
 Singleton {
     id: root
 
     property var preview: null
     property bool previewActive: false
-    // Desktop frames come from compositor screencopy in the overlay windows, which
-    // is far faster than writing/decoding an image file. `preview` (window list and
-    // window frames) arrives separately from the helper a moment later.
     property bool capturing: false
     property var frameScreens: ({})
     property var grabbedFrames: ({})
@@ -32,7 +27,6 @@ Singleton {
     signal grabRequested(string directory)
 
     function openPreview() {
-        // A restarted UI must not freeze a recording that already runs in systemd.
         if (!recordingStatusKnown) {
             previewRequested = true
             if (!recordingStatus.running)
@@ -135,9 +129,6 @@ Singleton {
         dismissPreview()
     }
 
-    // Keep the dimmed cut-out on screen from the moment Record is pressed: the live
-    // outline only exists once the recording and window tracker are running, so the
-    // chosen window's rectangle bridges the gap (as range recording does).
     function beginWindowRecording() {
         const window = selectedWindow
         if (!window || recording || recordingCommandRunning || !previewActive)
@@ -158,13 +149,10 @@ Singleton {
         capturing = false
         previewActive = false
         frameTimeout.stop()
-        // The save process still needs the source frame until it exits.
         if (currentScreenshot === null && !saving)
             cleanupPreview()
     }
 
-    // Save from the frozen frames themselves: a separate screen capture here would
-    // photograph our own backdrop and toolbar.
     function frozenScreenshot(geometry) {
         if (!previewActive || saving)
             return
@@ -246,10 +234,8 @@ Singleton {
     property real recordingStartedAtMs: 0
     property string recordingGeometry: ""
     property string recordingWindow: ""
-    // Live rectangle of the recorded window, so the outline can follow it.
     property string windowGeometry: ""
     property string startingRecordingGeometry: ""
-    // True while the placeholder outline above stands in for a window being started.
     property bool startingWindow: false
     onStartingRecordingGeometryChanged: if (startingRecordingGeometry.length === 0) startingWindow = false
     readonly property string visibleRecordingGeometry: startingRecordingGeometry || recordingGeometry || windowGeometry
@@ -359,7 +345,6 @@ Singleton {
         regionCaptureDelay.restart()
     }
 
-    // Hide selector controls before capture; recording keeps its click-through outline.
     Timer {
         id: regionCaptureDelay
         property string kind: ""
@@ -399,10 +384,8 @@ Singleton {
         if (mode !== recordingMode || geometry.length > 0)
             recordingGeometry = mode === "region" ? geometry : ""
         recordingWindow = mode === "window" && /^[0-9a-fA-F]+$/.test(status.window ?? "") ? status.window : ""
-        // The completion hook removes session metadata while the service is still stopping.
         if (mode !== recordingMode || startedAtMs > 0)
             recordingStartedAtMs = mode ? startedAtMs : 0
-        // Hand over from the placeholder to the live outline without a flash.
         if (mode === "window" && windowGeometry.length === 0 && startingRecordingGeometry.length > 0)
             windowGeometry = startingRecordingGeometry
         recordingMode = mode
@@ -417,11 +400,8 @@ Singleton {
         id: screenshotCommand
         stderr: StdioCollector { id: screenshotErrors }
         onRunningChanged: {
-            // Failed-to-start processes emit this signal without emitting exited.
             if (!running && root.currentScreenshot !== null) {
                 root.currentScreenshot = null
-                // exited may have fired first and deferred cleanup while this
-                // screenshot was still current; retry now that it is cleared.
                 if (root.cleanupPending && !root.previewActive)
                     root.cleanupPreview()
                 Qt.callLater(root.startNextScreenshot)
@@ -430,7 +410,6 @@ Singleton {
         stdout: SplitParser {
             onRead: data => {
                 if (data.length > 0) {
-                    // Both capture commands print the saved path once the file is written.
                     root.screenshotCommandSaved = true
                     root.screenshotSaved(data)
                 }
@@ -456,7 +435,6 @@ Singleton {
             if (running)
                 startedSuccessfully = false
             else if (!startedSuccessfully)
-                // Failed startup emits runningChanged, but not exited.
                 root.startingRecordingGeometry = ""
         }
         onExited: (exitCode, exitStatus) => {
@@ -474,7 +452,6 @@ Singleton {
         let geometry = ""
         try {
             const [clientsJson, monitorsJson] = line.split("\t")
-            // (This QML engine has no Array.flatMap.)
             const visible = []
             for (const monitor of JSON.parse(monitorsJson))
                 visible.push(monitor.activeWorkspace?.id, monitor.specialWorkspace?.id)
@@ -483,13 +460,11 @@ Singleton {
                 geometry = Math.round(client.at[0]) + "," + Math.round(client.at[1]) + " "
                     + Math.round(client.size[0]) + "x" + Math.round(client.size[1])
         } catch (error) {
-            // A partial or unavailable reading simply hides the outline for a moment.
         }
         if (geometry !== windowGeometry)
             windowGeometry = geometry
     }
 
-    // Poll Hyprland only while a window recording runs (about 10 Hz).
     Process {
         id: windowTracker
         running: root.recordingMode === "window" && root.recordingWindow.length > 0
@@ -517,7 +492,6 @@ Singleton {
                 root.previewRequested = false
                 root.errorOccurred("Could not check the recording service. Please try again.")
             }
-            // Only a status query issued after Start may retire the pending outline.
             if (completesRegionStart)
                 root.startingRecordingGeometry = ""
             if (root.recordingStatusRefreshQueued) {
@@ -527,14 +501,11 @@ Singleton {
         }
     }
 
-    // Pushed by screen-capture-record when a recording starts or stops.
     IpcHandler {
         target: "screenCapture"
         function changed(): void { root.refreshRecordingStatus() }
     }
 
-    // Start and Stop are pushed; polling only catches recordings that end on
-    // their own (window closed, recorder failure), so it can be slow.
     Timer {
         interval: 5000
         running: true

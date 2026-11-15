@@ -14,8 +14,8 @@ Singleton {
             ?? (players.includes(lastSelectedPlayer) ? lastSelectedPlayer : players[0]) ?? null
     }
 
-    // Defer this assignment to avoid re-entering the player-selection binding.
-    onPlayerChanged: Qt.callLater(() => root.lastSelectedPlayer = root.player)
+    function rememberPlayerOutsideSelectionBinding() { lastSelectedPlayer = player }
+    onPlayerChanged: Qt.callLater(rememberPlayerOutsideSelectionBinding)
     property bool pipewirePlaying: false
     readonly property bool playing: pipewirePlaying
     readonly property string title: player?.trackTitle || (playing ? "Audio playing" : "No media")
@@ -30,7 +30,6 @@ Singleton {
                 root.pipewirePlaying = JSON.parse(data).playing === true
             }
         }
-        // Also retry failed starts, which do not emit exited.
         onRunningChanged: {
             if (!running) {
                 root.pipewirePlaying = false

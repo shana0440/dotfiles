@@ -1,8 +1,6 @@
 import QtQuick
 import QtQuick.Effects
 
-// A Lucide icon tinted to one color. Icon.qml rewrites the SVG text, which needs
-// Quickshell; this only uses Qt Quick, so the SDDM greeter can load it too.
 Item {
     id: root
 
@@ -22,7 +20,6 @@ Item {
         visible: false
     }
 
-    // Lucide strokes are black; lift them to white, then tint.
     MultiEffect {
         anchors.fill: parent
         source: svg

@@ -25,7 +25,9 @@ From `~/dotfiles`:
 install -m 600 nixos/nas/secrets.example.yaml nixos/nas/secrets.yaml
 ```
 
-Set `device` to `NAS_HOST:/EXPORT/PATH`, for example:
+Set `device` to `NAS_HOST:/EXPORT/PATH`: the export path DSM shows followed by
+your user's home folder. Mount your own folder rather than all of `homes`, so
+paths stay `/mnt/nas/Eagle/...`. For example:
 
 ```yaml
 device: "NAS_HOST:/volume1/homes/YOUR_NAS_USERNAME"

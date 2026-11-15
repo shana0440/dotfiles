@@ -1,4 +1,3 @@
-# Install Git and link its native configuration without generating Git settings.
 { config, pkgs, ... }:
 
 let

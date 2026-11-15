@@ -1,4 +1,3 @@
-# Install tmux and link its native configuration.
 { config, pkgs, ... }:
 
 {

@@ -22,7 +22,6 @@ stdenv.mkDerivation {
 
   dontConfigure = true;
   dontBuild = true;
-  # Bun's executable contains an embedded payload; do not strip it.
   dontStrip = true;
 
   installPhase = ''

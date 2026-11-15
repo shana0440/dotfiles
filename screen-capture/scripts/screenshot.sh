@@ -1,5 +1,9 @@
 set -euo pipefail
 
+slurp_without_rectangle_suggestions() {
+    slurp </dev/null
+}
+
 capture_args=()
 case "${1:-}" in
     full)
@@ -7,8 +11,7 @@ case "${1:-}" in
     region)
         geometry="${2:-}"
         if [[ -z "$geometry" ]]; then
-            # slurp reads piped stdin as rectangle suggestions; GUI launches supply none.
-            if ! geometry=$(slurp </dev/null); then
+                if ! geometry=$(slurp_without_rectangle_suggestions); then
                 exit 0
             fi
             [[ -n "$geometry" ]] || exit 0
@@ -37,8 +40,8 @@ remove_unsaved() {
 }
 trap remove_unsaved EXIT
 
-# Favor capture latency over PNG file size; compression remains lossless.
-grim -l 1 "${capture_args[@]}" "$screenshot_path"
+fastest_lossless_png_compression=1
+grim -l "$fastest_lossless_png_compression" "${capture_args[@]}" "$screenshot_path"
 screenshot_saved=true
 printf '%s\n' "$screenshot_path"
 screen-capture-notify screenshot "$screenshot_path" >/dev/null 2>&1 &

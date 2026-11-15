@@ -1,8 +1,7 @@
 { config, lib, pkgs, ... }:
 
 let
-  # One interpreter for every wallpaper command: thumbnails (ImageMagick
-  # subprocess) plus colony maps and accent colours (NumPy, Pillow).
+  publishShaderPathForLiveReload = import ../quickshell/publish-shader-path.nix { inherit lib; };
   python = pkgs.python3.withPackages (ps: [ ps.numpy ps.pillow ]);
   library = pkgs.writeShellApplication {
     name = "wallpaper-library";
@@ -40,22 +39,8 @@ let
   };
 in
 {
-  # Installs the client and runs the daemon as a user service.
-  # Hyprland explicitly starts it because this session does not activate
-  # graphical-session.target (see hyprland/hyprland.lua).
   services.awww.enable = true;
-  # Quickshell reads the shader's store path from here. Qt caches shaders by
-  # URL, so a stable path would keep the old shader after a rebuild; the store
-  # path changes with every shader change. It is a plain file rewritten in place,
-  # not a store symlink: the running shell watches it, and a swapped symlink
-  # fires no change.
-  home.activation.publishColoniesShader = lib.hm.dag.entryAfter [ "linkGeneration" ] ''
-    target="${config.xdg.configHome}/wallpaper/colonies-shader"
-    run mkdir -p "$(dirname "$target")"
-    if [ -L "$target" ]; then run rm "$target"; fi
-    if [ "$(cat "$target" 2>/dev/null)" != "${shader}" ]; then
-      run sh -c 'printf "%s\n" "$1" > "$2"' _ "${shader}" "$target"
-    fi
-  '';
+  home.activation.publishColoniesShader = publishShaderPathForLiveReload
+    "${config.xdg.configHome}/wallpaper/colonies-shader" shader;
   home.packages = [ library colonies setWallpaper check ];
 }

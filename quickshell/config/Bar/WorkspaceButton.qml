@@ -3,9 +3,6 @@ import Quickshell.Hyprland
 import "../Theme" as Theme
 import "../Components" as Components
 
-// One workspace as a numbered dot: white and stretched when focused, half-clear
-// white when it has windows, so it takes on what lies behind the island. Empty workspaces hide unless focused, so the row lists only what is
-// in use. The item is a little wider than the dot to give an easy target.
 Item {
     id: root
 
@@ -13,6 +10,7 @@ Item {
     readonly property var workspace: Hyprland.workspaces.values.find(ws => ws.id === workspaceId) ?? null
     readonly property bool hasWindows: (workspace?.toplevels.values.length ?? 0) > 0
     readonly property bool focused: Hyprland.focusedWorkspace?.id === workspaceId
+    readonly property int altKeyDigit: workspaceId % 10
 
     visible: hasWindows || focused
     width: dot.width + 6
@@ -24,13 +22,8 @@ Item {
         id: dot
         anchors.centerIn: parent
         width: widthSpring.value
-        // Matches the apps island's icons.
         height: 20
         radius: height / 2
-        // White is the shell's emphasis; hover brightens without looking focused.
-        // On the black island the others are a faint white chip with white digits;
-        // over the wallpaper they are half-clear white with dark digits. Both follow
-        // the theme's clearness, so they shift with it when the theme changes.
         readonly property real clear: Theme.Colors.clearness
         color: root.focused ? Theme.Colors.foreground
             : Qt.alpha(Theme.Colors.foreground, mouse.containsMouse
@@ -48,19 +41,16 @@ Item {
             damping: Theme.Motion.morphDamping
         }
 
-        // Centre the digits' ink, not the line box: the box reserves ascender and
-        // descender space that digits do not fill, which pushes them off centre.
         TextMetrics {
-            id: ink
+            id: digitInkWithoutLineBox
             text: label.text
             font: label.font
         }
         Text {
             id: label
-            x: (dot.width - ink.tightBoundingRect.width) / 2 - ink.tightBoundingRect.x
-            y: (dot.height - ink.tightBoundingRect.height) / 2 - ink.tightBoundingRect.y - baselineOffset
-            // Workspace 10 is Alt+0, so it reads as 0 like its key.
-            text: root.workspaceId % 10
+            x: (dot.width - digitInkWithoutLineBox.tightBoundingRect.width) / 2 - digitInkWithoutLineBox.tightBoundingRect.x
+            y: (dot.height - digitInkWithoutLineBox.tightBoundingRect.height) / 2 - digitInkWithoutLineBox.tightBoundingRect.y - baselineOffset
+            text: root.altKeyDigit
             color: root.focused ? Theme.Colors.background
                 : Theme.Colors.themed(Theme.Colors.foreground, Theme.Colors.background)
             font.family: Theme.Fonts.family

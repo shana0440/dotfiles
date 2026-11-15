@@ -2,7 +2,6 @@ import QtQuick
 import Quickshell
 import "../Theme" as Theme
 
-// An analog clock with the digital time and date beneath it.
 Item {
     id: root
 

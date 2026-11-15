@@ -4,9 +4,6 @@ import Quickshell.Wayland
 import "../Theme" as Theme
 import "../Components" as Components
 
-// One window in Mission Control: a live capture that moves from where the window
-// sits (`frame`) to its place in the spread (`target`) as `progress` goes 0 → 1.
-// It can be clicked to focus the window or dragged onto a workspace.
 Item {
     id: root
 
@@ -14,12 +11,9 @@ Item {
     required property var screenInfo
     property var frame: null
     property var target: null
-    // Which spread the tile is in ("current", "leaving", or none) and its sideways
-    // offset while workspaces slide.
     property string slot: ""
     property real offsetX: 0
     property real progress: 0
-    // Once fully open, layout changes (a window leaving) glide instead of jumping.
     property bool settled: false
     property bool live: false
     property bool selected: false
@@ -38,16 +32,13 @@ Item {
     Components.Spring { id: springY; to: root.target?.y ?? 0; enabled: root.settled; stiffness: Theme.Motion.stackStiffness; damping: Theme.Motion.stackDamping }
     Components.Spring { id: springWidth; to: root.target?.width ?? 0; enabled: root.settled; stiffness: Theme.Motion.stackStiffness; damping: Theme.Motion.stackDamping }
     Components.Spring { id: springHeight; to: root.target?.height ?? 0; enabled: root.settled; stiffness: Theme.Motion.stackStiffness; damping: Theme.Motion.stackDamping }
-    // Entering a spread lands in place; only layout changes within one glide.
     function snapTarget() { springX.snap(); springY.snap(); springWidth.snap(); springHeight.snap() }
     onSlotChanged: { snapTarget(); Qt.callLater(snapTarget) }
 
     function lerp(a, b) { return a + (b - a) * progress }
 
-    // While dragged the tile shrinks under the pointer so the strip stays visible.
     property real dragX: 0
     property real dragY: 0
-    // Dropped on a workspace: stay where it was let go until the window leaves.
     property bool parked: false
     function resetDrag() { parked = false; dragX = 0; dragY = 0; mouse.dragged = false }
     onFrameChanged: if (!frame) resetDrag()
@@ -55,13 +46,11 @@ Item {
     property real dragScale: dragging ? Math.min(1, 180 / Math.max(1, targetWidth)) : 1
     Behavior on dragScale { NumberAnimation { duration: 160; easing.type: Easing.OutCubic } }
 
-    // Without a frame (a workspace being left) the tile stays in the spread.
     visible: target !== null && live
     x: (frame ? lerp(frame.x, targetX) : targetX) + offsetX + dragX
     y: (frame ? lerp(frame.y, targetY) : targetY) + dragY
     width: frame ? lerp(frame.width, targetWidth) : targetWidth
     height: frame ? lerp(frame.height, targetHeight) : targetHeight
-    // The most recently focused window on top, as on the desktop; a dragged one above all.
     z: dragging ? 10000 : 1000 - (frame?.stack ?? 0)
     transformOrigin: Item.Center
 
@@ -84,7 +73,6 @@ Item {
             live: true
             paintCursor: false
         }
-        // Mission Control's selection ring sits just outside the window.
         Rectangle {
             anchors.fill: parent
             anchors.margins: -4
@@ -128,7 +116,6 @@ Item {
         enabled: root.progress > 0.9
         hoverEnabled: true
         cursorShape: dragged ? Qt.ClosedHandCursor : Qt.PointingHandCursor
-        // The tile moves with the drag, so track the pointer in window coordinates.
         onPressed: event => { pressAt = mapToItem(null, event.x, event.y); dragged = false }
         onPositionChanged: event => {
             if (!pressed) return

@@ -1,6 +1,5 @@
 { pkgs }:
 let
-  # Apply scaling after extraction, so only Electron images receive Chromium flags.
   scaledExec = pkgs.runCommand "appimage-exec-scaled" { } ''
     mkdir -p "$out/bin"
     cp ${pkgs.appimageTools.appimage-exec}/bin/appimage-exec.sh "$out/bin/"

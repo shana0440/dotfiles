@@ -3,8 +3,6 @@ import "../Theme" as Theme
 import "../Components" as Components
 import "../Services" as Services
 
-// The dashboard's pomodoro tab: the phase picker, a ring counting down the phase,
-// the round's focus sessions, then reset, start or pause, and skip.
 Item {
     id: root
 
@@ -118,7 +116,6 @@ Item {
                     ctx.beginPath()
                     ctx.arc(c, c, r, 0, Math.PI * 2)
                     ctx.stroke()
-                    // What is left of the phase, clockwise from the top.
                     const left = Math.max(0, Math.min(1, 1 - fraction))
                     if (left <= 0)
                         return
@@ -162,7 +159,6 @@ Item {
             }
         }
 
-        // The round's focus sessions, filled as they finish.
         Row {
             anchors.horizontalCenter: parent.horizontalCenter
             spacing: 8

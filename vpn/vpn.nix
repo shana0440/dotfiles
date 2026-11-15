@@ -1,4 +1,3 @@
-# Import the appropriate module for NixOS or standalone Home Manager.
 {
   homeManager = { pkgs, ... }: {
     home.packages = [
@@ -19,7 +18,6 @@
       services.resolved.enable = true;
       services.gnome.gnome-keyring.enable = true;
 
-      # The helper socket is restricted to this group. Avoid setgid binaries.
       users.groups.windscribe = { };
       users.users.windscribe = {
         isSystemUser = true;

@@ -2,9 +2,7 @@
 
 let
   wine = pkgs.wineWow64Packages.stable;
-  # Nexon serves the current installer from a fixed, unversioned URL, so it is
-  # downloaded on first launch instead of being pinned with fetchurl.
-  installerUrl = "https://download.nxfs.nexon.com/download-launcher?file=NexonLauncherSetup.exe";
+  unversionedInstallerUrl = "https://download.nxfs.nexon.com/download-launcher?file=NexonLauncherSetup.exe";
   favicon = pkgs.fetchurl {
     url = "https://web.nxfs.nexon.com/arena-home/static/images/nexon.ico";
     hash = "sha256-04NjNHwkc4v/jr+7zWid0V6xmHPIxqlw3pmQ9Tx4+1M=";
@@ -44,10 +42,10 @@ let
       mkdir -p "$WINEPREFIX"
       exec 9>"$WINEPREFIX/.nexon-setup.lock"
       flock 9
+      without_mono_and_gecko="mscoree,mshtml=;winemenubuilder.exe=d"
       if [[ ! -f "$WINEPREFIX/system.reg" ]]; then
         echo "Nexon: creating Wine prefix."
-        # The launcher is Chromium based and needs neither Mono nor Gecko.
-        WINEDLLOVERRIDES="mscoree,mshtml=;winemenubuilder.exe=d" wineboot -u
+        WINEDLLOVERRIDES="$without_mono_and_gecko" wineboot -u
       fi
       export WINEDLLOVERRIDES="winemenubuilder.exe=d"
       if [[ ! -f "$WINEPREFIX/.nexon-rendering" ]]; then
@@ -58,7 +56,7 @@ let
       launcher_exe="$WINEPREFIX/drive_c/Program Files (x86)/Nexon/Nexon Launcher/nexon_launcher.exe"
       if [[ ! -f "$launcher_exe" ]]; then
         echo "Nexon: downloading and installing Nexon Launcher."
-        curl -fL -o "$data/NexonLauncherSetup.exe" "${installerUrl}"
+        curl -fL -o "$data/NexonLauncherSetup.exe" "${unversionedInstallerUrl}"
         wine "$data/NexonLauncherSetup.exe" /S
         if [[ ! -f "$launcher_exe" ]]; then
           echo "Nexon installation did not produce nexon_launcher.exe." >&2
@@ -67,8 +65,8 @@ let
       fi
       flock -u 9
       exec 9>&-
-      # Its embedded Chromium cannot use the GPU or sandbox under Wine.
-      exec wine "$launcher_exe" --no-sandbox --disable-gpu "$@"
+      chromium_flags_for_wine=(--no-sandbox --disable-gpu)
+      exec wine "$launcher_exe" "''${chromium_flags_for_wine[@]}" "$@"
     '';
   };
 in

@@ -1,5 +1,3 @@
-"""Read host gauges and cumulative counters; QML derives rates between snapshots."""
-
 import csv
 import io
 import json
@@ -10,6 +8,8 @@ import subprocess
 import time
 from pathlib import Path
 
+KERNEL_SECTOR_BYTES = 512
+
 
 def read_text(path):
     try:
@@ -19,8 +19,8 @@ def read_text(path):
 
 
 def cpu_times():
-    # guest/guest_nice are already included in user/nice; do not count twice.
-    fields = Path("/proc/stat").read_text().splitlines()[0].split()[1:9]
+    without_guest_already_in_user_and_nice = slice(1, 9)
+    fields = Path("/proc/stat").read_text().splitlines()[0].split()[without_guest_already_in_user_and_nice]
     values = [int(value) for value in fields]
     return {"total": sum(values), "idle": values[3] + values[4]}
 
@@ -53,7 +53,6 @@ def temperature():
             label = read_text(path.with_name(path.name.replace("_input", "_label"))) or name
             cpu = name in {"coretemp", "k10temp", "zenpower", "cpu_thermal"} or "cpu" in name.lower()
             sensors.append({"celsius": degrees, "label": label, "cpu": cpu})
-    # Prefer a CPU sensor; otherwise identify the actual hottest available sensor.
     candidates = [sensor for sensor in sensors if sensor["cpu"]] or sensors
     return max(candidates, key=lambda sensor: sensor["celsius"], default=None)
 
@@ -73,10 +72,9 @@ def storage():
         total = stats.f_blocks * stats.f_frsize
         free = stats.f_bavail * stats.f_frsize
         used = (stats.f_blocks - stats.f_bfree) * stats.f_frsize
-        # Match df: exclude blocks reserved for root from user-available capacity.
-        capacity = used + free
+        capacity_without_root_reserve = used + free
         disks.append({"label": label, "path": path, "total": total, "used": used,
-                      "free": free, "percent": used / capacity if capacity else 0})
+                      "free": free, "percent": used / capacity_without_root_reserve if capacity_without_root_reserve else 0})
     return disks
 
 
@@ -151,7 +149,6 @@ def network_counters():
 
 def disk_counters():
     disks = []
-    # Whole physical devices only: exclude partitions and virtual layers to avoid double counting.
     for directory in sorted(Path("/sys/block").iterdir()):
         if str(directory.resolve()).startswith("/sys/devices/virtual/"):
             continue
@@ -160,9 +157,8 @@ def disk_counters():
             continue
         read, written = number(fields[2]), number(fields[6])
         if read is not None and written is not None:
-            # Kernel block statistics always count 512-byte sectors, irrespective of sector size.
             disks.append({"id": directory.name, "label": directory.name,
-                          "read": read * 512, "write": written * 512})
+                          "read": read * KERNEL_SECTOR_BYTES, "write": written * KERNEL_SECTOR_BYTES})
     return disks
 
 

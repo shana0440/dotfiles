@@ -1,5 +1,3 @@
-"""Generate owned desktop entries for AppImages without running their application code."""
-
 import argparse
 import configparser
 import hashlib
@@ -13,14 +11,18 @@ import time
 
 
 PREFIX = "managed-appimage-"
+SECONDS_TO_SETTLE_AFTER_WRITE = 2
 
 
 def desktop_value(value):
     return value.replace("\\", "\\\\").replace("\n", "\\n").replace("\r", "")
 
 
+def still_being_written(stat):
+    return time.time() - stat.st_mtime < SECONDS_TO_SETTLE_AFTER_WRITE
+
+
 def exec_arg(value):
-    # Desktop Entry Exec has its own quoting rules, not shell quoting.
     value = value.replace("%", "%%")
     for char in ("\\", '"', "`", "$"):
         value = value.replace(char, "\\" + char)
@@ -84,8 +86,7 @@ def integrate(applications, data, cache, runner):
         if old_state.get(key) == fingerprint and entry.exists():
             state[key] = fingerprint
             continue
-        # Avoid extracting a file while it is still being downloaded/copied.
-        if time.time() - stat.st_mtime < 2:
+        if still_being_written(stat):
             if key in old_state:
                 state[key] = old_state[key]
             continue
@@ -132,7 +133,7 @@ def integrate(applications, data, cache, runner):
 
 
 def main():
-    parser = argparse.ArgumentParser(description=__doc__)
+    parser = argparse.ArgumentParser(description="Generate owned desktop entries for AppImages without running their application code.")
     parser.add_argument("--runner", required=True)
     parser.add_argument("--applications", type=Path, default=Path.home() / "Applications")
     parser.add_argument("--data", type=Path, default=Path(os.environ.get("XDG_DATA_HOME", str(Path.home() / ".local/share"))))

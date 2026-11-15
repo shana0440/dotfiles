@@ -14,8 +14,6 @@ let
   };
 in
 {
-  # Safari on iPhone -> VDO.Ninja -> OBS Browser source -> virtual webcam.
-  # NixOS configures v4l2loopback with exclusive_caps for browser compatibility.
   programs.obs-studio = {
     enable = true;
     enableVirtualCamera = true;

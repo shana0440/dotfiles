@@ -1,6 +1,7 @@
 { config, lib, pkgs, ... }:
 
 let
+  publishShaderPathForLiveReload = import ./publish-shader-path.nix { inherit lib; };
   systemStatus = pkgs.writeShellApplication {
     name = "system-status-snapshot";
     text = ''
@@ -26,7 +27,6 @@ let
       exec ${pkgs.python3}/bin/python3 -u ${./pipewire/playback_monitor.py}
     '';
   };
-  # The bar's liquid island surface (see config/Components/IslandGoo.qml).
   islandShader = pkgs.runCommand "island-goo.frag.qsb" {
     nativeBuildInputs = [ pkgs.qt6.qtshadertools ];
   } ''
@@ -43,16 +43,6 @@ in
 
   xdg.configFile."quickshell".source = config.lib.file.mkOutOfStoreSymlink
     "${config.dotfiles.directory}/quickshell/config";
-  # The config is an out-of-store symlink, so the compiled shader's store path is
-  # published beside it. The path changes with the shader, which also defeats Qt's
-  # per-URL shader cache. It is a plain file rewritten in place, not a store
-  # symlink: the running shell watches it, and a swapped symlink fires no change.
-  home.activation.publishIslandShader = lib.hm.dag.entryAfter [ "linkGeneration" ] ''
-    target="${config.xdg.configHome}/quickshell-shaders/island-goo"
-    run mkdir -p "$(dirname "$target")"
-    if [ -L "$target" ]; then run rm "$target"; fi
-    if [ "$(cat "$target" 2>/dev/null)" != "${islandShader}" ]; then
-      run sh -c 'printf "%s\n" "$1" > "$2"' _ "${islandShader}" "$target"
-    fi
-  '';
+  home.activation.publishIslandShader = publishShaderPathForLiveReload
+    "${config.xdg.configHome}/quickshell-shaders/island-goo" islandShader;
 }

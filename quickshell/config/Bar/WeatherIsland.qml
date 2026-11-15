@@ -3,8 +3,6 @@ import "../Components" as Components
 import "../Services" as Services
 import "../Theme" as Theme
 
-// The current temperature, flowing out of the island beside it like the side dots.
-// Clicking opens the dashboard's home tab, which shows the weather too.
 Components.MergeableCircle {
     id: root
 

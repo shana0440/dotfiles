@@ -4,17 +4,13 @@ import Quickshell.Io
 import "../Theme" as Theme
 import "../Components" as Components
 
-// The dashboard's power tab: lock and log out, then restart and power off.
-// Everything but lock asks for a second click, so one stray click loses nothing.
 Item {
     id: root
 
     property bool active: false
-    // The tiles grow to fill this, the height the tab rail already gives the dashboard.
     property real fillHeight: 0
     signal closeRequested()
 
-    // The action waiting for its second click, or "".
     property string armedAction: ""
     readonly property string user: Quickshell.env("USER") ?? ""
 

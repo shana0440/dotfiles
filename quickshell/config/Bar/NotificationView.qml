@@ -3,7 +3,6 @@ import "../Components" as Components
 import "../Services" as Services
 import "../Theme" as Theme
 
-// The dashboard's notifications tab: the history, newest first.
 Item {
     id: root
 
@@ -14,7 +13,6 @@ Item {
     width: 420
     height: Math.min(maximumHeight, cards.y + cards.contentHeight + 20)
 
-    // The same header as the other tabs: title, a quiet line under it, one action.
     Item {
         id: header
         x: 20

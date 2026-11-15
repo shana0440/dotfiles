@@ -1,4 +1,3 @@
-# macOS Home Manager profile (Apple Silicon or Intel).
 { ... }:
 
 {

@@ -4,8 +4,6 @@ import "../Theme" as Theme
 import "../Components" as Components
 import "../Services" as Services
 
-// Now playing: source and state, artwork with track details, a spectrum that doubles
-// as progress, the seek bar, and transport controls.
 Item {
     id: root
 
@@ -18,7 +16,6 @@ Item {
         && (player?.positionSupported ?? false) && duration > 0
     property real previewPosition: 0
     readonly property real shownPosition: seekMouse.pressed ? previewPosition : position
-    // Without a known length the whole spectrum stays live.
     readonly property real progress: duration > 0 ? Math.min(1, shownPosition / duration) : 1
 
     implicitWidth: 480
@@ -34,7 +31,6 @@ Item {
         return Math.max(0, Math.min(1, x / width)) * duration
     }
 
-    // MPRIS position needs explicit refreshes to advance the seek bar during playback.
     Timer {
         interval: 250
         repeat: true
@@ -49,7 +45,6 @@ Item {
         width: parent.width - 40
         spacing: 16
 
-        // The same header as the other tabs: title, then the source and state under it.
         Item {
             width: parent.width
             height: 32
@@ -198,7 +193,6 @@ Item {
             }
         }
 
-        // Bars up to the playhead move with the audio; the rest wait as dashes.
         Row {
             id: spectrum
             width: parent.width

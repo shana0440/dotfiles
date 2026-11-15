@@ -12,8 +12,6 @@ Singleton {
         for (const id of [desktopId, appId]) {
             if (!id)
                 continue
-            // IDs may already include the file extension, or merely end in
-            // '.desktop' as part of their stem (org.telegram.desktop.desktop).
             for (const key of [id, id + ".desktop"]) {
                 const badge = badges[key]
                 if (badge && (badge.count > 0 || badge.urgent === true))

@@ -1,9 +1,5 @@
-# File manager and the handlers it opens files with: Nautilus for folders,
-# File Roller for archives, and appimage-run for AppImages.
-# Import the appropriate module for NixOS or standalone Home Manager.
 {
   nixos = { pkgs, ... }: {
-    # Nautilus reaches Trash, removable drives, and network shares through GVfs.
     services.gvfs.enable = true;
 
     programs.appimage = {
@@ -17,21 +13,16 @@
     let
       xdgMime = "${pkgs.xdg-utils}/bin/xdg-mime";
       appimageRun = import ./appimage/package.nix { inherit pkgs; };
+      gnomeThumbnailers = [ pkgs.glycin-thumbnailer pkgs.gst-thumbnailers pkgs.papers ];
     in {
       imports = [ ./appimage/home.nix ];
 
       home.packages = [
         pkgs.nautilus
-        # Nautilus runs the thumbnailers found in share/thumbnailers; these are
-        # the ones GNOME installs: images, audio and video, and PDFs.
-        pkgs.glycin-thumbnailer
-        pkgs.gst-thumbnailers
-        pkgs.papers
         pkgs.file-roller
         appimageRun
-      ];
+      ] ++ gnomeThumbnailers;
 
-      # Update only these handlers; other application associations remain user-managed.
       home.activation.fileManagerDefaultHandler = lib.hm.dag.entryAfter [ "linkGeneration" ] ''
         run ${xdgMime} default org.gnome.Nautilus.desktop inode/directory
       '';

@@ -1,14 +1,4 @@
 #!/usr/bin/env python3
-"""BlueZ pairing agent that delegates prompts to Quickshell.
-
-Requests are written to stdout as JSON lines:
-  {"id": 1, "type": "confirm", "device": "/org/bluez/hci0/dev_...", "name": "...", "passkey": "123456"}
-Replies are read from stdin as JSON lines:
-  {"id": 1, "accept": true, "value": "0000"}
-Types: pin, passkey (need a value), confirm, authorize, service (need accept),
-display-pin, display-passkey (informational), cancel (drop the prompt).
-"""
-
 import asyncio
 import itertools
 import json
@@ -44,7 +34,7 @@ class Agent(ServiceInterface):
             return reply.body[0].value
         return path.rsplit("/", 1)[-1].removeprefix("dev_").replace("_", ":")
 
-    async def ask(self, kind, device, **extra):
+    async def ask_quickshell(self, kind, device, **extra):
         request_id = next(self.ids)
         future = asyncio.get_running_loop().create_future()
         self.pending[request_id] = future
@@ -69,7 +59,7 @@ class Agent(ServiceInterface):
                 future.set_exception(DBusError(CANCELED, "Canceled"))
         emit({"type": "cancel"})
 
-    async def show(self, kind, device, **extra):
+    async def tell_quickshell(self, kind, device, **extra):
         emit({"id": next(self.ids), "type": kind, "device": device,
               "name": await self.device_name(device), **extra})
 
@@ -79,15 +69,15 @@ class Agent(ServiceInterface):
 
     @method()
     async def RequestPinCode(self, device: "o") -> "s":
-        return await self.ask("pin", device)
+        return await self.ask_quickshell("pin", device)
 
     @method()
     async def DisplayPinCode(self, device: "o", pincode: "s"):
-        await self.show("display-pin", device, passkey=pincode)
+        await self.tell_quickshell("display-pin", device, passkey=pincode)
 
     @method()
     async def RequestPasskey(self, device: "o") -> "u":
-        value = await self.ask("passkey", device)
+        value = await self.ask_quickshell("passkey", device)
         try:
             return int(value)
         except ValueError:
@@ -95,19 +85,19 @@ class Agent(ServiceInterface):
 
     @method()
     async def DisplayPasskey(self, device: "o", passkey: "u", entered: "q"):
-        await self.show("display-passkey", device, passkey=f"{passkey:06d}", entered=entered)
+        await self.tell_quickshell("display-passkey", device, passkey=f"{passkey:06d}", entered=entered)
 
     @method()
     async def RequestConfirmation(self, device: "o", passkey: "u"):
-        await self.ask("confirm", device, passkey=f"{passkey:06d}")
+        await self.ask_quickshell("confirm", device, passkey=f"{passkey:06d}")
 
     @method()
     async def RequestAuthorization(self, device: "o"):
-        await self.ask("authorize", device)
+        await self.ask_quickshell("authorize", device)
 
     @method()
     async def AuthorizeService(self, device: "o", uuid: "s"):
-        await self.ask("service", device, uuid=uuid)
+        await self.ask_quickshell("service", device, uuid=uuid)
 
     @method()
     def Cancel(self):
@@ -129,7 +119,7 @@ async def register(bus):
     return True
 
 
-async def read_replies(agent):
+async def read_replies_until_quickshell_exits(agent):
     loop = asyncio.get_running_loop()
     reader = asyncio.StreamReader()
     await loop.connect_read_pipe(lambda: asyncio.StreamReaderProtocol(reader), sys.stdin)
@@ -145,22 +135,20 @@ async def main():
     agent = Agent(bus)
     bus.export(AGENT_PATH, agent)
 
-    # BlueZ forgets agents when it restarts; register again once it is back.
-    def on_message(message):
+    def reregister_when_bluez_restarts(message):
         if (message.message_type == MessageType.SIGNAL
                 and message.member == "NameOwnerChanged"
                 and message.body and message.body[0] == "org.bluez"
                 and message.body[2]):
             asyncio.ensure_future(register(bus))
 
-    bus.add_message_handler(on_message)
+    bus.add_message_handler(reregister_when_bluez_restarts)
     await bus.call(Message(
         destination="org.freedesktop.DBus", path="/org/freedesktop/DBus",
         interface="org.freedesktop.DBus", member="AddMatch", signature="s",
         body=["type='signal',interface='org.freedesktop.DBus',member='NameOwnerChanged',arg0='org.bluez'"]))
     await register(bus)
-    # Exit with Quickshell: stdin closes when the parent process goes away.
-    await read_replies(agent)
+    await read_replies_until_quickshell_exits(agent)
 
 
 if __name__ == "__main__":

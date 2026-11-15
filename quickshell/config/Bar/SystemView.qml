@@ -2,7 +2,6 @@ import QtQuick
 import "../Theme" as Theme
 import "../Components" as Components
 
-// The dashboard's system tab: CPU and memory, then usage and VRAM for each GPU.
 Item {
     id: root
 
@@ -49,7 +48,6 @@ Item {
 
     component Meter: Rectangle {
         id: meter
-        // Below zero leaves the track empty and dimmed.
         property real fraction: -1
         property bool warning: false
 
@@ -78,7 +76,6 @@ Item {
         property string label: ""
         property string value: "—"
         property string detail: ""
-        // Below zero hides the meter.
         property real fraction: -1
         property bool warning: fraction >= 0.9
 
@@ -160,7 +157,6 @@ Item {
                 anchors.right: parent.right
                 anchors.verticalCenter: parent.verticalCenter
                 visible: root.snapshot !== null
-                // Load averages over 1, 5 and 15 minutes.
                 text: root.snapshot ? "Up " + root.uptime(root.snapshot.uptime)
                     + " · load " + root.snapshot.load.map(value => value.toFixed(2)).join(" ") : ""
                 color: Theme.Colors.muted
@@ -193,9 +189,7 @@ Item {
                         + (root.memory.swapTotal ? " · swap " + root.bytes(root.memory.swapUsed) : " · no swap")
             }
 
-            // One row per GPU: usage on the left, VRAM on the right.
             Repeater {
-                // A count model keeps the cards (and their meter springs) across samples.
                 model: sampler.gpus.length * 2
 
                 Card {
@@ -217,7 +211,6 @@ Item {
                 }
             }
 
-            // Keep the GPU row in place until telemetry arrives or turns out missing.
             Card {
                 visible: sampler.gpus.length === 0
                 label: "GPU"
@@ -252,7 +245,6 @@ Item {
                 }
 
                 Repeater {
-                    // A count model keeps the rows (and their meter springs) across samples.
                     model: root.snapshot ? root.snapshot.storage.length : 0
 
                     Column {
@@ -294,7 +286,6 @@ Item {
                             }
                             Text {
                                 id: percentText
-                                // Same size as the label, so a shared top aligns their baselines.
                                 anchors.right: parent.right
                                 anchors.top: parent.top
                                 text: root.percent(volume.disk.percent)
@@ -336,7 +327,6 @@ Item {
                     visible: sampler.diskRates.length > 0
                 }
 
-                // Activity is per physical disk, which need not map onto the volumes above.
                 Repeater {
                     model: sampler.diskRates.length
 

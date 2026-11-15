@@ -1,4 +1,3 @@
-# Zen Browser beta, packaged by the community Zen flake.
 { pkgs, zen-browser, ... }:
 
 {

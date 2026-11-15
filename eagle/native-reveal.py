@@ -1,5 +1,3 @@
-"""Open a Wine-translated path in the native Linux file manager."""
-
 import json
 from pathlib import Path
 import subprocess
@@ -20,7 +18,6 @@ def reveal(filename):
             return
     except (OSError, subprocess.TimeoutExpired):
         pass
-    # Managers without the standard D-Bus interface still open the folder.
     folder = target if target.is_dir() else target.parent
     subprocess.run(['xdg-open', str(folder)], check=True)
 

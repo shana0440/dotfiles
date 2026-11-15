@@ -1,9 +1,15 @@
-// Prefix-local Explorer adapter. Preserve Wine's desktop and shell startup.
 #include <windows.h>
 #include <shellapi.h>
 #include <wchar.h>
 #include <wctype.h>
 #include <stdlib.h>
+
+static BOOL is_filesystem_path(const WCHAR *target)
+{
+    BOOL is_drive_path = iswalpha(target[0]) && target[1] == L':';
+    BOOL is_network_path = target[0] == L'\\' && target[1] == L'\\';
+    return is_drive_path || is_network_path;
+}
 
 int WINAPI wWinMain(HINSTANCE instance, HINSTANCE previous, WCHAR *command, int show)
 {
@@ -21,10 +27,7 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE previous, WCHAR *command, int 
     while (iswspace(*target)) target++;
     if (*target == L'"') target++;
 
-    // Only filesystem paths go native; /desktop and other shell switches retain
-    // the real Explorer. This also works when Eagle invokes Explorer directly.
-    if ((iswalpha(target[0]) && target[1] == L':') ||
-        (target[0] == L'\\' && target[1] == L'\\')) {
+    if (is_filesystem_path(target)) {
         WCHAR *path = _wcsdup(target);
         if (!path) {
             LocalFree(args);

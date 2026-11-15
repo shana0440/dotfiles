@@ -5,22 +5,13 @@ import "../Components" as Components
 import "../Services" as Services
 import "../Theme" as Theme
 
-// The notification popup as a Ding toast (ding.yusufcengiz.dev) inside the center
-// island: it arrives as a dot with its status icon, then springs open into a pill.
-// The text is revealed by the island's live width, so the box and its content move
-// together: it fades in, unblurs and slides out of the icon. A new notification
-// morphs the open pill in place (the old text rolls up, the new one rolls in), a
-// repeat counts up, and on close the text erases as the pill shrinks to its dot.
 Item {
     id: root
 
-    // The island's live size, which drives the reveal.
     property real revealWidth: width
     property real revealHeight: height
-    // "enter" (a dot), "open" (the pill), "closing" (back to the dot) or "hidden".
     property string phase: "hidden"
     signal listRequested()
-    // Content-aware motion for the island: "error" shakes, "repeat" nudges.
     signal gesture(string kind)
 
     readonly property int size: 44
@@ -28,8 +19,6 @@ Item {
     readonly property var notification: Services.Notifications.preview
     readonly property bool visibleInIsland: Services.Notifications.previewVisible
 
-    // Live content with the last values kept, so a notification closed by its sender
-    // still has its text while the pill collapses.
     property string lastTitle: ""
     property string lastBody: ""
     property string lastApp: ""
@@ -40,8 +29,6 @@ Item {
     readonly property string app: notification?.appName ?? lastApp
     readonly property string image: notification?.image ?? lastImage
     readonly property string status: notification ? Services.Notifications.statusOf(notification) : lastStatus
-    // A success shows its check: a capture preview cropped to a 28 px circle says
-    // little, and the notification list shows it in full.
     readonly property bool showsImage: status !== "success" && picture.status === Image.Ready
     readonly property var actions: (notification?.actions ?? []).slice(0, 2)
     readonly property int count: Services.Notifications.previewCount
@@ -52,7 +39,6 @@ Item {
     onImageChanged: if (notification) lastImage = image
     onStatusChanged: if (notification) lastStatus = status
 
-    // The copy as it was before a change, for the roll (see `roll()`).
     property var shownCopy: ({ title: "", body: "" })
     function rememberCopy() { shownCopy = { title: root.title, body: root.body } }
     onLastTitleChanged: Qt.callLater(rememberCopy)
@@ -63,7 +49,6 @@ Item {
     width: phase === "open" ? fullWidth : size
     height: phase === "open" ? fullHeight : size
 
-    // Reveal progress of the text (tp) and of the buttons (ap), from the island width.
     readonly property bool showingCopy: phase === "open" || phase === "closing"
     readonly property real copyEnd: buttonsBox.width > 0 ? size + copy.width + 8 : fullWidth
     readonly property real actionWidth: fullWidth - copyEnd
@@ -71,7 +56,6 @@ Item {
     readonly property real ap: actionWidth > 2 ? clamp((revealWidth - copyEnd) / actionWidth) : clamp((tp - 0.45) / 0.55)
     function clamp(value) { return Math.max(0, Math.min(1, value)) }
 
-    // The visible island's left edge inside this view: content grows out of the icon.
     readonly property real leftEdge: phase === "enter" ? 0 : (width - revealWidth) / 2
 
     onVisibleInIslandChanged: {
@@ -95,8 +79,6 @@ Item {
         }
         function onPreviewRestarted() {
             life.restart()
-            // A notification arriving while the pill collapses springs it open again;
-            // the island stays visible, so nothing else restarts the phase.
             if (root.phase === "closing") {
                 root.phase = "open"
                 statusIcon.restart()
@@ -111,7 +93,6 @@ Item {
         }
     }
 
-    // The dot arrives, then the pill opens.
     Timer {
         id: openTimer
         interval: 450
@@ -130,7 +111,6 @@ Item {
             gesture("error")
     }
 
-    // The old copy rolls up and out while the new one rolls in.
     function roll() {
         ghost.title = shownCopy.title
         ghost.body = shownCopy.body
@@ -148,7 +128,6 @@ Item {
         onClicked: root.listRequested()
     }
 
-    // Status icon, or the notification's image in its place.
     Item {
         id: icon
         x: root.leftEdge
@@ -204,7 +183,6 @@ Item {
 
         Item {
             id: copy
-            // Natural widths only: the lines size themselves from this.
             readonly property real titleWidth: titleText.implicitWidth
                 + (root.count > 1 ? countText.implicitWidth + 6 : 0)
                 + (root.app.length > 0 ? Math.min(metaText.implicitWidth, 120) + 6 : 0)
@@ -282,7 +260,6 @@ Item {
                 }
             }
 
-            // The previous copy, rolling up and out.
             Column {
                 id: ghost
                 property string title: ""
@@ -330,8 +307,6 @@ Item {
             }
         }
 
-        // Buttons appear as the width reaches them. The fade lives on an inner row so
-        // it never feeds back into the layout it is derived from.
         Item {
             id: buttonsBox
             anchors.verticalCenter: parent.verticalCenter
@@ -387,7 +362,6 @@ Item {
                     }
                 }
     
-                // Only popups that wait to be dismissed carry a close button, as in Ding.
                 Components.IconButton {
                     visible: root.sticky
                     width: 30
@@ -402,8 +376,6 @@ Item {
         }
     }
 
-    // Countdown line along the bottom edge, held while hovered. Inset so it stays
-    // inside the pill's rounded ends.
     Rectangle {
         readonly property real cornerRadius: Math.min(22, root.height / 2)
         readonly property real inset: cornerRadius - Math.sqrt(Math.max(0, cornerRadius * cornerRadius - (cornerRadius - 1) * (cornerRadius - 1)))

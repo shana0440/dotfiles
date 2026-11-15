@@ -1,6 +1,3 @@
-// Test shell: only the lock, locked at start. Never run it in your own session;
-// run-headless.sh starts it as the root of a temporary config, inside a headless
-// sway with a test PAM service.
 import QtQuick
 import Quickshell
 import "Lock"

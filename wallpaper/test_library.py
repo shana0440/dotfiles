@@ -1,4 +1,3 @@
-"""Run via wallpaper-check; all dependencies come from wallpaper.nix."""
 import importlib.util
 import json
 import os
@@ -22,7 +21,6 @@ class LibraryTests(unittest.TestCase):
         self.source = self.root / "walls"
         self.source.mkdir()
         self.cache = self.root / "cache"
-        # `set` records the current wallpaper; keep that out of the real state dir.
         state = patch.dict(os.environ, {"XDG_STATE_HOME": str(self.root / "state")})
         state.start()
         self.addCleanup(state.stop)
@@ -163,7 +161,7 @@ class LibraryTests(unittest.TestCase):
             library, "transition_ipc", side_effect=["same"]
         ) as ipc, patch.object(library.subprocess, "Popen") as popen:
             self.assertTrue(library.colony_transition(self.source / "new.png"))
-        self.assertEqual(ipc.call_count, 1)     # no go, no abort
+        self.assertEqual(ipc.call_count, 1)
         popen.assert_not_called()
 
     def test_ipc_client_does_not_inherit_quickshell_crash_state(self):

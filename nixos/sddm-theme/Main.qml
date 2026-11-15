@@ -1,5 +1,3 @@
-// SDDM greeter: the shared login/lock screen (quickshell/config/Login) wired to
-// SDDM. nixos/login.nix copies Login, Theme and Icons next to this file.
 import QtQuick
 import "Login" as Login
 
@@ -9,7 +7,6 @@ Item {
     property int sessionIndex: sessionModel.lastIndex >= 0 ? sessionModel.lastIndex : 0
     property string authState: "idle"
     property string message: ""
-    // userModel and sessionModel expose their rows only to delegates.
     readonly property string userName: userModel.lastUser || (users.count ? users.itemAt(0).name : "")
 
     Repeater {

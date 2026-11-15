@@ -2,13 +2,10 @@ import QtQuick
 import "../Theme" as Theme
 import "../Components" as Components
 
-// The dashboard's usage tab: how much of each subscription's 5-hour and weekly
-// limits is spent, when each resets, and any earned Codex limit resets to redeem.
 Item {
     id: root
 
     property bool active: false
-    // Reset countdowns tick once a minute.
     property date now: new Date()
 
     implicitWidth: 480
@@ -27,7 +24,6 @@ Item {
         onTriggered: root.now = new Date()
     }
 
-    // "Reset in 3h 55m (23:20)" within a day, "Reset in 6d 9h (Fri 05:00)" beyond.
     function resetText(iso) {
         if (!iso)
             return ""
@@ -101,9 +97,6 @@ Item {
         }
     }
 
-    // One earned Codex reset. Like the power tab, redeeming takes a second click
-    // within 4 seconds; the
-    // backend only accepts it while a limit is spent enough to need it.
     component ResetCredit: Item {
         id: credit
         property var entry: null
@@ -165,7 +158,6 @@ Item {
             }
         }
 
-        // Like the power tab, leaving the tab cancels a pending second click.
         Connections {
             target: root
             function onActiveChanged() {
@@ -273,7 +265,6 @@ Item {
                 Text {
                     anchors.right: parent.right
                     anchors.baseline: cardName.baseline
-                    // A failed check keeps the last reading and says why it is stale.
                     text: card.error ? root.errorText(card.error) + (card.reading ? " \u00b7 stale" : "")
                         : card.plan
                     color: card.error ? Theme.Colors.warning : Theme.Colors.muted
@@ -292,7 +283,6 @@ Item {
                 span: card.reading ? card.reading.weekly : null
             }
 
-            // Weekly limits that apply to one model only.
             Repeater {
                 model: card.reading ? card.reading.models.length : 0
 
@@ -304,7 +294,6 @@ Item {
                 }
             }
 
-            // Earned resets that clear the 5-hour and weekly limits at once.
             Column {
                 readonly property var resets: card.reading ? card.reading.resets ?? null : null
                 width: parent.width

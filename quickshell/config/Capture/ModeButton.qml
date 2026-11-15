@@ -2,7 +2,6 @@ import QtQuick
 import "../Components" as Components
 import "../Theme" as Theme
 
-// A capture mode; recording modes carry a small record dot.
 Components.IconButton {
     id: root
 

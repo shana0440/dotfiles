@@ -9,3 +9,6 @@ wallpaper-set '/path/to/image.png'
 
 The new wallpaper spreads over the old one in an animated transition. Images
 are never modified.
+
+The transition is inspired by pocket-dots' "contagio" transition and
+implemented independently.

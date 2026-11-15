@@ -2,8 +2,6 @@ import QtQuick
 import "../Theme" as Theme
 import "../Components" as Components
 
-// The current input method, flowing out of the island beside it like the side dots.
-// Clicking opens the dashboard's input method page.
 Components.MergeableCircle {
     id: root
 

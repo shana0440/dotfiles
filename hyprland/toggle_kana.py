@@ -1,4 +1,3 @@
-"""Toggle Mozc's native Hiragana/Katakana action without injecting modified keys."""
 import json
 import subprocess
 import sys

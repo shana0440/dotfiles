@@ -1,8 +1,6 @@
 import QtQuick
 import "../Theme" as Theme
 
-// The user's initial inside a dial: two outer arcs and a ring of ticks. The dial
-// turns while a password is checked and takes the status color of the result.
 Item {
     id: root
 
@@ -28,14 +26,12 @@ Item {
             ctx.strokeStyle = tone
             ctx.globalAlpha = 0.85
             ctx.lineWidth = 2
-            // Two arcs with gaps at the top-right and bottom-left.
             ctx.beginPath()
             ctx.arc(c, c, c - 2, Math.PI * 0.80, Math.PI * 1.45)
             ctx.stroke()
             ctx.beginPath()
             ctx.arc(c, c, c - 2, Math.PI * 1.80, Math.PI * 2.45)
             ctx.stroke()
-            // Tick ring; every sixth tick is longer.
             ctx.globalAlpha = 0.45
             ctx.lineWidth = 1
             for (let i = 0; i < 60; i++) {

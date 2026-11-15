@@ -6,8 +6,6 @@ let
     url = "https://r2-app.eagle.cool/releases/Eagle-4.0-x64-build23.exe";
     hash = "sha256-b5Kuy2xT9eOp3uSWBfGVWuEW4q3NXtLm3h0Z1zL5TTg=";
   };
-  # Official favicon from eagle.cool (32x32), installed as an icon-theme icon so
-  # launchers and Hyprland-aware panels can resolve Icon=eagle.
   icon = pkgs.fetchurl {
     url = "https://tw.eagle.cool/images/favicon.png";
     hash = "sha256-Unk10Tt0VPz34aTy7y6MLc7o0H3gfDL3cI41VWLxy54=";
@@ -71,9 +69,9 @@ let
       flock 9
       if [[ ! -f "$WINEPREFIX/.eagle-dotnet48" ]]; then
         echo "Eagle: installing .NET 4.8 in a private Wine prefix (first launch may take several minutes)."
-        # Suppress Mono/Gecko only in a new prefix. Eagle needs native .NET.
+        without_mono_and_gecko="mscoree,mshtml=;winemenubuilder.exe=d"
         if [[ ! -f "$WINEPREFIX/system.reg" ]]; then
-          WINEDLLOVERRIDES="mscoree,mshtml=;winemenubuilder.exe=d" wineboot -u
+          WINEDLLOVERRIDES="$without_mono_and_gecko" wineboot -u
         fi
         unset WINEDLLOVERRIDES
         winetricks -q dotnet48
@@ -96,8 +94,6 @@ let
         winetricks -q corefonts fontsmooth=rgb
         touch "$WINEPREFIX/.eagle-rendering-v2"
       fi
-      # Intercept filesystem browsing only in Eagle's private prefix. Keep a
-      # real Explorer for Wine's /desktop startup; never modify Eagle's files.
       system32="$WINEPREFIX/drive_c/windows/system32"
       cp --remove-destination ${wine}/lib/wine/x86_64-windows/explorer.exe "$system32/eagle-wine-explorer.exe"
       cp --remove-destination ${nativeExplorer}/bin/explorer.exe "$system32/explorer.exe"
@@ -106,8 +102,6 @@ let
       flock -u 9
       exec 9>&-
       scale_args=()
-      # With compositor bitmap scaling disabled, let Electron render at the
-      # focused monitor's native DPI instead of stretching a low-res image.
       if [[ "''${XDG_CURRENT_DESKTOP:-}" == *Hyprland* ]] \
         && command -v hyprctl >/dev/null \
         && hyprctl -j getoption xwayland:force_zero_scaling 2>/dev/null | jq -e '.bool == true' >/dev/null; then

@@ -17,15 +17,14 @@ Item {
         objects: root.sink ? [root.sink] : []
     }
 
-    // PipeWire emits initial volume values when binding a device; suppress startup feedback.
     onAudioChanged: {
         feedbackEnabled = false
-        deviceSettleTimer.restart()
+        ignoreInitialVolumeFromPipeWire.restart()
     }
-    Component.onCompleted: deviceSettleTimer.restart()
+    Component.onCompleted: ignoreInitialVolumeFromPipeWire.restart()
 
     Timer {
-        id: deviceSettleTimer
+        id: ignoreInitialVolumeFromPipeWire
         interval: 300
         onTriggered: root.feedbackEnabled = true
     }

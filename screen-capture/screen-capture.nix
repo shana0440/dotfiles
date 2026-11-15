@@ -37,6 +37,5 @@ let
   };
 in
 {
-  # Commands only; the capture UI lives in the Quickshell bar (quickshell/config/Capture).
   home.packages = [ screenshot recording snapshot captureNotification ];
 }

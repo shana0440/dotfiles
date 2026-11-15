@@ -1,9 +1,7 @@
 { pkgs }:
 
 let
-  # Upstream's Ubuntu 26.04 release requires GLIBC_2.43. Keep its newer runtime
-  # local to this package rather than upgrading the host's NixOS/Home Manager.
-  runtimePkgs = import (builtins.fetchTarball {
+  pkgsWithGlibc243 = import (builtins.fetchTarball {
     url = "https://github.com/NixOS/nixpkgs/archive/1c89083e451e891152365b799595cf7790a43325.tar.gz";
     sha256 = "0gnw7gkrh9axnknb67627mf9sbdd7sbgw3148g5lh1d8hiks4l33";
   }) { system = pkgs.stdenv.hostPlatform.system; };
@@ -23,18 +21,18 @@ let
     xdpyinfo xprop xwininfo xterm
   ];
 in
-runtimePkgs.stdenv.mkDerivation rec {
+pkgsWithGlibc243.stdenv.mkDerivation rec {
   pname = "agent-workspace-linux";
   version = "0.6.3";
-  src = runtimePkgs.fetchurl {
+  src = pkgsWithGlibc243.fetchurl {
     url = "https://github.com/agent-sh/agent-workspace-linux/releases/download/v${version}/agent-workspace-linux-${release.target}";
     inherit (release) hash;
   };
   dontUnpack = true;
   dontStrip = true;
-  nativeBuildInputs = with runtimePkgs; [ autoPatchelfHook makeWrapper ];
-  buildInputs = with runtimePkgs; [ libxcb libxkbcommon stdenv.cc.cc.lib ];
-  runtimeDependencies = map runtimePkgs.lib.getLib (with runtimePkgs; [
+  nativeBuildInputs = with pkgsWithGlibc243; [ autoPatchelfHook makeWrapper ];
+  buildInputs = with pkgsWithGlibc243; [ libxcb libxkbcommon stdenv.cc.cc.lib ];
+  runtimeDependencies = map pkgsWithGlibc243.lib.getLib (with pkgsWithGlibc243; [
     libglvnd vulkan-loader wayland fontconfig freetype libX11
   ]);
   installPhase = ''

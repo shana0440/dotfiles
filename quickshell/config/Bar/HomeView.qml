@@ -3,15 +3,12 @@ import "../Theme" as Theme
 import "../Components" as Components
 import "../Services" as Services
 
-// The dashboard's first tab: the calendar and clock, with the weather and the input
-// method beneath. The input method opens a nested page to choose another.
 Item {
     id: root
 
     property bool active: false
     property date today: new Date()
     readonly property alias calendar: calendar
-    // The input method page lets the editor keep the keyboard (see InputMethodList).
     property bool inputMethodsOpen: false
     signal closeRequested()
 
@@ -19,12 +16,10 @@ Item {
 
     implicitWidth: calendar.implicitWidth + clockFace.implicitWidth
     implicitHeight: inputMethodsOpen ? inputPage.implicitHeight + 40 : home.implicitHeight + 12
-    // The pages shift a little as they cross; keep that inside the tab.
     clip: true
 
     onActiveChanged: inputMethodsOpen = false
 
-    // Mouse side buttons, routed here by the dashboard from anywhere over the page.
     function navigateBack() {
         inputMethodsOpen = false
     }
@@ -37,7 +32,6 @@ Item {
         id: inputMethod
     }
 
-    // 0 shows home, 1 the input method page; each fades and shifts toward where it lives.
     Components.Spring {
         id: pageSpring
         to: root.inputMethodsOpen ? 1 : 0
@@ -133,7 +127,6 @@ Item {
                 id: clockFace
                 active: root.active && !root.inputMethodsOpen
 
-                // Switches the shell between the solid and transparent themes.
                 Components.IconButton {
                     anchors.top: parent.top
                     anchors.right: parent.right
@@ -180,7 +173,6 @@ Item {
         }
     }
 
-    // The nested input method page.
     Column {
         id: inputPage
         x: 20 + 24 * (1 - pageSpring.value)

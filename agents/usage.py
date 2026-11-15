@@ -1,17 +1,3 @@
-"""Print Claude and Codex subscription limits (5-hour and weekly) as JSON.
-
-Reads the OAuth logins saved by Pi, falling back to Claude Code's and Codex CLI's
-own files, and asks the usage endpoints behind Claude Code's /usage and Codex's
-/status. Logins are only read, never refreshed: refreshing rotates the saved
-refresh token and would sign the owning tool out. Output carries limits only,
-never tokens, emails or account IDs. With --stream, flushes one JSON line per
-provider as it finishes instead of waiting for both.
-
-`agent-usage reset-codex [CREDIT_ID]` redeems one of Codex's earned limit resets
-(the next available one when no ID is given), as Codex's /usage menu does, and
-prints {"outcome": ...}.
-"""
-
 import json
 import socket
 import sys
@@ -26,12 +12,13 @@ from pathlib import Path
 HOME = Path.home()
 TIMEOUT = 10
 
-# Try IPv4 addresses first. urllib tries addresses in order, waiting the full
-# timeout on each, so a network that hands out IPv6 addresses without routing
-# them would stall every request by 10 seconds per IPv6 address.
-_getaddrinfo = socket.getaddrinfo
-socket.getaddrinfo = lambda *args, **kwargs: sorted(
-    _getaddrinfo(*args, **kwargs), key=lambda entry: entry[0] != socket.AF_INET)
+def try_ipv4_before_possibly_unroutable_ipv6():
+    resolve = socket.getaddrinfo
+    socket.getaddrinfo = lambda *args, **kwargs: sorted(
+        resolve(*args, **kwargs), key=lambda entry: entry[0] != socket.AF_INET)
+
+
+try_ipv4_before_possibly_unroutable_ipv6()
 
 
 def read_json(path):
@@ -106,7 +93,6 @@ def claude():
         "available": True,
         "fiveHour": window(five_hour.get("utilization"), five_hour.get("resets_at"), severity.get("session")),
         "weekly": window(seven_day.get("utilization"), seven_day.get("resets_at"), severity.get("weekly_all")),
-        # Weekly limits that apply to one model only.
         "models": [
             {"name": (limit.get("scope") or {}).get("model", {}).get("display_name") or "Model",
              **window(limit.get("percent"), limit.get("resets_at"), limit.get("severity"))}
@@ -116,7 +102,6 @@ def claude():
 
 
 def codex_headers():
-    """Request headers for the Codex backend, or a failure reason."""
     token, account, expires = codex_login()
     if not token:
         return None, "not signed in"
@@ -129,7 +114,6 @@ def codex_headers():
 
 
 def codex_resets(headers, summary):
-    """Earned limit resets: how many exist, how many would help now, and each one."""
     summary = summary or {}
     available = summary.get("available_count") or 0
     credits = []
@@ -167,8 +151,6 @@ def codex():
 
 
 def reset_codex(credit_id=None):
-    """Redeem one earned Codex limit reset. Outcome is reset, nothing_to_reset,
-    no_credit or already_redeemed as the backend reports it."""
     headers, reason = codex_headers()
     if reason:
         return failure(reason)

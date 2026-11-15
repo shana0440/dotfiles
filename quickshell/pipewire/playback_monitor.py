@@ -14,7 +14,6 @@ PROCESS_EXIT_TIMEOUT_SECONDS = 2
 
 
 def iter_json_documents(chunks):
-    """pw-dump emits consecutive JSON arrays over a chunked UTF-8 pipe."""
     utf8 = codecs.getincrementaldecoder("utf-8")()
     decoder = json.JSONDecoder()
     buffer = ""

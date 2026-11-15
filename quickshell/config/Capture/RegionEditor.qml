@@ -13,7 +13,6 @@ Item {
     property var region: ({ x: 0, y: 0, width: 0, height: 0 })
     readonly property bool hasRegion: activeRegion && region.width > 0 && region.height > 0
     readonly property bool adjustable: editing
-    // Leave fractional-scale edge pixels clear of the recording's shade and border.
     readonly property int capturePadding: editing ? 0 : 1
     readonly property var clearRegion: Geometry.intersection({
         x: region.x - capturePadding, y: region.y - capturePadding,
@@ -177,7 +176,6 @@ Item {
         regionHeight: Math.round(root.region.height)
         recording: root.kind === "recording"
         x: Math.max(12, Math.min(root.width - width - 12, root.region.x + (root.region.width - width) / 2))
-        // Keep the size hint clear of the bottom capture toolbar.
         y: Math.max(12, root.region.y + root.region.height + height + 16 < root.height - 120
             ? root.region.y + root.region.height + 16 : root.region.y - height - 16)
     }

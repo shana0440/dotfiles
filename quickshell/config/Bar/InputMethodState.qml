@@ -1,7 +1,6 @@
 import QtQuick
 import "../Services" as Services
 
-// Labels for the current Fcitx input method (see Services/InputMethod).
 QtObject {
     id: root
 

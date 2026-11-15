@@ -6,23 +6,15 @@ import Quickshell.Services.Pam
 import "../Theme" as Theme
 import "../Login" as Login
 
-// The session lock: the shared login screen on every monitor, unlocked through PAM.
-//   quickshell ipc call lock lock
-// If Quickshell dies while locked, the compositor keeps the session locked.
 Scope {
     id: root
 
-    // idle | busy | denied | granted, shared by every monitor.
     property string authState: "idle"
     property string message: ""
     property string wallpaper: ""
     property string pending: ""
-    // PAM service that checks the password; tests point it elsewhere.
     property string pamConfig: "quickshell-lock"
     property string pamDirectory: "/etc/pam.d"
-    // Lock: the background fades in over the desktop, then the card slides down.
-    // Unlock: the card slides up, then the background fades out.
-    // Hyprland's misc:session_lock_xray keeps the desktop drawn beneath it.
     property bool shown: false
     readonly property int fadeInDuration: 750
     readonly property int fadeOutDuration: 500
@@ -30,7 +22,6 @@ Scope {
 
     function lock() {
         if (sessionLock.locked) {
-            // Locking again while it leaves: bring it back instead.
             if (!shown || unlockDelay.running) {
                 unlockDelay.stop()
                 authState = "idle"
@@ -38,9 +29,9 @@ Scope {
             }
             return
         }
-        // Without the PAM service no password could unlock it again.
         pamService.reload()
-        if (!pamService.text().length) {
+        const passwordCouldUnlockAgain = pamService.text().length > 0
+        if (!passwordCouldUnlockAgain) {
             console.warn("Lock: no PAM service at", pamService.path, "- not locking")
             return
         }
@@ -76,7 +67,6 @@ Scope {
         config: root.pamConfig
         configDirectory: root.pamDirectory
         user: Quickshell.env("USER")
-        // pam_unix asks once for the password; any other prompt has no answer here.
         onPamMessage: {
             if (!responseRequired) return
             if (root.pending.length) {
@@ -98,7 +88,6 @@ Scope {
         onError: error => root.fail(PamError.toString(error))
     }
 
-    // Long enough to see the result before the sheet slides away.
     Timer {
         id: unlockDelay
         interval: 450
@@ -147,7 +136,6 @@ Scope {
                 NumberAnimation { target: surface; property: "cardIn"; to: 1; duration: root.slideDuration; easing.type: Easing.OutCubic }
             }
 
-            // Still locked until the background is gone.
             SequentialAnimation {
                 id: leave
                 NumberAnimation { target: surface; property: "cardIn"; to: 0; duration: root.slideDuration; easing.type: Easing.InCubic }

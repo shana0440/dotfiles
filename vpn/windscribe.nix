@@ -36,11 +36,11 @@ let
       *) exec /opt/windscribe/Windscribe "$@" ;;
     esac
   '';
+  keepRootCapabilitiesToManageRoutesAndFirewall = [ "--cap-add ALL" ];
 in
 pkgs.buildFHSEnv {
   pname = "windscribe";
   inherit version;
-  # Upstream binaries and helper scripts require /opt/windscribe and FHS tools.
   targetPkgs = p: with p; [
     acl brotli bzip2 dbus fontconfig freetype glib harfbuzz libdrm libglvnd
     libx11 libxcb libxkbcommon nftables pcre2 systemd
@@ -52,9 +52,7 @@ pkgs.buildFHSEnv {
   ];
   multiPkgs = null;
   extraBwrapArgs = [ "--ro-bind ${payload}/opt/windscribe /opt/windscribe" ]
-    # Bubblewrap normally drops root capabilities; the helper manages host routes
-    # and firewall rules. Only the root system service uses this variant.
-    ++ pkgs.lib.optionals helper [ "--cap-add ALL" ];
+    ++ pkgs.lib.optionals helper keepRootCapabilitiesToManageRoutesAndFirewall;
   runScript = if helper then "/opt/windscribe/helper" else launcher;
   extraInstallCommands = ''
     mkdir -p $out/share/applications

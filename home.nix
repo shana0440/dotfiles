@@ -1,4 +1,3 @@
-# Desktop Linux Home Manager profile.
 { ... }:
 
 {

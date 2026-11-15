@@ -1,6 +1,4 @@
 #!/usr/bin/env python3
-"""Stream Unity LauncherEntry badge state as JSON lines for Quickshell."""
-
 import asyncio
 import json
 import sys
@@ -43,8 +41,6 @@ class Badges:
         return bool(removed)
 
     def snapshot(self):
-        # Multiple publishers may advertise one desktop ID. Keep attention from
-        # any live publisher rather than letting one erase another's state.
         result = {}
         for (_, desktop_id), entry in self.entries.items():
             count = entry.get("count", 0) if entry.get("count-visible", False) else 0
