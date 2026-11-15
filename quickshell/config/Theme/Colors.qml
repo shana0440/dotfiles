@@ -1,16 +1,14 @@
 pragma Singleton
 import QtQuick
-import Quickshell
-import Quickshell.Io
 
-Singleton {
+QtObject {
     id: root
 
-    readonly property string theme: settings.theme === "transparent" ? "transparent" : "solid"
+    property string theme: "solid"
     readonly property bool transparentTheme: theme === "transparent"
 
     function toggleTheme() {
-        settings.theme = transparentTheme ? "solid" : "transparent"
+        theme = transparentTheme ? "solid" : "transparent"
     }
 
     property real clearness: transparentTheme ? 1 : 0
@@ -68,17 +66,4 @@ Singleton {
     function surfaceFill(t) { return themed(background, transparent, t) }
     function surfaceEdge(t) { return themed(edge, transparent, t) }
     function surfaceShadow(t) { return themed(shadow, transparent, t) }
-
-    FileView {
-        path: Quickshell.statePath("theme.json")
-        blockLoading: true
-        watchChanges: false
-        printErrors: false
-        onAdapterUpdated: writeAdapter()
-
-        JsonAdapter {
-            id: settings
-            property string theme: "solid"
-        }
-    }
 }
