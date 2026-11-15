@@ -308,6 +308,7 @@ Item {
             UsageView {
                 id: usageView
                 width: root.pageWidth
+                query: root.normalizedQuery
                 active: root.active && root.tab === "usage"
             },
             PomodoroView {
