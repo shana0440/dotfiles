@@ -192,8 +192,9 @@ Item {
                     radius: 20
                     iconSize: 20
                     icon: "reset"
-                    tooltip: "Reset"
+                    tooltip: "Reset all sessions"
                     enabled: root.pomodoro.running || root.pomodoro.progress > 0
+                        || root.pomodoro.completed > 0 || root.pomodoro.phase !== "focus"
                     onClicked: root.pomodoro.reset()
                 }
                 Components.IconButton {

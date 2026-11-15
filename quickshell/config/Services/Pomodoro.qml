@@ -49,15 +49,16 @@ Singleton {
     }
 
     function reset() {
-        saved.endsAt = 0
-        saved.remaining = 0
+        select("focus")
+        saved.completed = 0
     }
 
     function select(name) {
         if (!phases[name])
             return
+        saved.endsAt = 0
+        saved.remaining = 0
         saved.phase = name
-        reset()
     }
 
     function skip() {
