@@ -1,5 +1,29 @@
 {
   "nodes": {
+    "herdr-app-release": {
+      "flake": false,
+      "locked": {
+        "narHash": "sha256-JTqqqn2uPTgeh/OMf2WiKgRgy9x5EpS5jUqUEemgJeo=",
+        "type": "file",
+        "url": "https://releases.herdr.dev/app/latest.json"
+      },
+      "original": {
+        "type": "file",
+        "url": "https://releases.herdr.dev/app/latest.json"
+      }
+    },
+    "herdr-core-release": {
+      "flake": false,
+      "locked": {
+        "narHash": "sha256-v3mtthg5wqQLogJw28pvCiXcte3mOb+ELz7aQh1RnBM=",
+        "type": "file",
+        "url": "https://releases.herdr.dev/core/latest.json"
+      },
+      "original": {
+        "type": "file",
+        "url": "https://releases.herdr.dev/core/latest.json"
+      }
+    },
     "home-manager": {
       "inputs": {
         "nixpkgs": [
@@ -71,6 +95,8 @@
     },
     "root": {
       "inputs": {
+        "herdr-app-release": "herdr-app-release",
+        "herdr-core-release": "herdr-core-release",
         "home-manager": "home-manager",
         "nixpkgs": "nixpkgs",
         "pi-bolt-darwin-arm64": "pi-bolt-darwin-arm64",

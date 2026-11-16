@@ -92,6 +92,18 @@ required).
 | [`vpn/`](vpn/README.md), [`file-manager/`](file-manager/README.md), [`eagle/`](eagle/README.md), [`nexon/`](nexon/README.md) | Optional apps |
 | `agent-workspace/` | Isolated X11 desktops for coding agents |
 
+## Herdr
+
+`agents/agents.nix` installs `herdr-core` (`hc`) on Linux and macOS, and
+`herdr-app` on Linux and Apple Silicon Macs. Launch Herdr from your app menu
+or run `herdr-app`; use `hc --help` for persistent terminals and agent commands.
+Linux needs a working Vulkan driver.
+
+`make update` refreshes both upstream release manifests in `flake.lock` and
+installs the latest releases through Home Manager. Use it instead of Herdr's
+built-in updater for these Nix-managed packages. Remove any earlier manual
+installation from `~/.local/bin` if it shadows the Home Manager commands.
+
 ## Desktop shortcuts
 
 All bindings are in `hyprland/hyprland.lua`. The main ones:
