@@ -2,6 +2,14 @@
   description = "kwguo's standalone Home Manager configuration";
 
   inputs = {
+    herdr-app-release = {
+      url = "file+https://releases.herdr.dev/app/latest.json";
+      flake = false;
+    };
+    herdr-core-release = {
+      url = "file+https://releases.herdr.dev/core/latest.json";
+      flake = false;
+    };
     pi-bolt-linux-x64 = {
       url = "https://github.com/opensec-git/Pi-Bolt/releases/latest/download/pi-bolt-linux-x64-baseline.tar.gz";
       flake = false;
@@ -34,30 +42,40 @@
         extraSpecialArgs = { inherit zen-browser inputs; };
       };
     in {
-      packages.x86_64-linux.pi-bolt = import ./agents/pi-bolt/package.nix {
-        pkgs = nixpkgs.legacyPackages.x86_64-linux;
+      packages = nixpkgs.lib.recursiveUpdate (nixpkgs.lib.genAttrs [
+        "x86_64-linux"
+        "aarch64-linux"
+        "x86_64-darwin"
+        "aarch64-darwin"
+      ] (system: import ./agents/herdr/packages.nix {
+        pkgs = nixpkgs.legacyPackages.${system};
         inherit inputs;
-      };
-      packages.aarch64-linux.pi-bolt = import ./agents/pi-bolt/package.nix {
-        pkgs = nixpkgs.legacyPackages.aarch64-linux;
-        inherit inputs;
-      };
-      packages.aarch64-darwin.pi-bolt = import ./agents/pi-bolt/package.nix {
-        pkgs = nixpkgs.legacyPackages.aarch64-darwin;
-        inherit inputs;
-      };
-
-      packages.x86_64-linux.eagle = import ./eagle/package.nix {
-        pkgs = import nixpkgs {
-          system = "x86_64-linux";
-          config.allowUnfree = true;
+      })) {
+        x86_64-linux.pi-bolt = import ./agents/pi-bolt/package.nix {
+          pkgs = nixpkgs.legacyPackages.x86_64-linux;
+          inherit inputs;
         };
-      };
+        aarch64-linux.pi-bolt = import ./agents/pi-bolt/package.nix {
+          pkgs = nixpkgs.legacyPackages.aarch64-linux;
+          inherit inputs;
+        };
+        aarch64-darwin.pi-bolt = import ./agents/pi-bolt/package.nix {
+          pkgs = nixpkgs.legacyPackages.aarch64-darwin;
+          inherit inputs;
+        };
 
-      packages.x86_64-linux.nexon-launcher = import ./nexon/package.nix {
-        pkgs = import nixpkgs {
-          system = "x86_64-linux";
-          config.allowUnfree = true;
+        x86_64-linux.eagle = import ./eagle/package.nix {
+          pkgs = import nixpkgs {
+            system = "x86_64-linux";
+            config.allowUnfree = true;
+          };
+        };
+
+        x86_64-linux.nexon-launcher = import ./nexon/package.nix {
+          pkgs = import nixpkgs {
+            system = "x86_64-linux";
+            config.allowUnfree = true;
+          };
         };
       };
 
