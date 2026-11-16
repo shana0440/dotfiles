@@ -159,6 +159,13 @@ hl.bind(mainMod .. " + SHIFT + L", hl.dsp.exec_cmd(quickshellIpc("lock", "lock")
 hl.bind(mainMod .. " + SHIFT + W", hl.dsp.exec_cmd(quickshellIpc("wallpaper", "toggle")))
 
 hl.bind(mainMod .. " + Q", hl.dsp.window.close())
+hl.bind(mainMod .. " + SHIFT + Q", function()
+    local window = hl.get_active_window()
+    local pid = window and tonumber(window.pid)
+    if pid and pid > 1 then
+        hl.exec_cmd("kill -TERM " .. math.floor(pid))
+    end
+end)
 hl.bind(mainMod .. " + M", hl.dsp.exec_cmd("command -v hyprshutdown >/dev/null 2>&1 && hyprshutdown || hyprctl dispatch 'hl.dsp.exit()'"))
 hl.bind(mainMod .. " + E", hl.dsp.exec_cmd(fileManager))
 hl.bind(mainMod .. " + SPACE", hl.dsp.exec_cmd(menu))
