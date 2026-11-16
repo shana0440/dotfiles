@@ -16,6 +16,7 @@
     fd
     gh
     gnumake
+    gnupg
     podman
     podman-compose
     ripgrep
