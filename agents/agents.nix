@@ -16,4 +16,8 @@ in
      else pi-coding-agent)
     agentUsage
   ] ++ pkgs.lib.attrValues herdr;
+
+  xdg.configFile."herdr-app/keys.json" = pkgs.lib.mkIf (herdr ? herdr-app) {
+    source = ./herdr/keys.json;
+  };
 }
