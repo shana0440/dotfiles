@@ -22,6 +22,7 @@
         bitwarden-desktop
         telegram-desktop
         signal-desktop
+        remmina
         uxplay
         zen-browser.packages.${pkgs.stdenv.hostPlatform.system}.beta
         (pkgs.anki.withAddons [
