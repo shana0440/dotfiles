@@ -40,6 +40,49 @@ Item {
     ListView {
         id: history
         property bool followBottom: true
+        property real swipeVelocity: 0
+        property real lastSwipeTime: 0
+        readonly property real topY: originY - topMargin
+        readonly property real bottomY: Math.max(topY, originY + contentHeight + bottomMargin - height)
+
+        function clampY(y) { return Math.max(topY, Math.min(bottomY, y)) }
+
+        function scrollTo(y) {
+            contentY = y
+            followBottom = y >= bottomY - 1
+        }
+
+        function glideBy(distance) {
+            const to = clampY((glide.running ? glide.to : contentY) + distance)
+            glide.from = contentY
+            glide.to = to
+            followBottom = to >= bottomY - 1
+            glide.restart()
+        }
+
+        function swipe(event) {
+            const now = Date.now()
+            const elapsed = Math.max(1, now - lastSwipeTime) / 1000
+            const velocity = event.pixelDelta.y / elapsed
+            swipeVelocity = elapsed > 0.1 ? velocity : swipeVelocity * 0.6 + velocity * 0.4
+            lastSwipeTime = now
+            scrollTo(clampY(contentY - event.pixelDelta.y))
+        }
+
+        function wheel(event) {
+            if (event.phase === Qt.ScrollEnd) {
+                if (Date.now() - lastSwipeTime < 80) flick(0, swipeVelocity)
+                swipeVelocity = 0
+                return
+            }
+            cancelFlick()
+            if (event.pixelDelta.y !== 0) {
+                glide.stop()
+                swipe(event)
+            } else {
+                glideBy(-event.angleDelta.y / 120 * 100 * chat.pt)
+            }
+        }
         anchors { bottom: inputBar.top; left: parent.left; right: parent.right }
         height: Math.min(inputBar.y - header.height, contentHeight + topMargin + bottomMargin)
         topMargin: 8 * chat.pt
@@ -49,6 +92,19 @@ Item {
         model: Services.Mei.messages
         boundsBehavior: Flickable.StopAtBounds
         onMovementEnded: followBottom = atYEnd
+
+        NumberAnimation {
+            id: glide
+            target: history
+            property: "contentY"
+            duration: 220
+            easing.type: Easing.OutCubic
+        }
+
+        WheelHandler {
+            acceptedDevices: PointerDevice.Mouse | PointerDevice.TouchPad
+            onWheel: event => history.wheel(event)
+        }
         onCountChanged: Qt.callLater(positionViewAtEnd)
         onContentHeightChanged: if (followBottom) Qt.callLater(positionViewAtEnd)
         onHeightChanged: if (followBottom) Qt.callLater(positionViewAtEnd)
