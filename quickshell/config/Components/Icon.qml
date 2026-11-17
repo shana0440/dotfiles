@@ -58,6 +58,8 @@ Item {
         speakerMuted: "volume-x",
         microphoneMuted: "mic-off",
         check: "check",
+        checkDouble: "check-check",
+        send: "arrow-up",
         clearNotifications: "list-x",
         weatherClear: "sun",
         weatherClearNight: "moon",

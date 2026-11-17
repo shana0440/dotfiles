@@ -119,7 +119,9 @@ All bindings are in `hyprland/hyprland.lua`. The main ones:
 - `Super+Shift+S`: screen capture ([details](quickshell/config/Capture/README.md)).
 - `Super+Shift+L`: lock the screen.
 - `Super+Shift+W`: wallpaper picker ([details](wallpaper/README.md)).
-- `Super+K`: slide a phone panel up from the bottom; press again to slide it away.
+- `Super+K`: slide up a phone for chatting with [mei](https://github.com/shana0440/mei); press again to
+  slide it away. It talks to the mei daemon at `$MEI_HOME/state/mei.sock` (default
+  `~/.local/share/mei`) and shows mei as offline when the daemon is not running.
 - Tap `Super` to open the dashboard; type to [search it](#dashboard-search).
 
 ### Dashboard search

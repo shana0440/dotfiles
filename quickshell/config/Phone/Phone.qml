@@ -5,13 +5,14 @@ import Quickshell.Io
 import Quickshell.Wayland
 import Quickshell.Hyprland
 import "../Theme" as Theme
-import "../Components" as Components
+import "../Services" as Services
 
 Scope {
     id: root
 
     property bool opened: false
     property var chosenScreen: Quickshell.screens[0] ?? null
+    property Item chat: null
     readonly property real visibleShare: 0.9
     readonly property real horizontalCenterShare: 0.7
     readonly property real bounce: 34
@@ -22,13 +23,21 @@ Scope {
             ?? Quickshell.screens[0] ?? null
         opened = true
     }
-    function close() { opened = false }
+    function close() {
+        if (!opened) return
+        opened = false
+        const address = Hyprland.activeToplevel?.address
+        if (address)
+            Hyprland.dispatch("hl.dsp.focus({ window = \"address:0x" + address + "\" })")
+    }
 
     onOpenedChanged: {
         if (opened) {
             exitAnim.stop()
             stage.lift = Math.min(stage.lift, stage.hiddenLift)
             enterAnim.restart()
+            Services.Mei.refresh()
+            Qt.callLater(() => root.chat?.focusInput())
         } else {
             enterAnim.stop()
             stage.exitPeak = stage.lift > 20 ? stage.lift : -bounce * 0.7
@@ -87,6 +96,7 @@ Scope {
         mask: Region { item: phone }
         WlrLayershell.layer: WlrLayer.Overlay
         WlrLayershell.namespace: "quickshell-phone"
+        WlrLayershell.keyboardFocus: root.opened ? WlrKeyboardFocus.OnDemand : WlrKeyboardFocus.None
 
         PhoneBody {
             id: phone
@@ -147,113 +157,31 @@ Scope {
                 anchors.fill: parent
                 anchors.margins: body.bezel
                 radius: body.cornerRadius - body.bezel
-                clip: true
-                gradient: Gradient {
-                    GradientStop { position: 0; color: "#1d2b3a" }
-                    GradientStop { position: 0.55; color: "#141a22" }
-                    GradientStop { position: 1; color: "#0c0c0d" }
+                color: "black"
+
+                Rectangle {
+                    id: glassShape
+                    anchors.fill: parent
+                    radius: screenGlass.radius
+                    visible: false
+                    layer.enabled: true
                 }
 
-                PhoneScreen { anchors.fill: parent }
-            }
-        }
-    }
-
-    component PhoneScreen: Item {
-        id: screenArea
-        readonly property date now: clock.date
-        readonly property real unit: width / 100
-
-        SystemClock {
-            id: clock
-            enabled: root.opened
-            precision: SystemClock.Minutes
-        }
-
-        Rectangle {
-            id: island
-            anchors { top: parent.top; topMargin: screenArea.unit * 3; horizontalCenter: parent.horizontalCenter }
-            width: screenArea.unit * 32
-            height: screenArea.unit * 9.5
-            radius: height / 2
-            color: "black"
-        }
-
-        Text {
-            anchors { verticalCenter: island.verticalCenter; horizontalCenter: parent.horizontalCenter; horizontalCenterOffset: -screenArea.width * 0.3 }
-            text: Qt.formatTime(screenArea.now, "h:mm")
-            color: Theme.Colors.foreground
-            font { family: Theme.Fonts.family; weight: Font.Bold; pixelSize: screenArea.unit * 4.6 }
-        }
-
-        Row {
-            anchors { verticalCenter: island.verticalCenter; horizontalCenter: parent.horizontalCenter; horizontalCenterOffset: screenArea.width * 0.3 }
-            spacing: screenArea.unit * 1.4
-
-            Row {
-                anchors.bottom: parent.bottom
-                anchors.bottomMargin: screenArea.unit * 0.4
-                spacing: screenArea.unit * 0.5
-                Repeater {
-                    model: 4
-                    Rectangle {
-                        required property int index
-                        anchors.bottom: parent.bottom
-                        width: screenArea.unit * 0.9
-                        height: screenArea.unit * (1.4 + index * 0.8)
-                        radius: width / 3
-                        color: Theme.Colors.foreground
+                Chat {
+                    id: chat
+                    anchors.fill: parent
+                    active: root.opened
+                    hiddenBottom: body.height * (1 - root.visibleShare) - body.bezel
+                    onDismissed: root.close()
+                    Component.onCompleted: root.chat = chat
+                    layer.enabled: true
+                    layer.effect: MultiEffect {
+                        maskEnabled: true
+                        maskSource: glassShape
+                        maskThresholdMin: 0.5
+                        maskSpreadAtMin: 1
                     }
                 }
-            }
-            Components.Icon {
-                action: "wifi"
-                width: screenArea.unit * 4.4
-                height: width
-            }
-            Item {
-                anchors.verticalCenter: parent.verticalCenter
-                width: screenArea.unit * 7
-                height: screenArea.unit * 3.4
-                Rectangle {
-                    width: parent.width - screenArea.unit * 0.8
-                    height: parent.height
-                    radius: height * 0.3
-                    color: "transparent"
-                    border.width: 1
-                    border.color: Qt.alpha(Theme.Colors.foreground, 0.45)
-                    Rectangle {
-                        anchors.fill: parent
-                        anchors.margins: screenArea.unit * 0.5
-                        radius: height * 0.25
-                        color: Theme.Colors.foreground
-                    }
-                }
-                Rectangle {
-                    anchors { right: parent.right; verticalCenter: parent.verticalCenter }
-                    width: screenArea.unit * 0.5
-                    height: parent.height * 0.4
-                    radius: width / 2
-                    color: Qt.alpha(Theme.Colors.foreground, 0.45)
-                }
-            }
-        }
-
-        Column {
-            anchors { top: island.bottom; topMargin: screenArea.unit * 12; horizontalCenter: parent.horizontalCenter }
-            spacing: screenArea.unit * 1.5
-
-            Text {
-                anchors.horizontalCenter: parent.horizontalCenter
-                text: Qt.formatDate(screenArea.now, "dddd, MMMM d")
-                color: Qt.alpha(Theme.Colors.foreground, 0.8)
-                font { family: Theme.Fonts.family; weight: Theme.Fonts.weight; pixelSize: screenArea.unit * 5 }
-            }
-            Text {
-                anchors.horizontalCenter: parent.horizontalCenter
-                text: Qt.formatTime(screenArea.now, "h:mm")
-                color: Theme.Colors.foreground
-                font { family: Theme.Fonts.family; weight: Font.Bold; pixelSize: screenArea.unit * 24 }
             }
         }
     }
