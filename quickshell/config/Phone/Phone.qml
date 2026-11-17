@@ -12,8 +12,10 @@ Scope {
 
     property bool opened: false
     property var chosenScreen: Quickshell.screens[0] ?? null
-    readonly property real visibleShare: 0.75
-    readonly property real horizontalCenterShare: 0.75
+    readonly property real visibleShare: 0.9
+    readonly property real horizontalCenterShare: 0.7
+    readonly property real bounce: 34
+    readonly property real pocketRoll: 12
 
     function show() {
         chosenScreen = Quickshell.screens.find(s => s.name === Hyprland.focusedMonitor?.name)
@@ -21,6 +23,18 @@ Scope {
         opened = true
     }
     function close() { opened = false }
+
+    onOpenedChanged: {
+        if (opened) {
+            exitAnim.stop()
+            stage.lift = Math.min(stage.lift, stage.hiddenLift)
+            enterAnim.restart()
+        } else {
+            enterAnim.stop()
+            stage.exitPeak = stage.lift > 20 ? stage.lift : -bounce * 0.7
+            exitAnim.restart()
+        }
+    }
 
     IpcHandler {
         target: "phone"
@@ -30,31 +44,60 @@ Scope {
         function state(): string { return JSON.stringify({ open: root.opened }) }
     }
 
+    QtObject {
+        id: stage
+        property real lift: hiddenLift
+        property real tilt: 1
+        property real exitPeak: 0
+        readonly property real hiddenLift: win.implicitHeight + phone.height * 0.15
+    }
+
+    ParallelAnimation {
+        id: enterAnim
+        SequentialAnimation {
+            NumberAnimation { target: stage; property: "lift"; to: -root.bounce; duration: 340; easing.type: Easing.OutCubic }
+            NumberAnimation { target: stage; property: "lift"; to: 0; duration: 170; easing.type: Easing.InOutSine }
+            NumberAnimation { target: stage; property: "lift"; to: -root.bounce * 0.14; duration: 110; easing.type: Easing.OutQuad }
+            NumberAnimation { target: stage; property: "lift"; to: 0; duration: 110; easing.type: Easing.InQuad }
+        }
+        NumberAnimation {
+            target: stage; property: "tilt"; to: 0; duration: 820
+            easing { type: Easing.OutElastic; amplitude: 1; period: 0.4 }
+        }
+    }
+
+    ParallelAnimation {
+        id: exitAnim
+        SequentialAnimation {
+            NumberAnimation { target: stage; property: "lift"; to: stage.exitPeak; duration: 130; easing.type: Easing.OutQuad }
+            NumberAnimation { target: stage; property: "lift"; to: stage.hiddenLift; duration: 340; easing.type: Easing.InCubic }
+        }
+        NumberAnimation { target: stage; property: "tilt"; to: 1; duration: 440; easing.type: Easing.InQuad }
+    }
+
     PanelWindow {
         id: win
+        readonly property real headroom: root.bounce + phone.height * 0.12
         screen: root.chosenScreen
-        visible: root.opened || phone.y < win.height
-        anchors { bottom: true; left: true }
-        margins.left: Math.max(0, (screen?.width ?? 0) * root.horizontalCenterShare - implicitWidth / 2)
-        implicitWidth: phone.width + phone.shadowRoom * 2
-        implicitHeight: phone.height * root.visibleShare + phone.shadowRoom
+        visible: root.opened || exitAnim.running
+        anchors { bottom: true; left: true; right: true }
+        implicitHeight: phone.height * root.visibleShare + headroom
         exclusiveZone: 0
         color: "transparent"
+        mask: Region { item: phone }
         WlrLayershell.layer: WlrLayer.Overlay
         WlrLayershell.namespace: "quickshell-phone"
 
         PhoneBody {
             id: phone
-            readonly property real shadowRoom: 24
-            height: Math.round(Math.min((win.screen?.height ?? 1080) * 0.86, 880))
+            height: Math.round(Math.min((win.screen?.height ?? 1080) * 0.8, 860))
             width: Math.round(height * 0.49)
-            x: shadowRoom
-            y: root.opened ? phone.shadowRoom : win.height
-            Behavior on y {
-                NumberAnimation {
-                    duration: root.opened ? 420 : 300
-                    easing.type: root.opened ? Easing.OutCubic : Easing.InCubic
-                }
+            x: win.width * root.horizontalCenterShare - width / 2
+            y: win.headroom + stage.lift
+            transform: Rotation {
+                origin.x: phone.width / 2
+                origin.y: phone.height
+                angle: root.pocketRoll * stage.tilt
             }
         }
     }
