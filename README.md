@@ -119,6 +119,7 @@ All bindings are in `hyprland/hyprland.lua`. The main ones:
 - `Super+Shift+S`: screen capture ([details](quickshell/config/Capture/README.md)).
 - `Super+Shift+L`: lock the screen.
 - `Super+Shift+W`: wallpaper picker ([details](wallpaper/README.md)).
+- `Super+K`: slide a phone panel up from the bottom; press again to slide it away.
 - Tap `Super` to open the dashboard; type to [search it](#dashboard-search).
 
 ### Dashboard search

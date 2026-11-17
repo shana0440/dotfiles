@@ -2,6 +2,7 @@ import Quickshell
 import "Capture"
 import "Lock"
 import "MissionControl"
+import "Phone"
 import "Wallpaper"
 import "Services" as Services
 
@@ -12,5 +13,6 @@ ShellRoot {
     WallpaperPicker {}
     ScreenCapture {}
     MissionControl {}
+    Phone {}
     Lock {}
 }

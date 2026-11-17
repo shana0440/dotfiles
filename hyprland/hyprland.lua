@@ -157,6 +157,7 @@ end
 hl.bind(mainMod .. " + SHIFT + S", hl.dsp.exec_cmd(quickshellIpc("capture", "open")))
 hl.bind(mainMod .. " + SHIFT + L", hl.dsp.exec_cmd(quickshellIpc("lock", "lock")))
 hl.bind(mainMod .. " + SHIFT + W", hl.dsp.exec_cmd(quickshellIpc("wallpaper", "toggle")))
+hl.bind(mainMod .. " + K", hl.dsp.exec_cmd(quickshellIpc("phone", "toggle")))
 
 hl.bind(mainMod .. " + Q", hl.dsp.window.close())
 hl.bind(mainMod .. " + SHIFT + Q", function()
