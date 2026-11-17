@@ -75,6 +75,15 @@ Singleton {
                 root.messages.setProperty(replyRow, "text", text)
             }
 
+            function showTyping() {
+                if (replyRow >= 0 && root.messages.get(replyRow).text !== "") {
+                    root.messages.setProperty(replyRow, "streaming", false)
+                    root.messages.setProperty(replyRow, "time", root.clock(Date.now()))
+                    replyRow = -1
+                }
+                stream("")
+            }
+
             function finish(reply) {
                 answered = true
                 root.reachable = true
@@ -103,6 +112,7 @@ Singleton {
                     stream("")
                 } else if (data.type === "tool_execution_start") {
                     root.activity = "using " + data.toolName + "…"
+                    showTyping()
                 } else if (data.type === "message_update") {
                     const update = data.assistantMessageEvent
                     if (update.type === "text_start") {
