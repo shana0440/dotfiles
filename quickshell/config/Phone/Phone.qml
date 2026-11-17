@@ -26,9 +26,9 @@ Scope {
     function close() {
         if (!opened) return
         opened = false
-        const address = Hyprland.activeToplevel?.address
-        if (address)
-            Hyprland.dispatch("hl.dsp.focus({ window = \"address:0x" + address + "\" })")
+        const window = Hyprland.activeToplevel
+        if (window && window.workspace?.id === Hyprland.focusedWorkspace?.id)
+            Hyprland.dispatch("hl.dsp.focus({ window = \"address:0x" + window.address + "\" })")
     }
 
     onOpenedChanged: {
