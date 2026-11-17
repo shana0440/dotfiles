@@ -12,6 +12,7 @@
   home.shellAliases.docker = "podman";
 
   home.packages = with pkgs; [
+    nodejs
     curl
     fd
     gh
