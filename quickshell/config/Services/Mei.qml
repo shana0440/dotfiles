@@ -82,6 +82,10 @@ Singleton {
         replyNotification.createObject(root, { body: plain })
     }
 
+    function requestOpen() {
+        Notifications.whenFocusReturns(() => openRequested())
+    }
+
     function readConfig() {
         nameReader.run(["get", "character.name"])
         characterFileReader.run(["get", "character.file"])
@@ -288,7 +292,7 @@ Singleton {
                 "--action=open=Reply", "--wait", root.name, body]
             running: true
             stdout: StdioCollector {
-                onStreamFinished: if (text.trim() === "open") root.openRequested()
+                onStreamFinished: if (text.trim() === "open") root.requestOpen()
             }
             onExited: notification.destroy()
         }

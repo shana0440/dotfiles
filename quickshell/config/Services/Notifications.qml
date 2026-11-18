@@ -23,6 +23,7 @@ Singleton {
     signal actionInvoked()
     property bool focusBlocked: false
     property var pendingSender: []
+    property var afterFocusReturns: []
 
     function hidePreview() {
         previewTimer.stop()
@@ -76,10 +77,20 @@ Singleton {
             Qt.callLater(flushFocus)
     }
 
+    function whenFocusReturns(callback) {
+        if (focusBlocked)
+            afterFocusReturns = afterFocusReturns.concat([callback])
+        else
+            callback()
+    }
+
     function flushFocus() {
         const names = pendingSender
+        const callbacks = afterFocusReturns
         pendingSender = []
+        afterFocusReturns = []
         focusSender(names)
+        callbacks.forEach(callback => callback())
     }
 
     function focusSender(names) {

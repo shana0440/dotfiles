@@ -24,6 +24,11 @@ Scope {
             ?? Quickshell.screens[0] ?? null
         opened = true
     }
+    function showChat() {
+        if (display) display.stack = ["chat"]
+        show()
+        Qt.callLater(() => root.display?.focusCurrent())
+    }
     function close() {
         if (!opened) return
         opened = false
@@ -41,7 +46,7 @@ Scope {
 
     Connections {
         target: Services.Mei
-        function onOpenRequested() { root.show() }
+        function onOpenRequested() { root.showChat() }
     }
     onRaisedChanged: {
         if (raised) {
