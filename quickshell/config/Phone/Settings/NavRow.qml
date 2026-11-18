@@ -9,13 +9,12 @@ MouseArea {
     property string icon
     property color tile: Look.accent
     property string label
-    property string subtitle
     property string detail
     property bool separated: false
     readonly property real textLeft: 62 * pt
 
     width: parent.width
-    height: (subtitle ? 60 : 44) * pt
+    height: 50 * pt
     cursorShape: Qt.PointingHandCursor
 
     Rectangle {
@@ -25,7 +24,7 @@ MouseArea {
 
     Rectangle {
         visible: row.separated
-        anchors { top: parent.top; left: parent.left; leftMargin: row.textLeft; right: parent.right }
+        anchors { top: parent.top; left: parent.left; leftMargin: row.textLeft; right: parent.right; rightMargin: 16 * row.pt }
         height: 1
         color: Look.separator
     }
@@ -34,7 +33,7 @@ MouseArea {
         anchors { left: parent.left; leftMargin: 16 * row.pt; verticalCenter: parent.verticalCenter }
         width: 30 * row.pt
         height: width
-        radius: 7 * row.pt
+        radius: 8 * row.pt
         color: row.tile
         Components.Icon {
             anchors.centerIn: parent
@@ -45,29 +44,17 @@ MouseArea {
         }
     }
 
-    Column {
+    Text {
         anchors { left: parent.left; leftMargin: row.textLeft; right: trailing.left; rightMargin: 8 * row.pt; verticalCenter: parent.verticalCenter }
-        spacing: 2 * row.pt
-        Text {
-            width: parent.width
-            text: row.label
-            elide: Text.ElideRight
-            color: Look.ink
-            font { family: Theme.Fonts.family; pixelSize: 17 * row.pt }
-        }
-        Text {
-            visible: row.subtitle !== ""
-            width: parent.width
-            text: row.subtitle
-            elide: Text.ElideRight
-            color: Look.secondaryInk
-            font { family: Theme.Fonts.family; pixelSize: 13 * row.pt }
-        }
+        text: row.label
+        elide: Text.ElideRight
+        color: Look.ink
+        font { family: Theme.Fonts.family; pixelSize: 17 * row.pt }
     }
 
     Row {
         id: trailing
-        anchors { right: parent.right; rightMargin: 10 * row.pt; verticalCenter: parent.verticalCenter }
+        anchors { right: parent.right; rightMargin: 14 * row.pt; verticalCenter: parent.verticalCenter }
         spacing: 4 * row.pt
         Text {
             anchors.verticalCenter: parent.verticalCenter

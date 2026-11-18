@@ -11,3 +11,4 @@ SettingsPage 1.0 SettingsPage.qml
 NavRow 1.0 NavRow.qml
 SchedulesPage 1.0 SchedulesPage.qml
 CharacterPage 1.0 CharacterPage.qml
+ActionRow 1.0 ActionRow.qml

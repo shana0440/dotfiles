@@ -7,7 +7,7 @@ ClippingRectangle {
     x: 16 * pt
     width: parent.width - 2 * x
     height: rowColumn.height
-    radius: 10 * pt
+    radius: 22 * pt
     color: "white"
 
     Column {

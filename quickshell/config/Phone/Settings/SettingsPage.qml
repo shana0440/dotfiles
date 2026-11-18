@@ -17,7 +17,7 @@ Page {
     Column {
         width: parent.width
         spacing: 10 * settings.pt
-        bottomPadding: 16 * settings.pt
+        bottomPadding: 18 * settings.pt
 
         Phone.Avatar {
             id: profileAvatar
@@ -40,31 +40,39 @@ Page {
             color: Look.ink
             font { family: Theme.Fonts.family; weight: Font.DemiBold; pixelSize: 24 * settings.pt }
         }
+    }
 
-        Row {
-            anchors.horizontalCenter: parent.horizontalCenter
-            spacing: 24 * settings.pt
-            TextButton {
-                pt: settings.pt
-                label: profileAvatar.hasPhoto ? "Change photo" : "Choose photo"
-                onClicked: Services.Mei.chooseAvatar()
-            }
-            TextButton {
-                visible: Services.Mei.avatar !== ""
-                pt: settings.pt
-                label: "Remove photo"
-                tint: Look.destructive
-                onClicked: Services.Mei.removeAvatar()
-            }
-        }
-
-        Caption {
-            visible: Services.Mei.avatarError !== ""
+    Group {
+        pt: settings.pt
+        ActionRow {
             pt: settings.pt
-            horizontalAlignment: Text.AlignHCenter
-            text: Services.Mei.avatarError
-            color: Look.destructive
+            icon: "screenshot"
+            label: profileAvatar.hasPhoto ? "Change photo" : "Choose photo"
+            onClicked: Services.Mei.chooseAvatar()
         }
+        ActionRow {
+            visible: Services.Mei.avatar !== ""
+            pt: settings.pt
+            separated: true
+            icon: "remove"
+            label: "Remove photo"
+            tint: Look.destructive
+            onClicked: Services.Mei.removeAvatar()
+        }
+    }
+
+    Caption {
+        visible: Services.Mei.avatarError !== ""
+        pt: settings.pt
+        note: true
+        text: Services.Mei.avatarError
+        color: Look.destructive
+    }
+
+    Item {
+        visible: Services.Mei.avatarError === ""
+        width: 1
+        height: 12 * settings.pt
     }
 
     Group {
@@ -74,40 +82,36 @@ Page {
             icon: "character"
             tile: "#ff9500"
             label: "CHARACTER.md"
-            subtitle: "Name, language and tone"
             onClicked: settings.openCharacter()
         }
+    }
+
+    Caption { pt: settings.pt; note: true; text: "Her language, tone and speaking style." }
+
+    Group {
+        pt: settings.pt
         NavRow {
             pt: settings.pt
-            separated: true
             icon: "schedules"
             tile: "#ff3b30"
             label: "Schedules"
-            subtitle: "Jobs she runs on her own"
             detail: Services.Mei.schedules.length
             onClicked: settings.openSchedules()
         }
     }
 
+    Caption { pt: settings.pt; note: true; text: "Jobs she runs on her own." }
+
     footer: [
         Group {
             pt: settings.pt
-            MouseArea {
+            ActionRow {
                 id: resetRow
-                width: parent.width
-                height: 44 * settings.pt
-                cursorShape: Qt.PointingHandCursor
+                pt: settings.pt
+                icon: "reset"
+                label: "Reset memory"
+                tint: Look.destructive
                 onClicked: resetAlert.open()
-                Rectangle {
-                    anchors.fill: parent
-                    color: resetRow.pressed ? Look.pressedFill : "transparent"
-                }
-                Text {
-                    anchors.centerIn: parent
-                    text: "Reset memory"
-                    color: Look.destructive
-                    font { family: Theme.Fonts.family; pixelSize: 17 * settings.pt }
-                }
             }
         },
         Caption {
