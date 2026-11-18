@@ -32,6 +32,17 @@ Scope {
     readonly property bool raised: opened && !Services.Mei.choosingAvatar && !Services.ChatBackground.choosing
 
     onOpenedChanged: if (opened) Services.Mei.refresh()
+
+    Binding {
+        target: Services.Mei
+        property: "chatInView"
+        value: root.raised
+    }
+
+    Connections {
+        target: Services.Mei
+        function onOpenRequested() { root.show() }
+    }
     onRaisedChanged: {
         if (raised) {
             exitAnim.stop()

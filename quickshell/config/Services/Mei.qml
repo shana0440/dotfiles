@@ -26,6 +26,8 @@ Singleton {
     property string activity: ""
     property bool reachable: true
     property string lastTopic: ""
+    property bool chatInView: false
+    signal openRequested()
     readonly property string presence: !reachable ? "offline"
         : activity ? activity
         : waiting > 0 ? "typing…" : "online"
@@ -51,6 +53,12 @@ Singleton {
         append("user", trimmed, Date.now())
         waiting++
         requestComponent.createObject(root, { message: { type: "chat", text: trimmed, debug: true } })
+    }
+
+    function announce(reply) {
+        if (chatInView || !reply.trim()) return
+        const plain = reply.replace(/^#+\s*/gm, "").replace(/[*`]+/g, "").trim()
+        replyNotification.createObject(root, { body: plain })
     }
 
     function readConfig() {
@@ -176,6 +184,7 @@ Singleton {
                 stream(reply.result)
                 root.messages.setProperty(replyRow, "streaming", false)
                 root.messages.setProperty(replyRow, "time", root.clock(Date.now()))
+                root.announce(reply.result)
             }
 
             function handle(line) {
@@ -230,6 +239,25 @@ Singleton {
                 giveUp()
                 Qt.callLater(() => request.destroy())
             }
+        }
+    }
+
+    Component {
+        id: replyNotification
+
+        Process {
+            id: notification
+            required property string body
+            readonly property string icon: root.avatar.startsWith("file://")
+                ? decodeURIComponent(root.avatar.slice("file://".length)) : root.avatar
+
+            command: ["notify-send", "--app-name=" + root.name, "--icon=" + icon,
+                "--action=open=Reply", "--wait", root.name, body]
+            running: true
+            stdout: StdioCollector {
+                onStreamFinished: if (text.trim() === "open") root.openRequested()
+            }
+            onExited: notification.destroy()
         }
     }
 
