@@ -1,5 +1,6 @@
 import QtQuick
 import Quickshell
+import Quickshell.Widgets
 import "../Theme" as Theme
 import "../Components" as Components
 import "../Services" as Services
@@ -136,6 +137,32 @@ Item {
                 text: Services.Mei.scheduleError || "A turned-off schedule stays in config.toml but never runs on its own. Removing one keeps its script or prompt."
                 color: Services.Mei.scheduleError ? settings.destructive : settings.secondaryInk
             }
+
+            Group {
+                MouseArea {
+                    id: resetRow
+                    width: parent.width
+                    height: 44 * settings.pt
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: resetDialog.open()
+                    Rectangle {
+                        anchors.fill: parent
+                        radius: 10 * settings.pt
+                        color: resetRow.pressed ? "#e5e5ea" : "transparent"
+                    }
+                    Text {
+                        anchors.centerIn: parent
+                        text: "Reset memory"
+                        color: settings.destructive
+                        font { family: Theme.Fonts.family; pixelSize: 17 * settings.pt }
+                    }
+                }
+            }
+
+            SectionNote {
+                text: resetDialog.cleared ? Services.Mei.name + "'s memory and chat history are cleared."
+                    : "Forget everything " + Services.Mei.name + " remembers and delete the chat history."
+            }
         }
     }
 
@@ -197,6 +224,145 @@ Item {
     }
 
     onActiveChanged: if (active) Services.Mei.loadSchedules()
+
+    MouseArea {
+        id: resetDialog
+        property bool shown: false
+        property bool cleared: false
+        property string error: ""
+
+        function open() {
+            error = ""
+            shown = true
+            forceActiveFocus()
+        }
+        function dismiss() {
+            if (Services.Mei.resetting) return
+            shown = false
+            page.forceActiveFocus()
+        }
+        function confirm() {
+            error = ""
+            Services.Mei.resetMemory(failure => {
+                error = failure
+                if (failure) return
+                cleared = true
+                dismiss()
+            })
+        }
+
+        anchors.fill: parent
+        z: 1
+        visible: opacity > 0
+        opacity: shown ? 1 : 0
+        Behavior on opacity { NumberAnimation { duration: 160 } }
+        onClicked: {}
+        Keys.onEscapePressed: dismiss()
+        Keys.onReturnPressed: confirm()
+
+        Rectangle {
+            anchors.fill: parent
+            color: Qt.rgba(0, 0, 0, 0.4)
+        }
+
+        ClippingRectangle {
+            id: alert
+            anchors { centerIn: parent; verticalCenterOffset: -settings.hiddenBottom / 2 }
+            width: 270 * settings.pt
+            height: alertText.height + alertButtons.height
+            radius: 14 * settings.pt
+            color: Qt.rgba(0.96, 0.96, 0.96, 0.98)
+            scale: resetDialog.shown ? 1 : 1.15
+            Behavior on scale { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
+
+            Column {
+                id: alertText
+                width: parent.width
+                topPadding: 19 * settings.pt
+                bottomPadding: 19 * settings.pt
+                spacing: 4 * settings.pt
+                Text {
+                    width: parent.width
+                    horizontalAlignment: Text.AlignHCenter
+                    text: "Reset memory?"
+                    color: settings.ink
+                    font { family: Theme.Fonts.family; weight: Font.DemiBold; pixelSize: 17 * settings.pt }
+                }
+                Text {
+                    x: 16 * settings.pt
+                    width: parent.width - 2 * x
+                    horizontalAlignment: Text.AlignHCenter
+                    wrapMode: Text.Wrap
+                    text: "This removes everything " + Services.Mei.name
+                        + " remembers, along with the chat history, session summaries and logs. It cannot be restored."
+                    color: settings.ink
+                    font { family: Theme.Fonts.family; pixelSize: 13 * settings.pt }
+                }
+                Text {
+                    visible: resetDialog.error !== ""
+                    x: 16 * settings.pt
+                    width: parent.width - 2 * x
+                    topPadding: 4 * settings.pt
+                    horizontalAlignment: Text.AlignHCenter
+                    wrapMode: Text.Wrap
+                    text: resetDialog.error
+                    color: settings.destructive
+                    font { family: Theme.Fonts.family; pixelSize: 13 * settings.pt }
+                }
+            }
+
+            Rectangle {
+                anchors.bottom: alertButtons.top
+                width: parent.width
+                height: 1
+                color: settings.hairline
+            }
+
+            Row {
+                id: alertButtons
+                anchors.bottom: parent.bottom
+                width: parent.width
+                height: 44 * settings.pt
+                AlertButton {
+                    label: "Cancel"
+                    bold: true
+                    onClicked: resetDialog.dismiss()
+                }
+                Rectangle {
+                    width: 1
+                    height: parent.height
+                    color: settings.hairline
+                }
+                AlertButton {
+                    label: Services.Mei.resetting ? "Resetting…" : "Reset"
+                    tint: settings.destructive
+                    onClicked: resetDialog.confirm()
+                }
+            }
+        }
+    }
+
+    component AlertButton: MouseArea {
+        id: alertButton
+        property string label
+        property color tint: settings.accent
+        property bool bold: false
+        width: (parent.width - 1) / 2
+        height: parent.height
+        enabled: !Services.Mei.resetting
+        cursorShape: Qt.PointingHandCursor
+        Rectangle {
+            anchors.fill: parent
+            color: alertButton.pressed ? Qt.rgba(0, 0, 0, 0.06) : "transparent"
+        }
+        Text {
+            anchors.centerIn: parent
+            text: alertButton.label
+            color: alertButton.tint
+            opacity: alertButton.enabled ? 1 : 0.5
+            font { family: Theme.Fonts.family; weight: alertButton.bold ? Font.DemiBold : Font.Normal; pixelSize: 17 * settings.pt }
+        }
+    }
 
     function nextRun(ms) {
         const due = new Date(ms)

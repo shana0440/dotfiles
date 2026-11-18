@@ -14,6 +14,7 @@ Singleton {
     property var schedules: []
     property string scheduleError: ""
     property string changingSchedule: ""
+    property bool resetting: false
     readonly property ListModel messages: ListModel {}
     property int waiting: 0
     property string activity: ""
@@ -81,6 +82,19 @@ Singleton {
         changingSchedule = name
         ask({ type: "schedule", change: { action: action, name: name } }, reply => {
             loadSchedules(reply.error)
+        })
+    }
+
+    function resetMemory(finished) {
+        if (resetting) return
+        resetting = true
+        ask({ type: "reset" }, reply => {
+            resetting = false
+            if (!reply.error) {
+                messages.clear()
+                lastTopic = ""
+            }
+            finished(reply.error ?? "")
         })
     }
 
