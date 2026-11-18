@@ -11,10 +11,18 @@ import time
 EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp"}
 
 
-def thumbnail(source, cache):
+def thumbnail_cache():
+    return Path(os.environ.get("XDG_CACHE_HOME", str(Path.home() / ".cache"))) / "wallpaper/thumbnails"
+
+
+def thumbnail_path(source, cache):
     stat = source.stat()
     key = hashlib.sha256(str(source).encode()).hexdigest()
-    target = cache / f"{key}-{stat.st_mtime_ns}-{stat.st_size}.jpg"
+    return cache / f"{key}-{stat.st_mtime_ns}-{stat.st_size}.jpg"
+
+
+def thumbnail(source, cache):
+    target = thumbnail_path(source, cache)
     if not target.is_file():
         fd, temp = tempfile.mkstemp(suffix=".jpg", dir=cache)
         os.close(fd)
@@ -77,7 +85,7 @@ def wait_transition(token, expected, seconds):
             return
         if state["phase"] in {"error", "superseded", "idle"}:
             raise RuntimeError(state.get("error") or "Transition stopped")
-        time.sleep(0.03)
+        time.sleep(0.01)
     raise TimeoutError("Colony transition timed out")
 
 
@@ -96,7 +104,9 @@ def colony_transition(image):
         if not outputs:
             return False
         colony_map = colonies("take")
-        request = {"image": str(image), "map": colony_map, "ember": colonies("accent", str(image)),
+        cached_thumbnail = thumbnail_path(image, thumbnail_cache())
+        color_source = cached_thumbnail if cached_thumbnail.is_file() else image
+        request = {"image": str(image), "map": colony_map, "ember": colonies("accent", str(color_source)),
                    "outputs": outputs}
         token = transition_ipc("prepare", json.dumps(request))
         already_heading_there = token == "same"
@@ -110,7 +120,6 @@ def colony_transition(image):
             return False
         wait_transition(token, "ready", 3)
         print("transition-ready", flush=True)
-        time.sleep(0.15)
         if transition_ipc("go", token) != "ok":
             raise RuntimeError("Colony transition did not start")
         wait_transition(token, "done", 8)
@@ -158,7 +167,7 @@ def main():
         record_current(image)
         return
     directory = Path(os.environ["WALLPAPER_DIR"]).expanduser().resolve()
-    cache = Path(os.environ.get("XDG_CACHE_HOME", str(Path.home() / ".cache"))) / "wallpaper/thumbnails"
+    cache = thumbnail_cache()
     import fcntl
     cache.mkdir(parents=True, exist_ok=True)
     with (cache.parent / "refresh.lock").open("w") as lock:

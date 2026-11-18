@@ -124,6 +124,7 @@ class LibraryTests(unittest.TestCase):
         return subprocess.CompletedProcess([], 0, stdout=json.dumps({"": [{"name": "A", "displaying": displaying}]}))
 
     def test_colony_transition_waits_for_ready_and_done_then_renews_map(self):
+        (self.source / "new.png").touch()
         done = [self.query({"image": "/old.png"}), subprocess.CompletedProcess([], 0, stdout="/pool/map-3.png\n"),
                 subprocess.CompletedProcess([], 0, stdout="#ff8800\n")]
         with patch.object(library.subprocess, "run", side_effect=done) as run, patch.object(
@@ -137,6 +138,7 @@ class LibraryTests(unittest.TestCase):
         self.assertEqual(run.call_count, 3)
 
     def test_solid_colour_start_still_uses_colonies(self):
+        (self.source / "new.png").touch()
         done = [self.query({"color": [0, 0, 0]}), subprocess.CompletedProcess([], 0, stdout="/m.png"),
                 subprocess.CompletedProcess([], 0, stdout="#ffffff")]
         with patch.object(library.subprocess, "run", side_effect=done), patch.object(
@@ -145,6 +147,7 @@ class LibraryTests(unittest.TestCase):
             self.assertTrue(library.colony_transition(self.source / "new.png"))
 
     def test_renderer_failure_is_aborted_and_falls_back(self):
+        (self.source / "new.png").touch()
         done = [self.query({"image": "/old.png"}), subprocess.CompletedProcess([], 0, stdout="/m.png"),
                 subprocess.CompletedProcess([], 0, stdout="#ffffff")]
         with patch.object(library.subprocess, "run", side_effect=done), patch.object(
@@ -155,6 +158,7 @@ class LibraryTests(unittest.TestCase):
         popen.assert_not_called()
 
     def test_change_already_heading_there_is_done_without_fade(self):
+        (self.source / "new.png").touch()
         done = [self.query({"image": "/old.png"}), subprocess.CompletedProcess([], 0, stdout="/m.png"),
                 subprocess.CompletedProcess([], 0, stdout="#ffffff")]
         with patch.object(library.subprocess, "run", side_effect=done), patch.object(
