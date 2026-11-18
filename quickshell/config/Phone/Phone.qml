@@ -27,9 +27,6 @@ Scope {
     function close() {
         if (!opened) return
         opened = false
-        const window = Hyprland.activeToplevel
-        if (window && window.workspace?.id === Hyprland.focusedWorkspace?.id)
-            Hyprland.dispatch("hl.dsp.focus({ window = \"address:0x" + window.address + "\" })")
     }
 
     readonly property bool raised: opened && !Services.Mei.choosingAvatar && !Services.ChatBackground.choosing
