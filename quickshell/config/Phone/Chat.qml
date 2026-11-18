@@ -17,9 +17,11 @@ Item {
     readonly property color link: "#64b5ff"
     readonly property color barFill: "#161618"
     readonly property color hairline: "#38383a"
-    readonly property color incomingFill: "#262628"
-    readonly property color outgoingFill: "#2b5a3c"
-    readonly property color outgoingInk: "#8fd3a0"
+    readonly property color incomingFill: "#182533"
+    readonly property color incomingStamp: "#6c7e8e"
+    readonly property color outgoingFill: "#2b5278"
+    readonly property color outgoingStamp: "#7da8d3"
+    readonly property color readTicks: "#6bbfff"
     readonly property color fieldFill: "#1c1c1e"
     readonly property color fieldBorder: "#38383a"
     readonly property color placeholder: "#6e6e73"
@@ -244,7 +246,7 @@ Item {
                             spacing: 3 * chat.pt
                             Text {
                                 text: row.time
-                                color: bubbleRow.outgoing ? chat.outgoingInk : chat.secondaryInk
+                                color: bubbleRow.outgoing ? chat.outgoingStamp : chat.incomingStamp
                                 font { family: Theme.Fonts.family; pixelSize: 11 * chat.pt }
                             }
                             Components.Icon {
@@ -253,7 +255,7 @@ Item {
                                 width: 14 * chat.pt
                                 height: width
                                 action: "checkDouble"
-                                iconColor: chat.outgoingInk
+                                iconColor: chat.readTicks
                             }
                         }
                     }
