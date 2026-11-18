@@ -13,6 +13,7 @@ Item {
     property real topPadding: 24 * pt
     default property alias content: sections.data
     property alias overlays: overlayLayer.data
+    property alias footer: footerColumn.data
     readonly property real pt: width / 390
     signal back
     signal backHeld
@@ -36,7 +37,7 @@ Item {
 
     Flickable {
         id: body
-        anchors { top: navBar.bottom; bottom: parent.bottom; bottomMargin: page.hiddenBottom; left: parent.left; right: parent.right }
+        anchors { top: navBar.bottom; bottom: footerColumn.top; left: parent.left; right: parent.right }
         contentHeight: sections.height + 32 * page.pt
         boundsBehavior: Flickable.StopAtBounds
         interactive: false
@@ -63,6 +64,13 @@ Item {
             width: body.width
             spacing: 8 * page.pt
         }
+    }
+
+    Column {
+        id: footerColumn
+        anchors { bottom: parent.bottom; bottomMargin: page.hiddenBottom; left: parent.left; right: parent.right }
+        bottomPadding: children.length > 0 ? 16 * page.pt : 0
+        spacing: 8 * page.pt
     }
 
     NavBar {

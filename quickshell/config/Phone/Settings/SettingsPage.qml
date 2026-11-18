@@ -77,33 +77,33 @@ Page {
 
     Caption { pt: settings.pt; note: true; text: "CHARACTER.md sets " + Services.Mei.name + "'s name, language and tone. Schedules are the jobs she runs on her own." }
 
-    Group {
-        pt: settings.pt
-        MouseArea {
-            id: resetRow
-            width: parent.width
-            height: 44 * settings.pt
-            cursorShape: Qt.PointingHandCursor
-            onClicked: resetAlert.open()
-            Rectangle {
-                anchors.fill: parent
-                color: resetRow.pressed ? Look.pressedFill : "transparent"
+    footer: [
+        Group {
+            pt: settings.pt
+            MouseArea {
+                id: resetRow
+                width: parent.width
+                height: 44 * settings.pt
+                cursorShape: Qt.PointingHandCursor
+                onClicked: resetAlert.open()
+                Rectangle {
+                    anchors.fill: parent
+                    color: resetRow.pressed ? Look.pressedFill : "transparent"
+                }
+                Text {
+                    anchors.centerIn: parent
+                    text: "Reset memory"
+                    color: Look.destructive
+                    font { family: Theme.Fonts.family; pixelSize: 17 * settings.pt }
+                }
             }
-            Text {
-                anchors.centerIn: parent
-                text: "Reset memory"
-                color: Look.destructive
-                font { family: Theme.Fonts.family; pixelSize: 17 * settings.pt }
-            }
+        },
+        Caption {
+            pt: settings.pt
+            text: settings.cleared ? Services.Mei.name + "'s memory and chat history are cleared."
+                : "Forget everything " + Services.Mei.name + " remembers and delete the chat history."
         }
-    }
-
-    Caption {
-        pt: settings.pt
-        note: true
-        text: settings.cleared ? Services.Mei.name + "'s memory and chat history are cleared."
-            : "Forget everything " + Services.Mei.name + " remembers and delete the chat history."
-    }
+    ]
 
     overlays: Alert {
         id: resetAlert
