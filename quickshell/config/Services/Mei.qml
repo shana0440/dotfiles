@@ -9,7 +9,9 @@ Singleton {
     readonly property string home: Quickshell.env("MEI_HOME") || Quickshell.env("HOME") + "/.local/share/mei"
     readonly property string socketPath: home + "/state/mei.sock"
     readonly property string character: characterFile.text()
-    readonly property string name: character.match(/^- Name:[ \t]*(.*\S)/m)?.[1] ?? "mei"
+    readonly property string name: configFile.text().split(/^\[/m)
+        .find(section => section.startsWith("character]"))
+        ?.match(/^name\s*=\s*"([^"]+)"/m)?.[1] ?? "mei"
     readonly property string avatar: profile.avatar
     readonly property bool choosingAvatar: avatarPicker.running
     property string avatarError: ""
@@ -218,6 +220,14 @@ Singleton {
                 Qt.callLater(() => request.destroy())
             }
         }
+    }
+
+    FileView {
+        id: configFile
+        path: root.home + "/config.toml"
+        watchChanges: true
+        printErrors: false
+        onFileChanged: reload()
     }
 
     FileView {

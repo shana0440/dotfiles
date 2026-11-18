@@ -53,7 +53,7 @@ Page {
     Caption {
         pt: editor.pt
         note: true
-        text: "Sets " + Services.Mei.name + "'s name, language, tone and speaking style. It is read for every answer, so a saved change applies to the next message."
+        text: "Sets " + Services.Mei.name + "'s language, tone and speaking style. It is read for every answer, so a saved change applies to the next message."
     }
 
     overlays: Alert {
