@@ -8,7 +8,8 @@ Singleton {
 
     readonly property string home: Quickshell.env("MEI_HOME") || Quickshell.env("HOME") + "/.local/share/mei"
     readonly property string socketPath: home + "/state/mei.sock"
-    readonly property string name: characterFile.text().match(/^- Name:[ \t]*(.*\S)/m)?.[1] ?? "mei"
+    readonly property string character: characterFile.text()
+    readonly property string name: character.match(/^- Name:[ \t]*(.*\S)/m)?.[1] ?? "mei"
     readonly property string avatar: profile.avatar
     readonly property bool choosingAvatar: avatarPicker.running
     property var schedules: []
@@ -47,14 +48,8 @@ Singleton {
         requestComponent.createObject(root, { message: { type: "chat", text: trimmed, debug: true } })
     }
 
-    function rename(newName) {
-        const trimmed = newName.trim().replace(/\s+/g, " ")
-        if (!trimmed || trimmed === name) return
-        const text = characterFile.text()
-        const line = "- Name: " + trimmed
-        characterFile.setText(/^- Name:.*$/m.test(text) ? text.replace(/^- Name:.*$/m, line)
-            : text.trim() ? text.trimEnd() + "\n" + line + "\n"
-            : "# Character\n\n" + line + "\n")
+    function saveCharacter(text) {
+        characterFile.setText(text)
     }
 
     function chooseAvatar() {

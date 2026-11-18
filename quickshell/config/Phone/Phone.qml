@@ -245,6 +245,22 @@ Scope {
                             hiddenBottom: display.hiddenBottom
                             onBack: display.pop()
                             onOpenSchedules: display.push("schedules")
+                            onOpenCharacter: {
+                                characterPage.load()
+                                display.push("character")
+                            }
+                        }
+                    }
+
+                    Slot {
+                        name: "character"
+                        stack: display.stack
+                        Settings.CharacterPage {
+                            id: characterPage
+                            anchors.fill: parent
+                            active: root.raised && display.current === "character"
+                            hiddenBottom: display.hiddenBottom
+                            onBack: display.pop()
                         }
                     }
 

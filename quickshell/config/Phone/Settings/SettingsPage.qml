@@ -8,6 +8,7 @@ Page {
 
     property bool cleared: false
     signal openSchedules
+    signal openCharacter
 
     title: "Settings"
     backLabel: "Chat"
@@ -33,6 +34,13 @@ Page {
             }
         }
 
+        Text {
+            anchors.horizontalCenter: parent.horizontalCenter
+            text: Services.Mei.name
+            color: Look.ink
+            font { family: Theme.Fonts.family; weight: Font.DemiBold; pixelSize: 24 * settings.pt }
+        }
+
         Row {
             anchors.horizontalCenter: parent.horizontalCenter
             spacing: 24 * settings.pt
@@ -51,48 +59,23 @@ Page {
         }
     }
 
-    Caption { pt: settings.pt; text: "Name" }
-
-    Group {
-        pt: settings.pt
-        Item {
-            width: parent.width
-            height: 44 * settings.pt
-            TextInput {
-                anchors { left: parent.left; right: parent.right; leftMargin: 16 * settings.pt; rightMargin: 16 * settings.pt; verticalCenter: parent.verticalCenter }
-                text: Services.Mei.name
-                color: Look.ink
-                selectionColor: Qt.alpha(Look.accent, 0.3)
-                selectedTextColor: Look.ink
-                selectByMouse: true
-                maximumLength: 40
-                font { family: Theme.Fonts.family; pixelSize: 17 * settings.pt }
-                onEditingFinished: {
-                    Services.Mei.rename(text)
-                    text = Qt.binding(() => Services.Mei.name)
-                }
-                onAccepted: settings.focusPage()
-                Keys.onEscapePressed: {
-                    text = Qt.binding(() => Services.Mei.name)
-                    settings.focusPage()
-                }
-            }
-        }
-    }
-
-    Caption { pt: settings.pt; note: true; text: "Saved to CHARACTER.md in mei's home, so she answers to it too." }
-
     Group {
         pt: settings.pt
         NavRow {
             pt: settings.pt
+            label: "CHARACTER.md"
+            onClicked: settings.openCharacter()
+        }
+        NavRow {
+            pt: settings.pt
+            separated: true
             label: "Schedules"
             detail: Services.Mei.schedules.length
             onClicked: settings.openSchedules()
         }
     }
 
-    Caption { pt: settings.pt; note: true; text: "Turn " + Services.Mei.name + "'s scheduled jobs on or off, or remove them." }
+    Caption { pt: settings.pt; note: true; text: "CHARACTER.md sets " + Services.Mei.name + "'s name, language and tone. Schedules are the jobs she runs on her own." }
 
     Group {
         pt: settings.pt
