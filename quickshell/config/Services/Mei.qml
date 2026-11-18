@@ -27,6 +27,7 @@ Singleton {
     property bool reachable: true
     property string lastTopic: ""
     property bool chatInView: false
+    property int historyVersion: 0
     signal openRequested()
     readonly property string presence: !reachable ? "offline"
         : activity ? activity
@@ -68,6 +69,7 @@ Singleton {
     function send(text) {
         const trimmed = text.trim()
         if (!trimmed) return
+        historyVersion++
         append("user", trimmed, Date.now())
         waiting++
         requestComponent.createObject(root, { message: { type: "chat", text: trimmed, debug: true } })
@@ -126,9 +128,11 @@ Singleton {
     function resetMemory(finished) {
         if (resetting) return
         resetting = true
+        historyVersion++
         ask({ type: "reset" }, reply => {
             resetting = false
             if (!reply.error) {
+                historyVersion++
                 messages.clear()
                 lastTopic = ""
             }
@@ -138,7 +142,7 @@ Singleton {
 
     function refresh() {
         if (waiting > 0) return
-        requestComponent.createObject(root, { message: { type: "status" } })
+        requestComponent.createObject(root, { message: { type: "status" }, historyVersion: historyVersion })
     }
 
     function showHistory(events) {
@@ -160,6 +164,7 @@ Singleton {
             id: request
             required property var message
             property var answer: null
+            property int historyVersion: -1
             property int replyRow: -1
             property bool answered: false
             property bool opened: false
@@ -197,7 +202,8 @@ Singleton {
                     return
                 }
                 if (message.type === "status") {
-                    root.showHistory(reply.events ?? [])
+                    if (historyVersion === root.historyVersion)
+                        root.showHistory(reply.events ?? [])
                     return
                 }
                 root.waiting--
