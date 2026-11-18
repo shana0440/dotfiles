@@ -199,12 +199,6 @@ Scope {
             Keys.onReturnPressed: root.apply()
             Keys.onEnterPressed: root.apply()
             MouseArea { anchors.fill: parent; onClicked: root.close() }
-            WheelHandler {
-                onWheel: event => {
-                    if (event.angleDelta.y !== 0) root.move(event.angleDelta.y > 0 ? -1 : 1)
-                    else if (event.angleDelta.x !== 0) root.move(event.angleDelta.x > 0 ? -1 : 1)
-                }
-            }
 
             Components.Surface {
                 anchors.centerIn: parent
@@ -317,6 +311,17 @@ Scope {
                         font.pixelSize: 13
                         elide: Text.ElideRight
                     }
+                }
+            }
+            MouseArea {
+                anchors.fill: parent
+                acceptedButtons: Qt.NoButton
+                property real pending: 0
+                onWheel: wheel => {
+                    pending += wheel.angleDelta.y !== 0 ? wheel.angleDelta.y : wheel.angleDelta.x
+                    if (Math.abs(pending) < 120) return
+                    root.move(pending > 0 ? -1 : 1)
+                    pending = 0
                 }
             }
         }
