@@ -57,6 +57,14 @@ Page {
                 onClicked: Services.Mei.removeAvatar()
             }
         }
+
+        Caption {
+            visible: Services.Mei.avatarError !== ""
+            pt: settings.pt
+            horizontalAlignment: Text.AlignHCenter
+            text: Services.Mei.avatarError
+            color: Look.destructive
+        }
     }
 
     Group {
