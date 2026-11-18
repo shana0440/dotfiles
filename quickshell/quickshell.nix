@@ -26,6 +26,12 @@ let
       exec ${pkgs.python3.withPackages (ps: [ ps.dbus-next ])}/bin/python3 -u ${./scripts/pick_image.py} "$@"
     '';
   };
+  linkPreview = pkgs.writeShellApplication {
+    name = "link-preview";
+    text = ''
+      exec ${pkgs.python3}/bin/python3 ${./scripts/link_preview.py} "$@"
+    '';
+  };
   playbackMonitor = pkgs.writeShellApplication {
     name = "pipewire-playback-monitor";
     runtimeInputs = [ pkgs.pipewire ];
@@ -40,7 +46,7 @@ let
   '';
 in
 {
-  home.packages = [ pkgs.quickshell pkgs.pipewire playbackMonitor systemStatus launcherBadgeMonitor bluetoothAgent imagePicker ]
+  home.packages = [ pkgs.quickshell pkgs.pipewire playbackMonitor systemStatus launcherBadgeMonitor bluetoothAgent imagePicker linkPreview ]
     ++ lib.optionals pkgs.stdenv.isLinux [
       pkgs.cava
       pkgs.libnotify

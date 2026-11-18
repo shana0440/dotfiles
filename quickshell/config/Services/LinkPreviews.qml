@@ -1,12 +1,15 @@
 pragma Singleton
 import QtQuick
 import Quickshell
+import Quickshell.Io
 
 Singleton {
     id: root
 
     property var pages: ({})
-    readonly property int pageLimit: 600000
+    property var queue: []
+    property int fetching: 0
+    readonly property int maxConcurrentFetches: 2
 
     function firstLink(text, stillWriting) {
         const match = stillWriting ? text.match(/\]\((https?:\/\/[^)\s]+)\)/)
@@ -17,14 +20,17 @@ Singleton {
     function fetch(url) {
         if (!url || url in pages) return
         remember(url, null)
-        const xhr = new XMLHttpRequest()
-        xhr.onreadystatechange = () => {
-            if (xhr.readyState !== XMLHttpRequest.DONE) return
-            if (xhr.status === 200) remember(url, read(url, xhr.responseText.slice(0, pageLimit)))
+        queue = queue.concat([url])
+        startNext()
+    }
+
+    function startNext() {
+        while (fetching < maxConcurrentFetches && queue.length) {
+            const url = queue[0]
+            queue = queue.slice(1)
+            fetching++
+            fetcher.createObject(root, { url: url })
         }
-        xhr.open("GET", url)
-        xhr.setRequestHeader("User-Agent", "Mozilla/5.0")
-        xhr.send()
     }
 
     function remember(url, page) {
@@ -33,43 +39,32 @@ Singleton {
         pages = next
     }
 
-    function decode(text) {
-        return text
-            .replace(/&#(\d+);/g, (match, code) => String.fromCodePoint(Number(code)))
-            .replace(/&#x([0-9a-f]+);/gi, (match, code) => String.fromCodePoint(parseInt(code, 16)))
-            .replace(/&quot;/g, "\"").replace(/&#39;|&apos;/g, "'")
-            .replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&amp;/g, "&")
-            .trim()
+    function finished(request, code, output, errors) {
+        fetching--
+        request.destroy()
+        Qt.callLater(startNext)
+        if (code === 0)
+            remember(request.url, JSON.parse(output))
+        else
+            console.warn("Link preview failed for", request.url + ":", errors.trim())
     }
 
-    function attribute(tag, name) {
-        const match = tag.match(new RegExp("\\s" + name + "\\s*=\\s*(?:\"([^\"]*)\"|'([^']*)')", "i"))
-        return match ? decode(match[1] ?? match[2]) : ""
-    }
+    Component {
+        id: fetcher
 
-    function absolute(link, page) {
-        if (!link || /^https?:\/\//.test(link)) return link
-        const origin = page.match(/^https?:\/\/[^\/]+/)[0]
-        if (link.startsWith("//")) return page.split(":")[0] + ":" + link
-        if (link.startsWith("/")) return origin + link
-        return page.replace(/[^\/]*$/, "") + link
-    }
+        Process {
+            id: request
+            required property string url
+            property bool startedSuccessfully: false
 
-    function read(url, html) {
-        const meta = {}
-        const metaTag = /<meta\s[^>]*>/gi
-        for (let found = metaTag.exec(html); found; found = metaTag.exec(html)) {
-            const tag = found[0]
-            const key = (attribute(tag, "property") || attribute(tag, "name")).toLowerCase()
-            if (key && !(key in meta)) meta[key] = attribute(tag, "content")
+            command: ["link-preview", url]
+            running: true
+            stdout: StdioCollector { id: output }
+            stderr: StdioCollector { id: errors }
+            onStarted: startedSuccessfully = true
+            onExited: code => root.finished(request, code, output.text, errors.text)
+            onRunningChanged: if (!running && !startedSuccessfully)
+                root.finished(request, -1, "", "link-preview could not start")
         }
-        const titleTag = html.match(/<title[^>]*>([^<]*)<\/title>/i)
-        const page = {
-            site: meta["og:site_name"] || url.match(/^https?:\/\/(?:www\.)?([^\/:]+)/)[1],
-            title: meta["og:title"] || meta["twitter:title"] || (titleTag ? decode(titleTag[1]) : ""),
-            description: meta["og:description"] || meta["twitter:description"] || meta["description"] || "",
-            image: absolute(meta["og:image"] || meta["twitter:image"] || "", url),
-        }
-        return page.title || page.image ? page : null
     }
 }
