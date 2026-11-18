@@ -118,6 +118,7 @@ Scope {
             onStreamFinished: {
                 try {
                     const result = JSON.parse(text)
+                    carousel.currentIndex = -1
                     root.items = result.items
                     root.directory = result.directory
                     if (result.errors.length) root.message = result.errors.length + " image(s) could not be loaded"
