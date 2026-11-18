@@ -10,9 +10,7 @@ Process {
     function run(args) {
         if (running) return false
         error = ""
-        command = ["sh", "-c", "command -v mei >/dev/null "
-            + "|| { echo 'The mei command is not installed. Run make install in the mei checkout.' >&2; exit 127; }; "
-            + "exec mei config \"$@\"", "sh"].concat(args)
+        command = ["mei", "config"].concat(args)
         running = true
         return true
     }

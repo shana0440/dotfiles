@@ -22,6 +22,10 @@
       url = "https://github.com/opensec-git/Pi-Bolt/releases/latest/download/pi-bolt-darwin-arm64.tar.gz";
       flake = false;
     };
+    mei = {
+      url = "github:shana0440/mei";
+      flake = false;
+    };
     zen-browser = {
       url = "github:0xc000022070/zen-browser-flake";
       inputs.nixpkgs.follows = "nixpkgs";

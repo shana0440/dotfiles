@@ -6,6 +6,7 @@
     ./git/git.nix
     ./neovim/neovim.nix
     ./agents/agents.nix
+    ./mei/mei.nix
     ./tmux/tmux.nix
     ./shell/shell.nix
     ./programs.nix
