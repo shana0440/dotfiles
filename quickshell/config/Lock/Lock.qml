@@ -27,19 +27,24 @@ Scope {
                 authState = "idle"
                 shown = true
             }
-            return
+            return true
         }
-        pamService.reload()
+        const pamPath = pamDirectory + "/" + pamConfig
+        const pamService = pamServiceFile.createObject(root, { path: pamPath })
         const passwordCouldUnlockAgain = pamService.text().length > 0
+        pamService.destroy()
         if (!passwordCouldUnlockAgain) {
-            console.warn("Lock: no PAM service at", pamService.path, "- not locking")
-            return
+            console.error("Lock: no PAM service at", pamPath, "- not locking")
+            Quickshell.execDetached(["notify-send", "--app-name=Lock", "--urgency=critical",
+                "Screen not locked", "PAM service " + pamPath + " is missing, so the session stays unlocked."])
+            return false
         }
         authState = "idle"
         message = ""
         wallpaperQuery.running = true
         shown = true
         sessionLock.locked = true
+        return true
     }
 
     function submit(password) {
@@ -58,7 +63,7 @@ Scope {
 
     IpcHandler {
         target: "lock"
-        function lock(): void { root.lock() }
+        function lock(): bool { return root.lock() }
         function locked(): bool { return sessionLock.locked }
     }
 
@@ -107,11 +112,12 @@ Scope {
         }
     }
 
-    FileView {
-        id: pamService
-        path: root.pamDirectory + "/" + root.pamConfig
-        blockLoading: true
-        printErrors: false
+    Component {
+        id: pamServiceFile
+        FileView {
+            blockLoading: true
+            printErrors: false
+        }
     }
 
     FileView {
