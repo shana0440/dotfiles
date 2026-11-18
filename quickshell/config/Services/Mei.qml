@@ -11,6 +11,9 @@ Singleton {
     readonly property string name: characterFile.text().match(/^- Name:[ \t]*(.*\S)/m)?.[1] ?? "mei"
     readonly property string avatar: profile.avatar
     readonly property bool choosingAvatar: avatarPicker.running
+    property var schedules: []
+    property string scheduleError: ""
+    property string changingSchedule: ""
     readonly property ListModel messages: ListModel {}
     property int waiting: 0
     property string activity: ""
@@ -61,6 +64,26 @@ Singleton {
         profile.avatar = ""
     }
 
+    function ask(message, answer) {
+        requestComponent.createObject(root, { message: message, answer: answer })
+    }
+
+    function loadSchedules(changeError) {
+        ask({ type: "schedules" }, reply => {
+            schedules = reply.schedules ?? []
+            changingSchedule = ""
+            scheduleError = reply.error ?? changeError ?? ""
+        })
+    }
+
+    function changeSchedule(action, name) {
+        if (changingSchedule) return
+        changingSchedule = name
+        ask({ type: "schedule", change: { action: action, name: name } }, reply => {
+            loadSchedules(reply.error)
+        })
+    }
+
     function refresh() {
         if (waiting > 0) return
         requestComponent.createObject(root, { message: { type: "status" } })
@@ -84,6 +107,7 @@ Singleton {
         Socket {
             id: request
             required property var message
+            property var answer: null
             property int replyRow: -1
             property bool answered: false
             property bool opened: false
@@ -108,6 +132,10 @@ Singleton {
             function finish(reply) {
                 answered = true
                 root.reachable = true
+                if (answer) {
+                    answer(reply)
+                    return
+                }
                 if (message.type === "status") {
                     root.showHistory(reply.events ?? [])
                     return
@@ -151,7 +179,8 @@ Singleton {
                 if (answered) return
                 answered = true
                 root.reachable = false
-                if (message.type === "chat") {
+                if (answer) answer({ error: "mei is not running." })
+                else if (message.type === "chat") {
                     root.waiting--
                     root.activity = ""
                     root.append("notice", "mei is not running, so the message was not sent.", 0)

@@ -112,6 +112,30 @@ Item {
             }
 
             SectionNote { text: "Saved to CHARACTER.md in mei's home, so she answers to it too." }
+
+            SectionLabel { text: "Schedules" }
+
+            Group {
+                Repeater {
+                    model: Services.Mei.schedules
+                    ScheduleRow {}
+                }
+                Text {
+                    visible: Services.Mei.schedules.length === 0
+                    width: parent.width
+                    height: 44 * settings.pt
+                    leftPadding: 16 * settings.pt
+                    verticalAlignment: Text.AlignVCenter
+                    text: "No schedules"
+                    color: settings.secondaryInk
+                    font { family: Theme.Fonts.family; pixelSize: 17 * settings.pt }
+                }
+            }
+
+            SectionNote {
+                text: Services.Mei.scheduleError || "A turned-off schedule stays in config.toml but never runs on its own. Removing one keeps its script or prompt."
+                color: Services.Mei.scheduleError ? settings.destructive : settings.secondaryInk
+            }
         }
     }
 
@@ -169,6 +193,149 @@ Item {
             text: "Settings"
             color: settings.ink
             font { family: Theme.Fonts.family; weight: Font.DemiBold; pixelSize: 17 * settings.pt }
+        }
+    }
+
+    onActiveChanged: if (active) Services.Mei.loadSchedules()
+
+    function nextRun(ms) {
+        const due = new Date(ms)
+        const today = new Date().toDateString() === due.toDateString()
+        return Qt.formatDateTime(due, today ? "hh:mm" : "ddd hh:mm")
+    }
+
+    component ScheduleRow: Item {
+        id: scheduleRow
+        required property var modelData
+        required property int index
+        readonly property bool changing: Services.Mei.changingSchedule === modelData.name
+        readonly property string when: modelData.spec.daily_at !== undefined
+            ? "Daily at " + modelData.spec.daily_at
+            : modelData.spec.every_minutes === 1 ? "Every minute" : "Every " + modelData.spec.every_minutes + " minutes"
+        property bool wanted: modelData.enabled
+        property bool confirming: false
+        width: parent.width
+        height: 60 * settings.pt
+
+        Rectangle {
+            visible: scheduleRow.index > 0
+            anchors { top: parent.top; left: parent.left; leftMargin: 16 * settings.pt; right: parent.right }
+            height: 1
+            color: settings.hairline
+        }
+
+        Column {
+            anchors { left: parent.left; leftMargin: 16 * settings.pt; right: controls.left; rightMargin: 12 * settings.pt; verticalCenter: parent.verticalCenter }
+            spacing: 2 * settings.pt
+            Text {
+                width: parent.width
+                text: scheduleRow.modelData.name
+                elide: Text.ElideRight
+                color: settings.ink
+                font { family: Theme.Fonts.family; pixelSize: 17 * settings.pt }
+            }
+            Text {
+                width: parent.width
+                text: scheduleRow.when + (scheduleRow.modelData.enabled && scheduleRow.modelData.dueAt
+                    ? " · next " + settings.nextRun(scheduleRow.modelData.dueAt) : "")
+                elide: Text.ElideRight
+                color: settings.secondaryInk
+                font { family: Theme.Fonts.family; pixelSize: 13 * settings.pt }
+            }
+        }
+
+        Row {
+            id: controls
+            anchors { right: parent.right; rightMargin: 12 * settings.pt; verticalCenter: parent.verticalCenter }
+            spacing: 14 * settings.pt
+
+            Toggle {
+                visible: !scheduleRow.confirming
+                anchors.verticalCenter: parent.verticalCenter
+                on: scheduleRow.changing ? scheduleRow.wanted : scheduleRow.modelData.enabled
+                busy: Services.Mei.changingSchedule !== ""
+                onToggled: {
+                    scheduleRow.wanted = !scheduleRow.modelData.enabled
+                    Services.Mei.changeSchedule(scheduleRow.wanted ? "enable" : "disable", scheduleRow.modelData.name)
+                }
+            }
+
+            MouseArea {
+                visible: !scheduleRow.confirming
+                anchors.verticalCenter: parent.verticalCenter
+                width: 26 * settings.pt
+                height: width
+                enabled: Services.Mei.changingSchedule === ""
+                cursorShape: Qt.PointingHandCursor
+                onClicked: scheduleRow.confirming = true
+                Components.Icon {
+                    anchors.centerIn: parent
+                    width: 22 * settings.pt
+                    height: width
+                    action: "remove"
+                    iconColor: parent.pressed ? settings.hairline : settings.secondaryInk
+                }
+            }
+
+            TextButton {
+                visible: scheduleRow.confirming
+                anchors.verticalCenter: parent.verticalCenter
+                label: "Cancel"
+                onClicked: scheduleRow.confirming = false
+            }
+
+            Rectangle {
+                visible: scheduleRow.confirming
+                anchors.verticalCenter: parent.verticalCenter
+                width: removeLabel.width + 24 * settings.pt
+                height: 32 * settings.pt
+                radius: height / 2
+                color: removeArea.pressed ? Qt.darker(settings.destructive, 1.15) : settings.destructive
+                Text {
+                    id: removeLabel
+                    anchors.centerIn: parent
+                    text: scheduleRow.changing ? "Removing…" : "Remove"
+                    color: "white"
+                    font { family: Theme.Fonts.family; weight: Font.DemiBold; pixelSize: 15 * settings.pt }
+                }
+                MouseArea {
+                    id: removeArea
+                    anchors.fill: parent
+                    enabled: Services.Mei.changingSchedule === ""
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: Services.Mei.changeSchedule("remove", scheduleRow.modelData.name)
+                }
+            }
+        }
+    }
+
+    component Toggle: MouseArea {
+        id: toggle
+        property bool on: false
+        property bool busy: false
+        signal toggled
+        width: 51 * settings.pt
+        height: 31 * settings.pt
+        enabled: !busy
+        cursorShape: Qt.PointingHandCursor
+        onClicked: toggled()
+
+        Rectangle {
+            anchors.fill: parent
+            radius: height / 2
+            color: toggle.on ? "#34c759" : "#e9e9ea"
+            Behavior on color { ColorAnimation { duration: 180 } }
+        }
+        Rectangle {
+            readonly property real inset: 2 * settings.pt
+            x: toggle.on ? toggle.width - width - inset : inset
+            y: inset
+            width: toggle.height - 2 * inset
+            height: width
+            radius: width / 2
+            color: "white"
+            border { width: 0.5; color: Qt.rgba(0, 0, 0, 0.04) }
+            Behavior on x { NumberAnimation { duration: 220; easing.type: Easing.OutBack; easing.overshoot: 1.2 } }
         }
     }
 

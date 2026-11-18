@@ -60,6 +60,7 @@ Item {
         check: "check",
         checkDouble: "check-check",
         send: "arrow-up",
+        remove: "trash",
         clearNotifications: "list-x",
         weatherClear: "sun",
         weatherClearNight: "moon",

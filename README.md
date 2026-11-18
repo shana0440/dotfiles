@@ -123,7 +123,8 @@ All bindings are in `hyprland/hyprland.lua`. The main ones:
   slide it away. It talks to the mei daemon at `$MEI_HOME/state/mei.sock` (default
   `~/.local/share/mei`) and shows mei as offline when the daemon is not running.
   Tap her name or photo to open settings, where you can rename her (saved to
-  `CHARACTER.md` in mei's home) and pick her photo with the desktop file chooser.
+  `CHARACTER.md` in mei's home), pick her photo with the desktop file chooser, and
+  turn her schedules on or off or remove them.
 - Tap `Super` to open the dashboard; type to [search it](#dashboard-search).
 
 ### Dashboard search
