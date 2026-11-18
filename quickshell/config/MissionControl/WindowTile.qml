@@ -23,6 +23,7 @@ Item {
     signal clicked()
     signal dragMoved(real x, real y)
     signal dropped(real x, real y)
+    signal dragCanceled()
 
     readonly property real targetX: springX.value
     readonly property real targetY: springY.value
@@ -37,26 +38,33 @@ Item {
 
     function lerp(a, b) { return a + (b - a) * progress }
 
-    property real dragX: 0
-    property real dragY: 0
+    property point dragPosition
+    property point grabFraction
     property bool parked: false
-    function resetDrag() { parked = false; dragX = 0; dragY = 0; mouse.dragged = false }
+    function resetDrag() {
+        const canceled = dragging && !parked
+        parked = false
+        mouse.dragged = false
+        if (canceled) dragCanceled()
+    }
     onFrameChanged: if (!frame) resetDrag()
     onLiveChanged: if (!live) resetDrag()
     property real dragScale: dragging ? Math.min(1, 180 / Math.max(1, targetWidth)) : 1
     Behavior on dragScale { NumberAnimation { duration: 160; easing.type: Easing.OutCubic } }
 
     visible: target !== null && live
-    x: (frame ? lerp(frame.x, targetX) : targetX) + offsetX + dragX
-    y: (frame ? lerp(frame.y, targetY) : targetY) + dragY
+    x: dragging ? dragPosition.x - width * (0.5 + (grabFraction.x - 0.5) * dragScale)
+        : (frame ? lerp(frame.x, targetX) : targetX) + offsetX
+    y: dragging ? dragPosition.y - height * (0.5 + (grabFraction.y - 0.5) * dragScale)
+        : (frame ? lerp(frame.y, targetY) : targetY)
     width: frame ? lerp(frame.width, targetWidth) : targetWidth
     height: frame ? lerp(frame.height, targetHeight) : targetHeight
     z: dragging ? 10000 : 1000 - (frame?.stack ?? 0)
-    transformOrigin: Item.Center
 
     Item {
         id: body
         anchors.fill: parent
+        transformOrigin: Item.Center
         scale: root.dragScale
 
         Rectangle {
@@ -116,15 +124,18 @@ Item {
         enabled: root.progress > 0.9
         hoverEnabled: true
         cursorShape: dragged ? Qt.ClosedHandCursor : Qt.PointingHandCursor
-        onPressed: event => { pressAt = mapToItem(null, event.x, event.y); dragged = false }
+        onPressed: event => {
+            if (root.parked) { event.accepted = false; return }
+            pressAt = mapToItem(null, event.x, event.y)
+            const grab = mapToItem(body, event.x, event.y)
+            root.grabFraction = Qt.point(grab.x / Math.max(1, body.width), grab.y / Math.max(1, body.height))
+        }
         onPositionChanged: event => {
             if (!pressed) return
             const p = mapToItem(null, event.x, event.y)
-            const dx = p.x - pressAt.x, dy = p.y - pressAt.y
-            if (!dragged && Math.hypot(dx, dy) < 8) return
+            if (!dragged && Math.hypot(p.x - pressAt.x, p.y - pressAt.y) < 8) return
+            root.dragPosition = mapToItem(root.parent, event.x, event.y)
             dragged = true
-            root.dragX = dx
-            root.dragY = dy
             root.dragMoved(p.x, p.y)
         }
         onReleased: event => {
@@ -133,11 +144,10 @@ Item {
                 return
             }
             const p = mapToItem(null, event.x, event.y)
+            root.dragPosition = mapToItem(root.parent, event.x, event.y)
             root.dropped(p.x, p.y)
-            if (root.parked) return
-            dragged = false
-            root.dragX = 0
-            root.dragY = 0
+            if (!root.parked) dragged = false
         }
+        onCanceled: root.resetDrag()
     }
 }

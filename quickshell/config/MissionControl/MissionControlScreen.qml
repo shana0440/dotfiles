@@ -88,7 +88,7 @@ PanelWindow {
         for (let i = 0; i < thumbs.count; i++) {
             const item = thumbs.itemAt(i)
             const p = item.mapFromItem(win.contentItem, x, y)
-            if (item.contains(p)) return item.workspaceId
+            if (!item.current && item.contains(p)) return item.workspaceId
         }
         return null
     }
@@ -270,6 +270,7 @@ PanelWindow {
                 onHoveredChanged: if (hovered) win.selectedAddress = modelData.address
                 onClicked: win.chooseWindow(modelData.address)
                 onDragMoved: (x, y) => win.dropWorkspaceId = win.targetAt(x, y)
+                onDragCanceled: win.dropWorkspaceId = null
                 onDropped: (x, y) => {
                     const target = win.targetAt(x, y)
                     tile.parked = target !== null
