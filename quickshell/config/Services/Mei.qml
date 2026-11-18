@@ -6,8 +6,11 @@ import Quickshell.Io
 Singleton {
     id: root
 
-    readonly property string socketPath: (Quickshell.env("MEI_HOME")
-        || Quickshell.env("HOME") + "/.local/share/mei") + "/state/mei.sock"
+    readonly property string home: Quickshell.env("MEI_HOME") || Quickshell.env("HOME") + "/.local/share/mei"
+    readonly property string socketPath: home + "/state/mei.sock"
+    readonly property string name: characterFile.text().match(/^- Name:[ \t]*(.*\S)/m)?.[1] ?? "mei"
+    readonly property string avatar: profile.avatar
+    readonly property bool choosingAvatar: avatarPicker.running
     readonly property ListModel messages: ListModel {}
     property int waiting: 0
     property string activity: ""
@@ -38,6 +41,24 @@ Singleton {
         append("user", trimmed, Date.now())
         waiting++
         requestComponent.createObject(root, { message: { type: "chat", text: trimmed, debug: true } })
+    }
+
+    function rename(newName) {
+        const trimmed = newName.trim().replace(/\s+/g, " ")
+        if (!trimmed || trimmed === name) return
+        const text = characterFile.text()
+        const line = "- Name: " + trimmed
+        characterFile.setText(/^- Name:.*$/m.test(text) ? text.replace(/^- Name:.*$/m, line)
+            : text.trim() ? text.trimEnd() + "\n" + line + "\n"
+            : "# Character\n\n" + line + "\n")
+    }
+
+    function chooseAvatar() {
+        if (!avatarPicker.running) avatarPicker.running = true
+    }
+
+    function removeAvatar() {
+        profile.avatar = ""
     }
 
     function refresh() {
@@ -155,6 +176,35 @@ Singleton {
                 giveUp()
                 Qt.callLater(() => request.destroy())
             }
+        }
+    }
+
+    FileView {
+        id: characterFile
+        path: root.home + "/CHARACTER.md"
+        watchChanges: true
+        printErrors: false
+        onFileChanged: reload()
+    }
+
+    FileView {
+        path: Quickshell.statePath("mei.json")
+        blockLoading: true
+        watchChanges: false
+        printErrors: false
+        onAdapterUpdated: writeAdapter()
+
+        JsonAdapter {
+            id: profile
+            property string avatar: ""
+        }
+    }
+
+    Process {
+        id: avatarPicker
+        command: ["pick-image", "Choose a photo for " + root.name]
+        stdout: StdioCollector {
+            onStreamFinished: if (text.trim()) profile.avatar = text.trim()
         }
     }
 

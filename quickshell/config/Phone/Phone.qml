@@ -12,7 +12,7 @@ Scope {
 
     property bool opened: false
     property var chosenScreen: Quickshell.screens[0] ?? null
-    property Item chat: null
+    property Item display: null
     readonly property real visibleShare: 0.9
     readonly property real horizontalCenterShare: 0.7
     readonly property real bounce: 34
@@ -31,13 +31,15 @@ Scope {
             Hyprland.dispatch("hl.dsp.focus({ window = \"address:0x" + window.address + "\" })")
     }
 
-    onOpenedChanged: {
-        if (opened) {
+    readonly property bool raised: opened && !Services.Mei.choosingAvatar
+
+    onOpenedChanged: if (opened) Services.Mei.refresh()
+    onRaisedChanged: {
+        if (raised) {
             exitAnim.stop()
             stage.lift = Math.min(stage.lift, stage.hiddenLift)
             enterAnim.restart()
-            Services.Mei.refresh()
-            Qt.callLater(() => root.chat?.focusInput())
+            Qt.callLater(() => root.display?.focusCurrent())
         } else {
             enterAnim.stop()
             stage.exitPeak = stage.lift > 20 ? stage.lift : -bounce * 0.7
@@ -88,7 +90,7 @@ Scope {
         id: win
         readonly property real headroom: root.bounce + phone.height * 0.12
         screen: root.chosenScreen
-        visible: root.opened || exitAnim.running
+        visible: root.raised || exitAnim.running
         anchors { bottom: true; left: true; right: true }
         implicitHeight: phone.height * root.visibleShare + headroom
         exclusiveZone: 0
@@ -96,7 +98,7 @@ Scope {
         mask: Region { item: phone }
         WlrLayershell.layer: WlrLayer.Overlay
         WlrLayershell.namespace: "quickshell-phone"
-        WlrLayershell.keyboardFocus: root.opened ? WlrKeyboardFocus.OnDemand : WlrKeyboardFocus.None
+        WlrLayershell.keyboardFocus: root.raised ? WlrKeyboardFocus.OnDemand : WlrKeyboardFocus.None
 
         PhoneBody {
             id: phone
@@ -167,19 +169,64 @@ Scope {
                     layer.enabled: true
                 }
 
-                Chat {
-                    id: chat
+                Item {
+                    id: display
+                    property bool inSettings: false
+                    property real push: inSettings ? 1 : 0
+                    readonly property real hiddenBottom: body.height * (1 - root.visibleShare) - body.bezel
                     anchors.fill: parent
-                    active: root.opened
-                    hiddenBottom: body.height * (1 - root.visibleShare) - body.bezel
-                    onDismissed: root.close()
-                    Component.onCompleted: root.chat = chat
+                    Behavior on push { NumberAnimation { duration: 380; easing.type: Easing.OutQuint } }
+                    Component.onCompleted: root.display = display
+
+                    function focusCurrent() {
+                        if (inSettings) settingsPage.focusPage()
+                        else chat.focusInput()
+                    }
+                    function openSettings() {
+                        inSettings = true
+                        settingsPage.focusPage()
+                    }
+                    function closeSettings() {
+                        inSettings = false
+                        chat.focusInput()
+                    }
+
                     layer.enabled: true
                     layer.effect: MultiEffect {
                         maskEnabled: true
                         maskSource: glassShape
                         maskThresholdMin: 0.5
                         maskSpreadAtMin: 1
+                    }
+
+                    Chat {
+                        id: chat
+                        width: parent.width
+                        height: parent.height
+                        x: -parent.width * 0.3 * display.push
+                        visible: display.push < 1
+                        active: root.raised && !display.inSettings
+                        hiddenBottom: display.hiddenBottom
+                        onDismissed: root.close()
+                        onSettingsRequested: display.openSettings()
+                    }
+
+                    Rectangle {
+                        anchors.fill: parent
+                        visible: display.push > 0
+                        color: "black"
+                        opacity: 0.12 * display.push
+                    }
+
+                    Settings {
+                        id: settingsPage
+                        width: parent.width
+                        height: parent.height
+                        x: parent.width * (1 - display.push)
+                        visible: display.push > 0
+                        active: root.raised && display.inSettings
+                        hiddenBottom: display.hiddenBottom
+                        onBack: display.closeSettings()
                     }
                 }
             }

@@ -20,6 +20,7 @@ Item {
     readonly property color outgoingFill: "#e1fec6"
     readonly property color outgoingInk: "#4fae4e"
     signal dismissed
+    signal settingsRequested
 
     function focusInput() { composer.forceActiveFocus() }
     function submit() {
@@ -267,7 +268,7 @@ Item {
         Text {
             id: emptyText
             anchors.centerIn: parent
-            text: "No messages here yet\nSay hi to mei"
+            text: "No messages here yet\nSay hi to " + Services.Mei.name
             horizontalAlignment: Text.AlignHCenter
             lineHeight: 1.2
             color: "white"
@@ -297,11 +298,12 @@ Item {
         }
 
         Column {
+            id: title
             anchors { horizontalCenter: parent.horizontalCenter; top: statusBar.bottom; topMargin: 3 * chat.pt }
             spacing: 1 * chat.pt
             Text {
                 anchors.horizontalCenter: parent.horizontalCenter
-                text: "mei"
+                text: Services.Mei.name
                 color: chat.ink
                 font { family: Theme.Fonts.family; weight: Font.DemiBold; pixelSize: 17 * chat.pt }
             }
@@ -314,21 +316,19 @@ Item {
             }
         }
 
-        Rectangle {
+        Avatar {
+            id: headerAvatar
             anchors { right: parent.right; rightMargin: 12 * chat.pt; top: statusBar.bottom; topMargin: 4 * chat.pt }
             width: 38 * chat.pt
             height: width
-            radius: width / 2
-            gradient: Gradient {
-                GradientStop { position: 0; color: "#ff9ac1" }
-                GradientStop { position: 1; color: "#e2588e" }
-            }
-            Text {
-                anchors.centerIn: parent
-                text: "M"
-                color: "white"
-                font { family: Theme.Fonts.family; weight: Font.Bold; pixelSize: 17 * chat.pt }
-            }
+            name: Services.Mei.name
+            source: Services.Mei.avatar
+        }
+
+        MouseArea {
+            anchors { left: title.left; right: headerAvatar.right; top: statusBar.bottom; bottom: parent.bottom }
+            cursorShape: Qt.PointingHandCursor
+            onClicked: chat.settingsRequested()
         }
     }
 
