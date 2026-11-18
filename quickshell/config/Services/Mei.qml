@@ -14,7 +14,7 @@ Singleton {
         ?.match(/^name\s*=\s*"([^"]+)"/m)?.[1] ?? "mei"
     readonly property string avatar: profile.avatar
     readonly property bool choosingAvatar: avatarPicker.running
-    property string avatarError: ""
+    readonly property string avatarError: avatarPicker.error
     property var schedules: []
     property string scheduleError: ""
     property string changingSchedule: ""
@@ -56,9 +56,7 @@ Singleton {
     }
 
     function chooseAvatar() {
-        if (avatarPicker.running) return
-        avatarError = ""
-        avatarPicker.running = true
+        avatarPicker.open()
     }
 
     function removeAvatar() {
@@ -251,22 +249,10 @@ Singleton {
         }
     }
 
-    Process {
+    ImagePicker {
         id: avatarPicker
-        command: ["sh", "-c", "command -v pick-image >/dev/null "
-            + "|| { echo 'pick-image is not installed. Apply the Home Manager config to add it.' >&2; exit 127; }; "
-            + "exec pick-image \"$1\"", "sh", "Choose a photo for " + root.name]
-        stdout: StdioCollector {
-            onStreamFinished: if (text.trim()) profile.avatar = text.trim()
-        }
-        stderr: StdioCollector {
-            id: avatarPickerErrors
-        }
-        onExited: exitCode => {
-            if (exitCode !== 0)
-                root.avatarError = avatarPickerErrors.text.trim().split("\n").pop()
-                    || "The file chooser could not be opened."
-        }
+        title: "Choose a photo for " + root.name
+        onPicked: uri => profile.avatar = uri
     }
 
     Component.onCompleted: refresh()

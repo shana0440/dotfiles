@@ -10,3 +10,4 @@ singleton InputMethod 1.0 InputMethod.qml
 singleton Pomodoro 1.0 Pomodoro.qml
 SavedTheme 1.0 SavedTheme.qml
 singleton Mei 1.0 Mei.qml
+ImagePicker 1.0 ImagePicker.qml
