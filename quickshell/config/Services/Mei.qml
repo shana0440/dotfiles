@@ -162,6 +162,14 @@ Singleton {
                 stream("")
             }
 
+            function showTopic(topic) {
+                if (!topic || topic === root.lastTopic) return
+                root.lastTopic = topic
+                root.messages.set(replyRow, { kind: "topic", text: topic, streaming: false })
+                replyRow = -1
+                showTyping()
+            }
+
             function finish(reply) {
                 answered = true
                 root.reachable = true
@@ -191,17 +199,16 @@ Singleton {
                 let data
                 try { data = JSON.parse(line) } catch (_) { return }
                 if (data.type === "mei_route") {
-                    root.noteTopic(data.topic)
-                    stream("")
+                    showTyping()
+                    showTopic(data.topic)
                 } else if (data.type === "tool_execution_start") {
                     root.activity = "using " + data.toolName + "…"
                     showTyping()
                 } else if (data.type === "message_update") {
                     const update = data.assistantMessageEvent
-                    if (update.type === "text_start") {
-                        root.activity = ""
-                        if (replyRow >= 0) stream("")
-                    }
+                    if (update.type === "text_start") root.activity = ""
+                    if (["text_start", "thinking_start", "toolcall_start"].includes(update.type))
+                        showTyping()
                     if (update.type === "text_delta")
                         stream((replyRow >= 0 ? root.messages.get(replyRow).text : "") + update.delta)
                 } else if (!data.type) {
@@ -229,6 +236,7 @@ Singleton {
                     opened = true
                     write(JSON.stringify(message) + "\n")
                     flush()
+                    if (message.type === "chat") showTyping()
                 } else {
                     if (!answered) giveUp()
                     Qt.callLater(() => request.destroy())
