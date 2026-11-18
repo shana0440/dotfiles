@@ -244,6 +244,18 @@ Scope {
                             active: root.raised && display.current === "settings"
                             hiddenBottom: display.hiddenBottom
                             onBack: display.pop()
+                            onOpenSchedules: display.push("schedules")
+                        }
+                    }
+
+                    Slot {
+                        name: "schedules"
+                        stack: display.stack
+                        Settings.SchedulesPage {
+                            anchors.fill: parent
+                            active: root.raised && display.current === "schedules"
+                            hiddenBottom: display.hiddenBottom
+                            onBack: display.pop()
                         }
                     }
                 }

@@ -124,7 +124,7 @@ All bindings are in `hyprland/hyprland.lua`. The main ones:
   `~/.local/share/mei`) and shows mei as offline when the daemon is not running.
   Tap her photo to open settings, where you can rename her (saved to
   `CHARACTER.md` in mei's home), pick her photo with the desktop file chooser,
-  turn her schedules on or off or remove them, and reset her memory. A reset
+  open her schedules to turn each on or off or remove it, and reset her memory. A reset
   permanently deletes her memory and chat history after you confirm it.
 - Tap `Super` to open the dashboard; type to [search it](#dashboard-search).
 

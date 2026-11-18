@@ -8,3 +8,5 @@ Toggle 1.0 Toggle.qml
 Alert 1.0 Alert.qml
 ScheduleRow 1.0 ScheduleRow.qml
 SettingsPage 1.0 SettingsPage.qml
+NavRow 1.0 NavRow.qml
+SchedulesPage 1.0 SchedulesPage.qml

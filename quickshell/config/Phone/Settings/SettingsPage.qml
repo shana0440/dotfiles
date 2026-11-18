@@ -7,6 +7,7 @@ Page {
     id: settings
 
     property bool cleared: false
+    signal openSchedules
 
     title: "Settings"
     backLabel: "Chat"
@@ -81,32 +82,17 @@ Page {
 
     Caption { pt: settings.pt; note: true; text: "Saved to CHARACTER.md in mei's home, so she answers to it too." }
 
-    Caption { pt: settings.pt; text: "Schedules" }
-
     Group {
         pt: settings.pt
-        Repeater {
-            model: Services.Mei.schedules
-            ScheduleRow { pt: settings.pt }
-        }
-        Text {
-            visible: Services.Mei.schedules.length === 0
-            width: parent.width
-            height: 44 * settings.pt
-            leftPadding: 16 * settings.pt
-            verticalAlignment: Text.AlignVCenter
-            text: "No schedules"
-            color: Look.secondaryInk
-            font { family: Theme.Fonts.family; pixelSize: 17 * settings.pt }
+        NavRow {
+            pt: settings.pt
+            label: "Schedules"
+            detail: Services.Mei.schedules.length
+            onClicked: settings.openSchedules()
         }
     }
 
-    Caption {
-        pt: settings.pt
-        note: true
-        text: Services.Mei.scheduleError || "A turned-off schedule stays in config.toml but never runs on its own. Removing one keeps its script or prompt."
-        color: Services.Mei.scheduleError ? Look.destructive : Look.secondaryInk
-    }
+    Caption { pt: settings.pt; note: true; text: "Turn " + Services.Mei.name + "'s scheduled jobs on or off, or remove them." }
 
     Group {
         pt: settings.pt
@@ -118,7 +104,6 @@ Page {
             onClicked: resetAlert.open()
             Rectangle {
                 anchors.fill: parent
-                radius: 10 * settings.pt
                 color: resetRow.pressed ? Look.pressedFill : "transparent"
             }
             Text {

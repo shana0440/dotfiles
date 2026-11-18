@@ -1,6 +1,7 @@
 import QtQuick
+import Quickshell.Widgets
 
-Rectangle {
+ClippingRectangle {
     property real pt: 1
     default property alias rows: rowColumn.data
     x: 16 * pt
