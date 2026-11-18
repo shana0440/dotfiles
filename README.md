@@ -91,6 +91,7 @@ required).
 | `nixos/` | System configuration |
 | [`vpn/`](vpn/README.md), [`file-manager/`](file-manager/README.md), [`eagle/`](eagle/README.md), [`nexon/`](nexon/README.md) | Optional apps |
 | `agent-workspace/` | Isolated X11 desktops for coding agents |
+| `mei/` | The mei assistant daemon and its `mei` command (Linux desktop) |
 
 ## Herdr
 
@@ -103,6 +104,15 @@ Linux needs a working Vulkan driver.
 installs the latest releases through Home Manager. Use it instead of Herdr's
 built-in updater for these Nix-managed packages. Remove any earlier manual
 installation from `~/.local/bin` if it shadows the Home Manager commands.
+
+## mei
+
+`mei/mei.nix` builds [mei](https://github.com/shana0440/mei) from the `mei`
+flake input, installs the `mei` command and runs the daemon as the `mei`
+systemd user service. `make update` moves it to the latest commit. The daemon
+runs agents with `pi-bolt`, so sign Pi-Bolt in to a model provider first. On
+first start it fills its home, `~/.local/share/mei`, with editable defaults.
+Use `mei --help` for commands and `journalctl --user -u mei` for its output.
 
 ## Desktop shortcuts
 
@@ -119,6 +129,15 @@ All bindings are in `hyprland/hyprland.lua`. The main ones:
 - `Super+Shift+S`: screen capture ([details](quickshell/config/Capture/README.md)).
 - `Super+Shift+L`: lock the screen.
 - `Super+Shift+W`: wallpaper picker ([details](wallpaper/README.md)).
+- `Super+K`: slide up a phone for chatting with [mei](https://github.com/shana0440/mei); press again or click outside it to
+  slide it away. It talks to the mei daemon at `$MEI_HOME/state/mei.sock` (default
+  `~/.local/share/mei`) and shows mei as offline when the daemon is not running.
+  Tap her photo to open settings, where you can pick her photo with the desktop
+  file chooser, rename her (saved with `mei config set character.name`), edit her character file in mei's home (her
+  language and tone; `CHARACTER.md` unless `[character] file` points elsewhere),
+  open her schedules to turn each on or off or remove it, pick the chat background
+  (the default one or an image of your own), and reset her memory. A
+  reset permanently deletes her memory and chat history after you confirm it.
 - Tap `Super` to open the dashboard; type to [search it](#dashboard-search).
 
 ### Dashboard search

@@ -41,6 +41,22 @@
         "url": "https://github.com/nix-community/home-manager/archive/refs/heads/release-26.05.tar.gz"
       }
     },
+    "mei": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1794986183,
+        "narHash": "sha256-hRCLQSwusw1AdnZ3y98BSIxvpabKvSw/z/420OALqi8=",
+        "owner": "shana0440",
+        "repo": "mei",
+        "rev": "c47f13ada5193bc4d5693bbb1a19090ad198929d",
+        "type": "github"
+      },
+      "original": {
+        "owner": "shana0440",
+        "repo": "mei",
+        "type": "github"
+      }
+    },
     "nixpkgs": {
       "locked": {
         "lastModified": 1794552581,
@@ -98,6 +114,7 @@
         "herdr-app-release": "herdr-app-release",
         "herdr-core-release": "herdr-core-release",
         "home-manager": "home-manager",
+        "mei": "mei",
         "nixpkgs": "nixpkgs",
         "pi-bolt-darwin-arm64": "pi-bolt-darwin-arm64",
         "pi-bolt-linux-arm64": "pi-bolt-linux-arm64",

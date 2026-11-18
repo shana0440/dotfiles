@@ -157,6 +157,7 @@ end
 hl.bind(mainMod .. " + SHIFT + S", hl.dsp.exec_cmd(quickshellIpc("capture", "open")))
 hl.bind(mainMod .. " + SHIFT + L", hl.dsp.exec_cmd(quickshellIpc("lock", "lock")))
 hl.bind(mainMod .. " + SHIFT + W", hl.dsp.exec_cmd(quickshellIpc("wallpaper", "toggle")))
+hl.bind(mainMod .. " + K", hl.dsp.exec_cmd(quickshellIpc("phone", "toggle")))
 
 hl.bind(mainMod .. " + Q", hl.dsp.window.close())
 hl.bind(mainMod .. " + SHIFT + Q", function()
@@ -357,4 +358,11 @@ hl.window_rule({
 
     move  = "20 monitor_h-120",
     float = true,
+})
+
+hl.layer_rule({
+    name    = "phone-draws-its-own-motion",
+    match   = { namespace = "^quickshell-phone$" },
+
+    no_anim = true,
 })
