@@ -29,7 +29,7 @@ Item {
         visible: row.index > 0
         anchors { top: parent.top; left: parent.left; leftMargin: 16 * row.pt; right: parent.right }
         height: 1
-        color: Look.hairline
+        color: Look.separator
     }
 
     Column {

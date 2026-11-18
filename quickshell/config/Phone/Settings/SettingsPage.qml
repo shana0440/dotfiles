@@ -63,19 +63,23 @@ Page {
         pt: settings.pt
         NavRow {
             pt: settings.pt
+            icon: "character"
+            tile: "#ff9500"
             label: "CHARACTER.md"
+            subtitle: "Name, language and tone"
             onClicked: settings.openCharacter()
         }
         NavRow {
             pt: settings.pt
             separated: true
+            icon: "schedules"
+            tile: "#ff3b30"
             label: "Schedules"
+            subtitle: "Jobs she runs on her own"
             detail: Services.Mei.schedules.length
             onClicked: settings.openSchedules()
         }
     }
-
-    Caption { pt: settings.pt; note: true; text: "CHARACTER.md sets " + Services.Mei.name + "'s name, language and tone. Schedules are the jobs she runs on her own." }
 
     footer: [
         Group {

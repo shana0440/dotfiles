@@ -61,6 +61,8 @@ Item {
         checkDouble: "check-check",
         send: "arrow-up",
         remove: "trash",
+        character: "user-pen",
+        schedules: "calendar-clock",
         clearNotifications: "list-x",
         weatherClear: "sun",
         weatherClearNight: "moon",
