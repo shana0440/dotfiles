@@ -125,7 +125,8 @@ All bindings are in `hyprland/hyprland.lua`. The main ones:
   Her name comes from `name` under `[character]` in mei's `config.toml`.
   Tap her photo to open settings, where you can pick her photo with the desktop
   file chooser, edit `CHARACTER.md` in mei's home (her language and tone),
-  open her schedules to turn each on or off or remove it, and reset her memory. A
+  open her schedules to turn each on or off or remove it, pick the chat background
+  (the default one or an image of your own), and reset her memory. A
   reset permanently deletes her memory and chat history after you confirm it.
 - Tap `Super` to open the dashboard; type to [search it](#dashboard-search).
 

@@ -63,6 +63,7 @@ Item {
         remove: "trash",
         character: "user-pen",
         schedules: "calendar-clock",
+        background: "image",
         clearNotifications: "list-x",
         weatherClear: "sun",
         weatherClearNight: "moon",

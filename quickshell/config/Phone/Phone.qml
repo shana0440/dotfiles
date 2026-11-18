@@ -32,7 +32,7 @@ Scope {
             Hyprland.dispatch("hl.dsp.focus({ window = \"address:0x" + window.address + "\" })")
     }
 
-    readonly property bool raised: opened && !Services.Mei.choosingAvatar
+    readonly property bool raised: opened && !Services.Mei.choosingAvatar && !Services.ChatBackground.choosing
 
     onOpenedChanged: if (opened) Services.Mei.refresh()
     onRaisedChanged: {
@@ -245,10 +245,22 @@ Scope {
                             hiddenBottom: display.hiddenBottom
                             onBack: display.pop()
                             onOpenSchedules: display.push("schedules")
+                            onOpenBackground: display.push("background")
                             onOpenCharacter: {
                                 characterPage.load()
                                 display.push("character")
                             }
+                        }
+                    }
+
+                    Slot {
+                        name: "background"
+                        stack: display.stack
+                        Settings.BackgroundPage {
+                            anchors.fill: parent
+                            active: root.raised && display.current === "background"
+                            hiddenBottom: display.hiddenBottom
+                            onBack: display.pop()
                         }
                     }
 

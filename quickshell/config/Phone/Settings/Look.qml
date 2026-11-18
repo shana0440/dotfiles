@@ -17,4 +17,5 @@ QtObject {
     readonly property color switchOff: "#39393d"
     readonly property color characterTile: "#ff9f0a"
     readonly property color schedulesTile: "#ff453a"
+    readonly property color backgroundTile: "#bf5af2"
 }

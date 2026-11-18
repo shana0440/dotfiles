@@ -9,6 +9,7 @@ Page {
     property bool cleared: false
     signal openSchedules
     signal openCharacter
+    signal openBackground
 
     title: "Settings"
     backLabel: "Chat"
@@ -22,7 +23,7 @@ Page {
         Phone.Avatar {
             id: profileAvatar
             anchors.horizontalCenter: parent.horizontalCenter
-            width: 96 * settings.pt
+            width: 84 * settings.pt
             height: width
             name: Services.Mei.name
             source: Services.Mei.avatar
@@ -101,6 +102,18 @@ Page {
     }
 
     Caption { pt: settings.pt; note: true; text: "Jobs she runs on her own." }
+
+    Group {
+        pt: settings.pt
+        NavRow {
+            pt: settings.pt
+            icon: "background"
+            tile: Look.backgroundTile
+            label: "Chat background"
+            detail: Services.ChatBackground.usingCustom ? "Custom" : "Default"
+            onClicked: settings.openBackground()
+        }
+    }
 
     footer: [
         Group {

@@ -69,6 +69,7 @@ Item {
     Column {
         id: footerColumn
         anchors { bottom: parent.bottom; bottomMargin: page.hiddenBottom; left: parent.left; right: parent.right }
+        topPadding: children.length > 0 ? 16 * page.pt : 0
         bottomPadding: children.length > 0 ? 16 * page.pt : 0
         spacing: 8 * page.pt
     }
