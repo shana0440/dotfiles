@@ -22,7 +22,7 @@ Item {
     signal dismissed
     signal settingsRequested
 
-    function focusInput() { composer.forceActiveFocus() }
+    function focusPage() { composer.forceActiveFocus() }
     function submit() {
         Services.Mei.send(composer.text)
         composer.clear()

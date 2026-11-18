@@ -6,6 +6,7 @@ import Quickshell.Wayland
 import Quickshell.Hyprland
 import "../Theme" as Theme
 import "../Services" as Services
+import "Settings" as Settings
 
 Scope {
     id: root
@@ -114,6 +115,31 @@ Scope {
         }
     }
 
+    component Slot: Item {
+        id: slot
+        required property string name
+        required property var stack
+        default property Item page
+        readonly property int depth: stack.indexOf(name)
+        readonly property int topDepth: stack.length - 1
+        property real position: depth < 0 ? 1 : depth === topDepth ? 0 : -0.3
+        Behavior on position { NumberAnimation { duration: 380; easing.type: Easing.OutQuint } }
+        width: parent.width
+        height: parent.height
+        x: width * position
+        visible: position < 1 && (depth < 0 || depth >= topDepth - 1)
+        z: depth < 0 ? stack.length : depth
+        Component.onCompleted: page.parent = slot
+
+        Rectangle {
+            anchors.fill: parent
+            z: 1
+            visible: slot.position < 0
+            color: "black"
+            opacity: -slot.position / 0.3 * 0.12
+        }
+    }
+
     component PhoneBody: Item {
         id: body
         readonly property real bezel: Math.round(width * 0.035)
@@ -171,24 +197,23 @@ Scope {
 
                 Item {
                     id: display
-                    property bool inSettings: false
-                    property real push: inSettings ? 1 : 0
+                    property var stack: ["chat"]
+                    readonly property string current: stack[stack.length - 1]
                     readonly property real hiddenBottom: body.height * (1 - root.visibleShare) - body.bezel
                     anchors.fill: parent
-                    Behavior on push { NumberAnimation { duration: 380; easing.type: Easing.OutQuint } }
                     Component.onCompleted: root.display = display
 
                     function focusCurrent() {
-                        if (inSettings) settingsPage.focusPage()
-                        else chat.focusInput()
+                        for (const slot of children)
+                            if (slot.name === current) slot.page.focusPage()
                     }
-                    function openSettings() {
-                        inSettings = true
-                        settingsPage.focusPage()
+                    function push(name) {
+                        stack = stack.concat([name])
+                        focusCurrent()
                     }
-                    function closeSettings() {
-                        inSettings = false
-                        chat.focusInput()
+                    function pop() {
+                        stack = stack.slice(0, -1)
+                        focusCurrent()
                     }
 
                     layer.enabled: true
@@ -199,34 +224,27 @@ Scope {
                         maskSpreadAtMin: 1
                     }
 
-                    Chat {
-                        id: chat
-                        width: parent.width
-                        height: parent.height
-                        x: -parent.width * 0.3 * display.push
-                        visible: display.push < 1
-                        active: root.raised && !display.inSettings
-                        hiddenBottom: display.hiddenBottom
-                        onDismissed: root.close()
-                        onSettingsRequested: display.openSettings()
+                    Slot {
+                        name: "chat"
+                        stack: display.stack
+                        Chat {
+                            anchors.fill: parent
+                            active: root.raised && display.current === "chat"
+                            hiddenBottom: display.hiddenBottom
+                            onDismissed: root.close()
+                            onSettingsRequested: display.push("settings")
+                        }
                     }
 
-                    Rectangle {
-                        anchors.fill: parent
-                        visible: display.push > 0
-                        color: "black"
-                        opacity: 0.12 * display.push
-                    }
-
-                    Settings {
-                        id: settingsPage
-                        width: parent.width
-                        height: parent.height
-                        x: parent.width * (1 - display.push)
-                        visible: display.push > 0
-                        active: root.raised && display.inSettings
-                        hiddenBottom: display.hiddenBottom
-                        onBack: display.closeSettings()
+                    Slot {
+                        name: "settings"
+                        stack: display.stack
+                        Settings.SettingsPage {
+                            anchors.fill: parent
+                            active: root.raised && display.current === "settings"
+                            hiddenBottom: display.hiddenBottom
+                            onBack: display.pop()
+                        }
                     }
                 }
             }

@@ -1,0 +1,10 @@
+singleton Look 1.0 Look.qml
+Page 1.0 Page.qml
+NavBar 1.0 NavBar.qml
+Group 1.0 Group.qml
+Caption 1.0 Caption.qml
+TextButton 1.0 TextButton.qml
+Toggle 1.0 Toggle.qml
+Alert 1.0 Alert.qml
+ScheduleRow 1.0 ScheduleRow.qml
+SettingsPage 1.0 SettingsPage.qml
