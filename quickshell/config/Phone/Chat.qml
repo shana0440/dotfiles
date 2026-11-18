@@ -164,6 +164,14 @@ Item {
                     readonly property bool stampInline: body.lineCount <= 1
                         && body.implicitWidth + stampWidth <= maxTextWidth
                     readonly property bool typing: row.streaming && row.text === ""
+                    readonly property var content: outgoing ? { caption: row.text, photos: [] }
+                        : Services.Mei.splitPhotos(row.text)
+                    readonly property bool hasPhotos: content.photos.length > 0
+                    readonly property bool hasCaption: content.caption !== ""
+                    readonly property bool photoOnly: hasPhotos && !hasCaption
+                    readonly property real captionTop: hasPhotos ? photos.height + 3 * chat.pt : 0
+                    readonly property real textWidth: Math.max(body.width + (stampInline ? stampWidth : 0),
+                                                               stampWidth) + 24 * chat.pt
                     implicitHeight: card.height + (row.lastOfGroup ? 6 * chat.pt : 0)
 
                     Rectangle {
@@ -171,10 +179,11 @@ Item {
                         readonly property real sharp: row.lastOfGroup ? 4 * chat.pt : 16 * chat.pt
                         x: bubbleRow.outgoing ? parent.width - width - 10 * chat.pt : 10 * chat.pt
                         width: bubbleRow.typing ? 58 * chat.pt
-                            : Math.max(body.width + (bubbleRow.stampInline ? bubbleRow.stampWidth : 0),
-                                       bubbleRow.stampWidth) + 24 * chat.pt
+                            : bubbleRow.photoOnly ? photos.width + 6 * chat.pt
+                            : Math.max(bubbleRow.textWidth, bubbleRow.hasPhotos ? photos.width + 6 * chat.pt : 0)
                         height: bubbleRow.typing ? 36 * chat.pt
-                            : body.height + (bubbleRow.stampInline ? 0 : stamp.height) + 14 * chat.pt
+                            : bubbleRow.photoOnly ? photos.height + 6 * chat.pt
+                            : bubbleRow.captionTop + body.height + (bubbleRow.stampInline ? 0 : stamp.height) + 14 * chat.pt
                         radius: 17 * chat.pt
                         bottomLeftRadius: bubbleRow.outgoing ? radius : sharp
                         bottomRightRadius: bubbleRow.outgoing ? sharp : radius
@@ -223,13 +232,30 @@ Item {
                             }
                         }
 
+                        Column {
+                            id: photos
+                            visible: !bubbleRow.typing && bubbleRow.hasPhotos
+                            x: 3 * chat.pt
+                            y: 3 * chat.pt
+                            spacing: 3 * chat.pt
+                            Repeater {
+                                model: bubbleRow.content.photos
+                                ChatPhoto {
+                                    required property string modelData
+                                    source: modelData
+                                    maxWidth: row.width * 0.74 - 6 * chat.pt
+                                    pt: chat.pt
+                                }
+                            }
+                        }
+
                         Text {
                             id: body
-                            visible: !bubbleRow.typing
+                            visible: !bubbleRow.typing && bubbleRow.hasCaption
                             x: 12 * chat.pt
-                            y: 7 * chat.pt
+                            y: bubbleRow.captionTop + 7 * chat.pt
                             width: Math.min(implicitWidth, bubbleRow.maxTextWidth)
-                            text: bubbleRow.outgoing ? row.text : row.text.replace(/\[([^\]]+)\]\(([^)\s]+)\)/g,
+                            text: bubbleRow.outgoing ? row.text : bubbleRow.content.caption.replace(/\[([^\]]+)\]\(([^)\s]+)\)/g,
                                 '<a href="$2"><span style="color: ' + chat.link + '">$1</span></a>')
                             textFormat: bubbleRow.outgoing ? Text.PlainText : Text.MarkdownText
                             wrapMode: Text.Wrap
@@ -239,14 +265,25 @@ Item {
                             onLinkActivated: link => Qt.openUrlExternally(link)
                         }
 
+                        Rectangle {
+                            visible: stamp.visible && bubbleRow.photoOnly
+                            anchors { fill: stamp; margins: -3 * chat.pt; leftMargin: -6 * chat.pt; rightMargin: -6 * chat.pt }
+                            radius: height / 2
+                            color: Qt.rgba(0, 0, 0, 0.5)
+                        }
+
                         Row {
                             id: stamp
                             visible: !bubbleRow.typing
-                            anchors { right: parent.right; rightMargin: 10 * chat.pt; bottom: parent.bottom; bottomMargin: 5 * chat.pt }
+                            anchors {
+                                right: parent.right; rightMargin: (bubbleRow.photoOnly ? 14 : 10) * chat.pt
+                                bottom: parent.bottom; bottomMargin: (bubbleRow.photoOnly ? 12 : 5) * chat.pt
+                            }
                             spacing: 3 * chat.pt
                             Text {
                                 text: row.time
-                                color: bubbleRow.outgoing ? chat.outgoingStamp : chat.incomingStamp
+                                color: bubbleRow.photoOnly ? "white"
+                                    : bubbleRow.outgoing ? chat.outgoingStamp : chat.incomingStamp
                                 font { family: Theme.Fonts.family; pixelSize: 11 * chat.pt }
                             }
                             Components.Icon {

@@ -36,6 +36,24 @@ Singleton {
         return Qt.formatTime(new Date(ms), "hh:mm")
     }
 
+    function imageUrl(path) {
+        if (/^(https?|file):\/\//.test(path)) return path
+        if (path.startsWith("~/")) path = Quickshell.env("HOME") + path.slice(1)
+        else if (!path.startsWith("/")) path = home + "/" + path
+        return "file://" + path.split("/").map(encodeURIComponent).join("/")
+    }
+
+    function splitPhotos(text) {
+        const photos = []
+        const keep = (match, path, plainPath) => { photos.push(imageUrl(path || plainPath)); return "" }
+        const caption = text
+            .replace(/!\[[^\]]*\]\((?:<([^>]+)>|([^)\s]+))(?:\s+"[^"]*")?\)/g, keep)
+            .replace(/^[ \t]*`?((?:https?:\/\/|file:\/\/|~\/|\/)\S+\.(?:png|jpe?g|gif|webp|bmp|svg))`?[ \t]*$/gmi, keep)
+            .replace(/\n{3,}/g, "\n\n")
+            .trim()
+        return { caption: caption, photos: photos }
+    }
+
     function append(kind, text, ms) {
         messages.append({ kind: kind, text: text, time: ms ? clock(ms) : "", streaming: false })
         return messages.count - 1
@@ -57,7 +75,8 @@ Singleton {
 
     function announce(reply) {
         if (chatInView || !reply.trim()) return
-        const plain = reply.replace(/^#+\s*/gm, "").replace(/[*`]+/g, "").trim()
+        const caption = splitPhotos(reply).caption || "Photo"
+        const plain = caption.replace(/^#+\s*/gm, "").replace(/[*`]+/g, "").trim()
         replyNotification.createObject(root, { body: plain })
     }
 
