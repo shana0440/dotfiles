@@ -139,8 +139,8 @@ All bindings are in `hyprland/hyprland.lua`. The main ones:
   (the default one or an image of your own), and reset her memory. A
   reset permanently deletes her memory and chat history after you confirm it.
   Links in her replies get a preview card, fetched by `link-preview` only from
-  public internet addresses; preview images are cached in
-  `~/.cache/quickshell/link-previews`.
+  public internet addresses. The title shows first and the image follows;
+  previews are cached for a week in `~/.cache/quickshell/link-previews`.
 - Tap `Super` to open the dashboard; type to [search it](#dashboard-search).
 
 ### Dashboard search

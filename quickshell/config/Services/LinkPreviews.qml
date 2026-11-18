@@ -9,10 +9,10 @@ Singleton {
     property var pages: ({})
     property var queue: []
     property int fetching: 0
-    readonly property int maxConcurrentFetches: 2
+    readonly property int maxConcurrentFetches: 4
 
     function firstLink(text, stillWriting) {
-        const match = stillWriting ? text.match(/\]\((https?:\/\/[^)\s]+)\)/)
+        const match = stillWriting ? text.match(/\]\((https?:\/\/[^)\s]+)\)|(https?:\/\/[^\s<>()\]]+)(?=\s)/)
             : text.match(/\]\((https?:\/\/[^)\s]+)\)|(https?:\/\/[^\s<>()\]]+)/)
         return match ? match[1] || match[2] : ""
     }
@@ -39,13 +39,11 @@ Singleton {
         pages = next
     }
 
-    function finished(request, code, output, errors) {
+    function finished(request, code, errors) {
         fetching--
         request.destroy()
         Qt.callLater(startNext)
-        if (code === 0)
-            remember(request.url, JSON.parse(output))
-        else
+        if (code !== 0)
             console.warn("Link preview failed for", request.url + ":", errors.trim())
     }
 
@@ -59,12 +57,12 @@ Singleton {
 
             command: ["link-preview", url]
             running: true
-            stdout: StdioCollector { id: output }
+            stdout: SplitParser { onRead: line => root.remember(request.url, JSON.parse(line)) }
             stderr: StdioCollector { id: errors }
             onStarted: startedSuccessfully = true
-            onExited: code => root.finished(request, code, output.text, errors.text)
+            onExited: code => root.finished(request, code, errors.text)
             onRunningChanged: if (!running && !startedSuccessfully)
-                root.finished(request, -1, "", "link-preview could not start")
+                root.finished(request, -1, "link-preview could not start")
         }
     }
 }

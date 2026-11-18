@@ -12,10 +12,12 @@ from html.parser import HTMLParser
 from pathlib import Path
 from urllib.parse import urljoin, urlsplit
 
-PAGE_LIMIT = 600_000
+PAGE_LIMIT = 2_000_000
 IMAGE_LIMIT = 5_000_000
 MAX_REDIRECTS = 5
 DEADLINE_SECONDS = 15
+CACHE_SECONDS = 7 * 24 * 3600
+CACHE = Path(os.environ.get("XDG_CACHE_HOME", str(Path.home() / ".cache"))) / "quickshell/link-previews"
 IMAGE_TYPES = {"image/png": ".png", "image/jpeg": ".jpg", "image/gif": ".gif", "image/webp": ".webp"}
 
 
@@ -46,7 +48,7 @@ class PinnedConnection(http.client.HTTPSConnection):
             self.sock = self._context.wrap_socket(self.sock, server_hostname=self.host)
 
 
-def get(url, accept, limit, deadline):
+def get(url, accept, limit, deadline, stop=None):
     for _ in range(MAX_REDIRECTS + 1):
         parts = urlsplit(url)
         if parts.scheme not in ("http", "https") or not parts.hostname:
@@ -74,6 +76,8 @@ def get(url, accept, limit, deadline):
                 if not chunk:
                     break
                 body += chunk
+                if stop and stop in body[-len(chunk) - len(stop):].lower():
+                    break
             return url, response.getheader("Content-Type", ""), bytes(body)
         finally:
             connection.close()
@@ -113,49 +117,79 @@ def charset(content_type):
     return "utf-8"
 
 
+def cached_path(url, extension):
+    CACHE.mkdir(parents=True, exist_ok=True)
+    return CACHE / (hashlib.sha256(url.encode()).hexdigest() + extension)
+
+
+def cached_page(url):
+    path = cached_path(url, ".json")
+    if not path.exists() or time.time() - path.stat().st_mtime > CACHE_SECONDS:
+        return None
+    page = json.loads(path.read_text())
+    if page["image"] and not Path(urlsplit(page["image"]).path).exists():
+        return None
+    return page
+
+
+def remember(url, page):
+    path = cached_path(url, ".json")
+    temporary = path.with_suffix(".tmp")
+    temporary.write_text(json.dumps(page))
+    temporary.replace(path)
+
+
 def cached_image(url, deadline):
     _, content_type, body = get(url, "image/*", IMAGE_LIMIT, deadline)
     extension = IMAGE_TYPES.get(content_type.split(";")[0].strip().lower())
     if not extension:
         raise Refused(f"{url} is not a supported image ({content_type})")
-    cache = Path(os.environ.get("XDG_CACHE_HOME", str(Path.home() / ".cache"))) / "quickshell/link-previews"
-    cache.mkdir(parents=True, exist_ok=True)
-    target = cache / (hashlib.sha256(url.encode()).hexdigest() + extension)
+    target = cached_path(url, extension)
     temporary = target.with_suffix(".tmp")
     temporary.write_bytes(body)
     temporary.replace(target)
     return target.as_uri()
 
 
-def preview(url):
+def previews(url):
     deadline = time.monotonic() + DEADLINE_SECONDS
-    final_url, content_type, body = get(url, "text/html", PAGE_LIMIT, deadline)
+    final_url, content_type, body = get(url, "text/html", PAGE_LIMIT, deadline, stop=b"</head>")
     if "html" not in content_type.lower():
-        return None
+        return
     page = PageMeta()
     page.feed(body.decode(charset(content_type), errors="replace"))
     meta = page.meta
-    title = meta.get("og:title") or meta.get("twitter:title") or page.title.strip()
+    card = {
+        "site": meta.get("og:site_name") or urlsplit(final_url).hostname.removeprefix("www."),
+        "title": meta.get("og:title") or meta.get("twitter:title") or page.title.strip(),
+        "description": meta.get("og:description") or meta.get("twitter:description") or meta.get("description") or "",
+        "image": "",
+    }
+    if card["title"]:
+        yield card
     image_link = meta.get("og:image") or meta.get("twitter:image")
-    image = ""
     if image_link:
         try:
-            image = cached_image(urljoin(final_url, image_link), deadline)
+            card = dict(card, image=cached_image(urljoin(final_url, image_link), deadline))
+            yield card
         except (OSError, Refused, http.client.HTTPException) as error:
             print(f"link-preview: no image: {error}", file=sys.stderr)
-    if not title and not image:
-        return None
-    return {
-        "site": meta.get("og:site_name") or urlsplit(final_url).hostname.removeprefix("www."),
-        "title": title,
-        "description": meta.get("og:description") or meta.get("twitter:description") or meta.get("description") or "",
-        "image": image,
-    }
+
+
+def show(url):
+    page = cached_page(url)
+    if page:
+        print(json.dumps(page))
+        return
+    for page in previews(url):
+        print(json.dumps(page), flush=True)
+    if page:
+        remember(url, page)
 
 
 if __name__ == "__main__":
     try:
-        print(json.dumps(preview(sys.argv[1])))
-    except (OSError, Refused, http.client.HTTPException, UnicodeError, LookupError) as error:
+        show(sys.argv[1])
+    except (OSError, Refused, http.client.HTTPException, UnicodeError, LookupError, ValueError) as error:
         print(f"link-preview: {error}", file=sys.stderr)
         sys.exit(1)
