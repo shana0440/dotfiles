@@ -80,7 +80,7 @@ Page {
         NavRow {
             pt: settings.pt
             icon: "character"
-            tile: "#ff9500"
+            tile: Look.characterTile
             label: "CHARACTER.md"
             onClicked: settings.openCharacter()
         }
@@ -93,7 +93,7 @@ Page {
         NavRow {
             pt: settings.pt
             icon: "schedules"
-            tile: "#ff3b30"
+            tile: Look.schedulesTile
             label: "Schedules"
             detail: Services.Mei.schedules.length
             onClicked: settings.openSchedules()

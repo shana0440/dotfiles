@@ -11,14 +11,19 @@ Item {
     property real hiddenBottom: 0
     property bool active: false
     readonly property real pt: width / 390
-    readonly property color ink: "#000000"
+    readonly property color ink: "#ffffff"
     readonly property color secondaryInk: "#8e8e93"
-    readonly property color accent: "#007aff"
-    readonly property color barFill: "#f6f6f6"
-    readonly property color hairline: "#c8c7cc"
-    readonly property color incomingFill: "#ffffff"
-    readonly property color outgoingFill: "#e1fec6"
-    readonly property color outgoingInk: "#4fae4e"
+    readonly property color accent: "#0a84ff"
+    readonly property color link: "#64b5ff"
+    readonly property color barFill: "#161618"
+    readonly property color hairline: "#38383a"
+    readonly property color incomingFill: "#262628"
+    readonly property color outgoingFill: "#2b5a3c"
+    readonly property color outgoingInk: "#8fd3a0"
+    readonly property color fieldFill: "#1c1c1e"
+    readonly property color fieldBorder: "#38383a"
+    readonly property color placeholder: "#6e6e73"
+    readonly property color pillFill: Qt.rgba(0, 0, 0, 0.4)
     signal dismissed
     signal settingsRequested
 
@@ -32,9 +37,9 @@ Item {
     Rectangle {
         anchors.fill: parent
         gradient: Gradient {
-            GradientStop { position: 0; color: "#d4e3a4" }
-            GradientStop { position: 0.5; color: "#b6d49c" }
-            GradientStop { position: 1; color: "#8fc29e" }
+            GradientStop { position: 0; color: "#1d2b1c" }
+            GradientStop { position: 0.5; color: "#15231a" }
+            GradientStop { position: 1; color: "#0d1a14" }
         }
     }
 
@@ -132,7 +137,7 @@ Item {
                         width: pillText.width + 16 * chat.pt
                         height: pillText.height + 6 * chat.pt
                         radius: Math.min(height / 2, 12 * chat.pt)
-                        color: Qt.rgba(0.2, 0.32, 0.2, 0.32)
+                        color: chat.pillFill
                         Text {
                             id: pillText
                             anchors.centerIn: parent
@@ -222,11 +227,11 @@ Item {
                             x: 12 * chat.pt
                             y: 7 * chat.pt
                             width: Math.min(implicitWidth, bubbleRow.maxTextWidth)
-                            text: row.text
+                            text: bubbleRow.outgoing ? row.text : row.text.replace(/\[([^\]]+)\]\(([^)\s]+)\)/g,
+                                '<a href="$2"><span style="color: ' + chat.link + '">$1</span></a>')
                             textFormat: bubbleRow.outgoing ? Text.PlainText : Text.MarkdownText
                             wrapMode: Text.Wrap
                             color: chat.ink
-                            linkColor: chat.accent
                             lineHeight: 1.08
                             font { family: Theme.Fonts.family; weight: Font.Normal; pixelSize: 16 * chat.pt }
                             onLinkActivated: link => Qt.openUrlExternally(link)
@@ -264,7 +269,7 @@ Item {
         width: emptyText.width + 32 * chat.pt
         height: emptyText.height + 24 * chat.pt
         radius: 16 * chat.pt
-        color: Qt.rgba(0.2, 0.32, 0.2, 0.32)
+        color: chat.pillFill
         Text {
             id: emptyText
             anchors.centerIn: parent
@@ -346,8 +351,8 @@ Item {
             anchors { left: parent.left; leftMargin: 12 * chat.pt; right: sendButton.left; rightMargin: 8 * chat.pt; verticalCenter: parent.verticalCenter }
             height: Math.min(composer.contentHeight, 5 * 21 * chat.pt) + 14 * chat.pt
             radius: 18 * chat.pt
-            color: "white"
-            border { width: 1; color: "#d1d1d6" }
+            color: chat.fieldFill
+            border { width: 1; color: chat.fieldBorder }
 
             Flickable {
                 id: composerScroll
@@ -376,7 +381,7 @@ Item {
                     Text {
                         visible: !composer.text && !composer.preeditText
                         text: "Message"
-                        color: "#a8a8ad"
+                        color: chat.placeholder
                         font: composer.font
                     }
                 }
@@ -390,7 +395,7 @@ Item {
             width: 32 * chat.pt
             height: width
             radius: width / 2
-            color: ready ? chat.accent : "#c7c7cc"
+            color: ready ? chat.accent : chat.fieldBorder
             Behavior on color { ColorAnimation { duration: 120 } }
 
             Components.Icon {

@@ -38,7 +38,7 @@ MouseArea {
 
     Rectangle {
         anchors.fill: parent
-        color: Qt.rgba(0, 0, 0, 0.4)
+        color: Qt.rgba(0, 0, 0, 0.55)
     }
 
     ClippingRectangle {
@@ -46,7 +46,7 @@ MouseArea {
         width: 270 * alert.pt
         height: texts.height + buttons.height
         radius: 14 * alert.pt
-        color: Qt.rgba(0.96, 0.96, 0.96, 0.98)
+        color: Look.alertFill
         scale: alert.shown ? 1 : 1.15
         Behavior on scale { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
 
@@ -121,7 +121,7 @@ MouseArea {
         cursorShape: Qt.PointingHandCursor
         Rectangle {
             anchors.fill: parent
-            color: button.pressed ? Qt.rgba(0, 0, 0, 0.06) : "transparent"
+            color: button.pressed ? Qt.rgba(1, 1, 1, 0.08) : "transparent"
         }
         Text {
             anchors.centerIn: parent

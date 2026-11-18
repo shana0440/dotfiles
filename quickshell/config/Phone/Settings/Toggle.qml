@@ -26,7 +26,6 @@ MouseArea {
         height: width
         radius: width / 2
         color: "white"
-        border { width: 0.5; color: Qt.rgba(0, 0, 0, 0.04) }
-        Behavior on x { NumberAnimation { duration: 220; easing.type: Easing.OutBack; easing.overshoot: 1.2 } }
+                Behavior on x { NumberAnimation { duration: 220; easing.type: Easing.OutBack; easing.overshoot: 1.2 } }
     }
 }

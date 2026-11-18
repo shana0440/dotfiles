@@ -8,7 +8,7 @@ ClippingRectangle {
     width: parent.width - 2 * x
     height: rowColumn.height
     radius: 22 * pt
-    color: "white"
+    color: Look.groupFill
 
     Column {
         id: rowColumn
