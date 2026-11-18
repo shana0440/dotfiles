@@ -124,8 +124,8 @@ All bindings are in `hyprland/hyprland.lua`. The main ones:
   `~/.local/share/mei`) and shows mei as offline when the daemon is not running.
   Tap her photo to open settings, where you can pick her photo with the desktop
   file chooser, rename her (saved with `mei config set character.name`, so the
-  `mei` command must be installed), edit `CHARACTER.md` in mei's home (her
-  language and tone),
+  `mei` command must be installed), edit her character file in mei's home (her
+  language and tone; `CHARACTER.md` unless `[character] file` points elsewhere),
   open her schedules to turn each on or off or remove it, pick the chat background
   (the default one or an image of your own), and reset her memory. A
   reset permanently deletes her memory and chat history after you confirm it.

@@ -16,7 +16,7 @@ Page {
         document.cursorPosition = 0
     }
 
-    title: "CHARACTER.md"
+    title: Services.Mei.characterTitle
     backLabel: "Settings"
     action: "Save"
     actionEnabled: dirty
@@ -61,7 +61,7 @@ Page {
         pt: editor.pt
         hiddenBottom: editor.hiddenBottom
         title: "Discard changes?"
-        message: "Your edits to CHARACTER.md will be lost."
+        message: "Your edits to " + Services.Mei.characterTitle + " will be lost."
         cancelLabel: "Keep editing"
         confirmLabel: "Discard"
         onDismissed: document.forceActiveFocus()

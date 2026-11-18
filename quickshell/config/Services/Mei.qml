@@ -9,6 +9,8 @@ Singleton {
     readonly property string home: Quickshell.env("MEI_HOME") || Quickshell.env("HOME") + "/.local/share/mei"
     readonly property string socketPath: home + "/state/mei.sock"
     readonly property string character: characterFile.text()
+    property string characterFileName: "CHARACTER.md"
+    readonly property string characterTitle: characterFileName.split("/").pop()
     property string configuredName: ""
     readonly property string name: configuredName || "mei"
     readonly property bool renaming: nameWriter.running
@@ -49,6 +51,11 @@ Singleton {
         append("user", trimmed, Date.now())
         waiting++
         requestComponent.createObject(root, { message: { type: "chat", text: trimmed, debug: true } })
+    }
+
+    function readConfig() {
+        nameReader.run(["get", "character.name"])
+        characterFileReader.run(["get", "character.file"])
     }
 
     function rename(newName, finished) {
@@ -233,8 +240,13 @@ Singleton {
         printErrors: false
         onFileChanged: {
             reload()
-            nameReader.run(["get", "character.name"])
+            root.readConfig()
         }
+    }
+
+    MeiConfig {
+        id: characterFileReader
+        onFinished: (ok, output) => { if (ok) root.characterFileName = output }
     }
 
     MeiConfig {
@@ -253,7 +265,8 @@ Singleton {
 
     FileView {
         id: characterFile
-        path: root.home + "/CHARACTER.md"
+        path: root.characterFileName.startsWith("/") ? root.characterFileName
+            : root.home + "/" + root.characterFileName
         watchChanges: true
         printErrors: false
         onFileChanged: reload()
@@ -280,6 +293,6 @@ Singleton {
 
     Component.onCompleted: {
         refresh()
-        nameReader.run(["get", "character.name"])
+        readConfig()
     }
 }

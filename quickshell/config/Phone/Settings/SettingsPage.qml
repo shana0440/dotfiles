@@ -97,7 +97,7 @@ Page {
             pt: settings.pt
             icon: "character"
             tile: Look.characterTile
-            label: "CHARACTER.md"
+            label: Services.Mei.characterTitle
             onClicked: settings.openCharacter()
         }
     }
