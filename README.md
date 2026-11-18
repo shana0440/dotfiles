@@ -122,7 +122,7 @@ All bindings are in `hyprland/hyprland.lua`. The main ones:
 - `Super+K`: slide up a phone for chatting with [mei](https://github.com/shana0440/mei); press again to
   slide it away. It talks to the mei daemon at `$MEI_HOME/state/mei.sock` (default
   `~/.local/share/mei`) and shows mei as offline when the daemon is not running.
-  Tap her name or photo to open settings, where you can rename her (saved to
+  Tap her photo to open settings, where you can rename her (saved to
   `CHARACTER.md` in mei's home), pick her photo with the desktop file chooser,
   turn her schedules on or off or remove them, and reset her memory. A reset
   permanently deletes her memory and chat history after you confirm it.

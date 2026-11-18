@@ -298,7 +298,6 @@ Item {
         }
 
         Column {
-            id: title
             anchors { horizontalCenter: parent.horizontalCenter; top: statusBar.bottom; topMargin: 3 * chat.pt }
             spacing: 1 * chat.pt
             Text {
@@ -317,18 +316,16 @@ Item {
         }
 
         Avatar {
-            id: headerAvatar
             anchors { right: parent.right; rightMargin: 12 * chat.pt; top: statusBar.bottom; topMargin: 4 * chat.pt }
             width: 38 * chat.pt
             height: width
             name: Services.Mei.name
             source: Services.Mei.avatar
-        }
-
-        MouseArea {
-            anchors { left: title.left; right: headerAvatar.right; top: statusBar.bottom; bottom: parent.bottom }
-            cursorShape: Qt.PointingHandCursor
-            onClicked: chat.settingsRequested()
+            MouseArea {
+                anchors.fill: parent
+                cursorShape: Qt.PointingHandCursor
+                onClicked: chat.settingsRequested()
+            }
         }
     }
 
