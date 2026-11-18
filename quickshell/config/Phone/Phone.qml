@@ -87,6 +87,12 @@ Scope {
         NumberAnimation { target: stage; property: "tilt"; to: 1; duration: 440; easing.type: Easing.InQuad }
     }
 
+    HyprlandFocusGrab {
+        windows: [win]
+        active: root.raised && win.visible
+        onCleared: root.close()
+    }
+
     PanelWindow {
         id: win
         readonly property real headroom: root.bounce + phone.height * 0.12
