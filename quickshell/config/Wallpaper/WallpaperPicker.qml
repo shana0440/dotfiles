@@ -28,7 +28,7 @@ Scope {
         message = ""
         preparing = true
         opened = true
-        query.running = true
+        query.start()
         if (!colonyWarm.running) colonyWarm.running = true
     }
     function finishOpening() {
@@ -81,7 +81,18 @@ Scope {
         return ""
     }
 
-    Process {
+    component Helper: Process {
+        property bool launched: false
+        signal failedToStart()
+        function start() {
+            if (running) return
+            launched = false
+            running = true
+        }
+        onStarted: launched = true
+        onRunningChanged: if (!running && !launched) failedToStart()
+    }
+    Helper {
         id: query
         command: ["awww", "query", "--json"]
         stdout: StdioCollector {
@@ -94,9 +105,13 @@ Scope {
                 } catch (_) {}
             }
         }
-        onExited: library.running = true
+        onExited: library.start()
+        onFailedToStart: {
+            root.message = "Could not run awww to find the current wallpaper"
+            library.start()
+        }
     }
-    Process {
+    Helper {
         id: library
         command: ["wallpaper-library"]
         stdout: StdioCollector {
@@ -105,13 +120,17 @@ Scope {
                     const result = JSON.parse(text)
                     root.items = result.items
                     root.directory = result.directory
-                    root.message = result.errors.length ? result.errors.length + " image(s) could not be loaded" : ""
+                    if (result.errors.length) root.message = result.errors.length + " image(s) could not be loaded"
                 } catch (_) { root.message = "Could not read the wallpaper library" }
             }
         }
         stderr: StdioCollector { id: libraryError }
         onExited: (code) => {
             if (code !== 0) root.message = libraryError.text || "Could not load wallpapers"
+            Qt.callLater(root.finishOpening)
+        }
+        onFailedToStart: {
+            root.message = "Could not run wallpaper-library"
             Qt.callLater(root.finishOpening)
         }
     }
@@ -139,7 +158,7 @@ Scope {
             onExited: code => root.setterExited(setter, code, setError.text)
         }
     }
-    Component.onCompleted: library.running = true
+    Component.onCompleted: library.start()
 
     IpcHandler {
         target: "wallpaper"
@@ -171,7 +190,7 @@ Scope {
             id: stage
             anchors.fill: parent
             focus: true
-            opacity: root.opened && !root.preparing ? 1 : 0
+            opacity: root.opened ? 1 : 0
             Behavior on opacity { NumberAnimation { duration: 140; easing.type: Easing.OutCubic } }
             Keys.onEscapePressed: root.close()
             Keys.onLeftPressed: root.move(-1)
@@ -206,6 +225,7 @@ Scope {
                     id: carousel
                     anchors { left: parent.left; right: parent.right; top: parent.top; topMargin: 80; bottom: footer.top; bottomMargin: 16 }
                     orientation: ListView.Horizontal
+                    opacity: root.preparing ? 0 : 1
                     model: root.items
                     readonly property real cardWidth: Math.max(1, Math.min(width * 0.62, height * 1.65))
                     readonly property real cardHeight: cardWidth / 1.6
