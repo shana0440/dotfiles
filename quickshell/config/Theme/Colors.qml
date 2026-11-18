@@ -63,7 +63,7 @@ QtObject {
     readonly property color panel: "#ed0c0c0d"
     readonly property color scrim: "#88000000"
 
-    function surfaceFill(t) { return themed(background, transparent, t) }
+    function surfaceFill(t) { return themed(background, Qt.rgba(1, 1, 1, 0.2), t) }
     function surfaceEdge(t) { return themed(edge, transparent, t) }
     function surfaceShadow(t) { return themed(shadow, transparent, t) }
 }
