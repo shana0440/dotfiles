@@ -9,6 +9,7 @@ Page {
     property bool cleared: false
     signal openSchedules
     signal openCharacter
+    signal openName
     signal openBackground
 
     title: "Settings"
@@ -75,6 +76,20 @@ Page {
         width: 1
         height: 12 * settings.pt
     }
+
+    Group {
+        pt: settings.pt
+        NavRow {
+            pt: settings.pt
+            icon: "name"
+            tile: Look.nameTile
+            label: "Name"
+            detail: Services.Mei.name
+            onClicked: settings.openName()
+        }
+    }
+
+    Caption { pt: settings.pt; note: true; text: "The name she answers as." }
 
     Group {
         pt: settings.pt

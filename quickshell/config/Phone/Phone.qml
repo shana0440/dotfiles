@@ -249,10 +249,26 @@ Scope {
                             onBack: display.pop()
                             onOpenSchedules: display.push("schedules")
                             onOpenBackground: display.push("background")
+                            onOpenName: {
+                                namePage.load()
+                                display.push("name")
+                            }
                             onOpenCharacter: {
                                 characterPage.load()
                                 display.push("character")
                             }
+                        }
+                    }
+
+                    Slot {
+                        name: "name"
+                        stack: display.stack
+                        Settings.NamePage {
+                            id: namePage
+                            anchors.fill: parent
+                            active: root.raised && display.current === "name"
+                            hiddenBottom: display.hiddenBottom
+                            onBack: display.pop()
                         }
                     }
 

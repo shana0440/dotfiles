@@ -12,3 +12,4 @@ SavedTheme 1.0 SavedTheme.qml
 singleton Mei 1.0 Mei.qml
 ImagePicker 1.0 ImagePicker.qml
 singleton ChatBackground 1.0 ChatBackground.qml
+MeiConfig 1.0 MeiConfig.qml

@@ -9,9 +9,9 @@ Singleton {
     readonly property string home: Quickshell.env("MEI_HOME") || Quickshell.env("HOME") + "/.local/share/mei"
     readonly property string socketPath: home + "/state/mei.sock"
     readonly property string character: characterFile.text()
-    readonly property string name: configFile.text().split(/^\[/m)
-        .find(section => section.startsWith("character]"))
-        ?.match(/^name\s*=\s*"([^"]+)"/m)?.[1] ?? "mei"
+    property string configuredName: ""
+    readonly property string name: configuredName || "mei"
+    readonly property bool renaming: nameWriter.running
     readonly property string avatar: profile.avatar
     readonly property bool choosingAvatar: avatarPicker.running
     readonly property string avatarError: avatarPicker.error
@@ -49,6 +49,12 @@ Singleton {
         append("user", trimmed, Date.now())
         waiting++
         requestComponent.createObject(root, { message: { type: "chat", text: trimmed, debug: true } })
+    }
+
+    function rename(newName, finished) {
+        nameWriter.whenDone = finished
+        if (!nameWriter.run(["set", "character.name", JSON.stringify(newName.trim())]))
+            finished("mei is still saving the last change.")
     }
 
     function saveCharacter(text) {
@@ -225,7 +231,24 @@ Singleton {
         path: root.home + "/config.toml"
         watchChanges: true
         printErrors: false
-        onFileChanged: reload()
+        onFileChanged: {
+            reload()
+            nameReader.run(["get", "character.name"])
+        }
+    }
+
+    MeiConfig {
+        id: nameReader
+        onFinished: (ok, output) => { if (ok) root.configuredName = output }
+    }
+
+    MeiConfig {
+        id: nameWriter
+        property var whenDone: null
+        onFinished: ok => {
+            if (ok) nameReader.run(["get", "character.name"])
+            whenDone?.(ok ? "" : error)
+        }
     }
 
     FileView {
@@ -255,5 +278,8 @@ Singleton {
         onPicked: uri => profile.avatar = uri
     }
 
-    Component.onCompleted: refresh()
+    Component.onCompleted: {
+        refresh()
+        nameReader.run(["get", "character.name"])
+    }
 }
