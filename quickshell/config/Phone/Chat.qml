@@ -161,7 +161,7 @@ Item {
                     readonly property bool outgoing: row.kind === "user"
                     readonly property real maxTextWidth: row.width * 0.74 - 24 * chat.pt
                     readonly property real stampWidth: stamp.implicitWidth + 8 * chat.pt
-                    readonly property bool stampInline: body.lineCount <= 1
+                    readonly property bool stampInline: !hasPreview && body.lineCount <= 1
                         && body.implicitWidth + stampWidth <= maxTextWidth
                     readonly property bool typing: row.streaming && row.text === ""
                     readonly property var content: outgoing ? { caption: row.text, photos: [] }
@@ -169,6 +169,13 @@ Item {
                     readonly property bool hasPhotos: content.photos.length > 0
                     readonly property bool hasCaption: content.caption !== ""
                     readonly property bool photoOnly: hasPhotos && !hasCaption
+                    readonly property string previewUrl: outgoing || hasPhotos ? ""
+                        : Services.LinkPreviews.firstLink(content.caption, row.streaming)
+                    readonly property var previewPage: previewUrl ? Services.LinkPreviews.pages[previewUrl] ?? null : null
+                    readonly property bool hasPreview: previewPage !== null && !typing
+                    readonly property real previewSpace: hasPreview ? linkPreview.height + 6 * chat.pt : 0
+                    onPreviewUrlChanged: Services.LinkPreviews.fetch(previewUrl)
+                    Component.onCompleted: Services.LinkPreviews.fetch(previewUrl)
                     readonly property real captionTop: hasPhotos ? photos.height + 3 * chat.pt : 0
                     readonly property real textWidth: Math.max(body.width + (stampInline ? stampWidth : 0),
                                                                stampWidth) + 24 * chat.pt
@@ -180,10 +187,11 @@ Item {
                         x: bubbleRow.outgoing ? parent.width - width - 10 * chat.pt : 10 * chat.pt
                         width: bubbleRow.typing ? 58 * chat.pt
                             : bubbleRow.photoOnly ? photos.width + 6 * chat.pt
-                            : Math.max(bubbleRow.textWidth, bubbleRow.hasPhotos ? photos.width + 6 * chat.pt : 0)
+                            : Math.max(bubbleRow.textWidth, bubbleRow.hasPhotos ? photos.width + 6 * chat.pt : 0,
+                                       bubbleRow.hasPreview ? bubbleRow.maxTextWidth + 24 * chat.pt : 0)
                         height: bubbleRow.typing ? 36 * chat.pt
                             : bubbleRow.photoOnly ? photos.height + 6 * chat.pt
-                            : bubbleRow.captionTop + body.height + (bubbleRow.stampInline ? 0 : stamp.height) + 14 * chat.pt
+                            : bubbleRow.captionTop + body.height + bubbleRow.previewSpace + (bubbleRow.stampInline ? 0 : stamp.height) + 14 * chat.pt
                         radius: 17 * chat.pt
                         bottomLeftRadius: bubbleRow.outgoing ? radius : sharp
                         bottomRightRadius: bubbleRow.outgoing ? sharp : radius
@@ -255,14 +263,30 @@ Item {
                             x: 12 * chat.pt
                             y: bubbleRow.captionTop + 7 * chat.pt
                             width: Math.min(implicitWidth, bubbleRow.maxTextWidth)
-                            text: bubbleRow.outgoing ? row.text : bubbleRow.content.caption.replace(/\[([^\]]+)\]\(([^)\s]+)\)/g,
-                                '<a href="$2"><span style="color: ' + chat.link + '">$1</span></a>')
+                            text: bubbleRow.outgoing ? row.text : bubbleRow.content.caption.replace(
+                                /\[([^\]]+)\]\(([^)\s]+)\)|(https?:\/\/[^\s<>()\]]+)/g,
+                                (match, label, target, bare) => '<a href="' + (target || bare) + '"><span style="color: '
+                                    + chat.link + '">' + (label || bare) + '</span></a>')
                             textFormat: bubbleRow.outgoing ? Text.PlainText : Text.MarkdownText
                             wrapMode: Text.Wrap
                             color: chat.ink
                             lineHeight: 1.08
                             font { family: Theme.Fonts.family; weight: Font.Normal; pixelSize: 16 * chat.pt }
                             onLinkActivated: link => Qt.openUrlExternally(link)
+                        }
+
+                        LinkPreview {
+                            id: linkPreview
+                            visible: bubbleRow.hasPreview
+                            x: 12 * chat.pt
+                            y: body.y + body.height + 6 * chat.pt
+                            width: bubbleRow.maxTextWidth
+                            url: bubbleRow.previewUrl
+                            page: bubbleRow.previewPage ?? { site: "", title: "", description: "", image: "" }
+                            pt: chat.pt
+                            accent: chat.link
+                            ink: chat.ink
+                            secondaryInk: chat.secondaryInk
                         }
 
                         Rectangle {
