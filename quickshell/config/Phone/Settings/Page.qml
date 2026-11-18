@@ -38,7 +38,7 @@ Item {
     Flickable {
         id: body
         anchors { top: navBar.bottom; bottom: footerColumn.top; left: parent.left; right: parent.right }
-        contentHeight: sections.height + 32 * page.pt
+        contentHeight: sections.y + sections.height + 24 * page.pt
         boundsBehavior: Flickable.StopAtBounds
         interactive: false
         clip: true
