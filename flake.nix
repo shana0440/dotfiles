@@ -26,6 +26,10 @@
       url = "github:shana0440/mei";
       flake = false;
     };
+    eagle-linux = {
+      url = "github:shana0440/Eagle-Linux";
+      flake = false;
+    };
     zen-browser = {
       url = "github:0xc000022070/zen-browser-flake";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -72,7 +76,14 @@
           inherit inputs;
         };
 
-        x86_64-linux.eagle = import ./eagle/package.nix {
+        x86_64-linux.eagle = (import nixpkgs {
+          system = "x86_64-linux";
+          config.allowUnfree = true;
+        }).callPackage "${inputs.eagle-linux}/default.nix" {
+          enableAiSearch = false;
+        };
+
+        x86_64-linux.eagle-wine = import ./eagle/package.nix {
           pkgs = import nixpkgs {
             system = "x86_64-linux";
             config.allowUnfree = true;

@@ -14,7 +14,7 @@
     networking.firewall.allowedUDPPorts = [ 6000 6001 7011 ];
   };
 
-  homeManager = { lib, pkgs, zen-browser, ... }:
+  homeManager = { inputs, lib, pkgs, zen-browser, ... }:
     let
       applications = with pkgs; [
         brave
@@ -35,7 +35,7 @@
           })
         ])
       ] ++ lib.optionals (pkgs.stdenv.hostPlatform.system == "x86_64-linux") [
-        (import ./eagle/package.nix { inherit pkgs; })
+        inputs.self.packages.x86_64-linux.eagle
         (import ./nexon/package.nix { inherit pkgs; })
       ];
       supported = pkg: lib.meta.availableOn pkgs.stdenv.hostPlatform pkg;

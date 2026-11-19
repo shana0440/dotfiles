@@ -1,13 +1,5 @@
-# Eagle on Linux (experimental)
+# Eagle on Linux
 
-Runs the Windows version of Eagle under Wine. Enabled by `applications.nix` on
-x86_64 desktop Linux. Eagle is proprietary and needs a license after its trial.
+`applications.nix` installs the unofficial [Eagle-Linux](https://github.com/shana0440/Eagle-Linux) port on x86_64 desktop Linux. Run `make home`, then open **Eagle** from the app launcher or run `eagle`. The port runs without Wine, ships with an older Electron runtime with its sandbox disabled, and is packaged here with AI search disabled. Eagle still requires a license after the trial.
 
-After `make home`, open **Eagle** from the app launcher (or run `eagle`). The
-first launch installs .NET, fonts, and Eagle; it takes several minutes and
-needs internet access.
-
-- Linux files appear as `Z:\` in Eagle's file dialogs. Eagle is not sandboxed.
-- **Open in Explorer** (`Ctrl+Enter`) opens the folder in your Linux file manager.
-- Close Eagle before `make home`, and restart it afterwards.
-- Browser integration, plugins, and video/PSD/RAW previews may not work.
+If you used the Wine version, open your existing library in native Eagle using its Linux path (not `Z:\`). The Wine prefix and settings are not migrated. To run the old version instead, close native Eagle and use `nix run .#eagle-wine` from the repo root.
