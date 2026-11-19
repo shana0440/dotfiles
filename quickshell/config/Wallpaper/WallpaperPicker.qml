@@ -259,6 +259,10 @@ Scope {
                 opacity: root.preparing ? 0 : 1
                 readonly property real cardHeight: Math.max(1, Math.min(height * 0.5, 440))
                 readonly property real cardWidth: cardHeight * 0.72
+                readonly property real screenAspect: win.width / Math.max(1, win.height)
+                readonly property real chosenWidth: Math.min(width * 0.8,
+                    Math.max(cardWidth, (cardHeight - 8 - 50) * screenAspect + 16))
+                readonly property real grow: chosenWidth - cardWidth
                 readonly property real step: 0.6
                 readonly property real reach: Math.max(1, Math.ceil(width / 2 / (cardWidth * step)) + 1)
                 property real position: root.view
@@ -279,12 +283,14 @@ Scope {
                         readonly property bool chosen: index === root.selected
                         readonly property bool current: modelData.path === root.targetPath
                         property real pick: chosen ? 1 : 0
-                        Behavior on pick { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
+                        Behavior on pick { NumberAnimation { duration: 220; easing.type: Easing.OutCubic } }
+                        property real push: root.selected < 0 ? 0 : Math.sign(index - root.selected) * hand.grow / 2
+                        Behavior on push { NumberAnimation { duration: 220; easing.type: Easing.OutCubic } }
 
                         visible: distance < hand.reach + 1
-                        width: hand.cardWidth
+                        width: hand.cardWidth + pick * hand.grow
                         height: hand.cardHeight
-                        x: hand.width / 2 - width / 2 + spread * hand.cardWidth
+                        x: hand.width / 2 - width / 2 + spread * hand.cardWidth + push
                         y: hand.height - height * 1.12 + spread * spread * hand.cardHeight * 0.035
                             - pick * hand.cardHeight * 0.07
                         z: chosen ? root.items.length : root.items.length - 1 - index
