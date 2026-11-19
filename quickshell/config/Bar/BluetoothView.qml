@@ -159,54 +159,6 @@ Item {
         }
     }
 
-    component Switch: Rectangle {
-        id: toggle
-        property bool checked: false
-        property string label: ""
-        signal toggled()
-
-        implicitWidth: 40
-        implicitHeight: 22
-        radius: height / 2
-        color: checked ? Theme.Colors.foreground : Theme.Colors.track
-        opacity: enabled ? 1 : 0.4
-        activeFocusOnTab: true
-        border.width: activeFocus ? 2 : 0
-        border.color: Theme.Colors.muted
-        Accessible.role: Accessible.CheckBox
-        Accessible.name: label
-        Accessible.checked: checked
-        Keys.onReturnPressed: toggled()
-        Keys.onSpacePressed: toggled()
-
-        Rectangle {
-            y: 3
-            x: knob.value
-            width: 16
-            height: 16
-            radius: 8
-            color: toggle.checked ? Theme.Colors.background : Theme.Colors.foreground
-
-            Components.Spring {
-                id: knob
-                to: toggle.checked ? toggle.width - 16 - 3 : 3
-                stiffness: Theme.Motion.enterStiffness
-                damping: Theme.Motion.enterDamping
-            }
-        }
-        MouseArea {
-            id: toggleMouse
-            anchors.fill: parent
-            hoverEnabled: true
-            cursorShape: Qt.PointingHandCursor
-            onClicked: toggle.toggled()
-        }
-        Components.Tooltip {
-            text: toggle.label
-            shown: toggleMouse.containsMouse
-        }
-    }
-
     component SectionLabel: Text {
         leftPadding: 4
         color: Theme.Colors.muted
@@ -401,7 +353,7 @@ Item {
                     anchors.verticalCenter: parent.verticalCenter
                     spacing: 8
 
-                    Switch {
+                    Components.Switch {
                         anchors.verticalCenter: parent.verticalCenter
                         label: root.powered ? "Turn Bluetooth off" : "Turn Bluetooth on"
                         checked: root.powered
@@ -444,7 +396,7 @@ Item {
                         font.weight: Theme.Fonts.weight
                         font.pixelSize: 12
                     }
-                    Switch {
+                    Components.Switch {
                         id: visibility
                         anchors.right: parent.right
                         anchors.rightMargin: 40

@@ -21,6 +21,7 @@ Item {
 
     implicitWidth: 480
     implicitHeight: page === "bluetooth" ? bluetoothView.implicitHeight
+        : page === "wifi" ? wifiView.implicitHeight
         : page ? Math.min(maximumHeight, pageHeader.height + 12 + devicePage.implicitHeight + 40)
         : home.implicitHeight + 40
     clip: true
@@ -63,6 +64,11 @@ Item {
         if (connectedBluetooth.length > 1)
             return connectedBluetooth.length + " devices"
         return "On"
+    }
+
+    WifiController {
+        id: wifiState
+        active: root.active
     }
 
     PwObjectTracker {
@@ -365,12 +371,29 @@ Item {
             }
         }
 
-        Row {
+        Grid {
+            id: tiles
+            readonly property real tileWidth: (width - columnSpacing) / 2
             width: parent.width
-            spacing: 12
+            columns: 2
+            columnSpacing: 12
+            rowSpacing: 12
 
             Tile {
-                width: (parent.width - parent.spacing) / 2
+                width: tiles.tileWidth
+                icon: !wifiState.enabled ? "wifiOff"
+                    : !wifiState.current || wifiState.current.strength >= 67 ? "wifi"
+                    : wifiState.current.strength >= 34 ? "wifiHigh" : "wifiLow"
+                title: "Wi-Fi"
+                detail: !wifiState.loaded ? "Checking" : !wifiState.enabled ? "Off" : wifiState.current?.ssid ?? "On"
+                on: wifiState.enabled
+                toggleLabel: wifiState.enabled ? "Turn Wi-Fi off" : "Turn Wi-Fi on"
+                openLabel: "Wi-Fi networks"
+                onToggled: wifiState.setEnabled(!wifiState.enabled)
+                onOpened: root.page = "wifi"
+            }
+            Tile {
+                width: tiles.tileWidth
                 icon: !Services.Bluetooth.enabled ? "bluetoothOff"
                     : root.connectedBluetooth.length > 0 ? "bluetoothConnected" : "bluetooth"
                 title: "Bluetooth"
@@ -384,7 +407,7 @@ Item {
                 onOpened: root.page = "bluetooth"
             }
             Tile {
-                width: (parent.width - parent.spacing) / 2
+                width: tiles.tileWidth
                 icon: Theme.Colors.transparentTheme ? "themeTransparent" : "themeDark"
                 title: "Theme"
                 detail: Theme.Colors.transparentTheme ? "Transparent" : "Dark"
@@ -529,6 +552,20 @@ Item {
                 }
             }
         }
+    }
+
+    WifiView {
+        id: wifiView
+        x: 24 * (1 - pageSpring.value)
+        width: root.width
+        maximumHeight: root.maximumHeight
+        wifi: wifiState
+        opacity: pageSpring.value
+        visible: opacity > 0 && root.shownPage === "wifi"
+        enabled: root.page === "wifi"
+        active: root.active && root.page === "wifi"
+        onBackRequested: root.page = ""
+        onCloseRequested: root.closeRequested()
     }
 
     BluetoothView {

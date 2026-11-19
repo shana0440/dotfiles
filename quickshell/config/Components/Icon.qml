@@ -49,6 +49,7 @@ Item {
         album: "disc-album",
         radio: "radio",
         ethernet: "ethernet-port",
+        network: "globe",
         back: "chevron-left",
         forward: "chevron-right",
         usage: "gauge",

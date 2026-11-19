@@ -6,26 +6,61 @@ Item {
 
     property bool active: false
     property string message: ""
+    property bool enabled: true
+    property bool loaded: false
+    property var current: null
     readonly property alias networks: networks
     readonly property bool scanning: scan.running
     readonly property bool connecting: connectProcess.running
-    readonly property bool busy: connectProcess.running || disconnectProcess.running
+    readonly property bool switching: radioSwitch.running
+    readonly property bool busy: connectProcess.running || disconnectProcess.running || radioSwitch.running
     property string pendingPassword: ""
     signal connectionChanged()
 
     visible: false
 
-    onActiveChanged: {
-        pendingPassword = ""
-        if (active)
-            refresh()
-    }
+    onActiveChanged: pendingPassword = ""
 
     function refresh() {
         if (scan.running || busy)
             return
         message = ""
+        if (!enabled) {
+            networks.clear()
+            return
+        }
         scan.running = true
+    }
+
+    function update() {
+        if (!radio.running)
+            radio.running = true
+        if (!currentQuery.running)
+            currentQuery.running = true
+    }
+
+    function setEnabled(on) {
+        if (radioSwitch.running)
+            return
+        enabled = on
+        message = ""
+        if (!on) {
+            networks.clear()
+            current = null
+        }
+        radioSwitch.command = ["nmcli", "radio", "wifi", on ? "on" : "off"]
+        radioSwitch.running = true
+    }
+
+    function loadCurrent(output) {
+        for (const line of output.trim().split("\n")) {
+            const parts = fields(line)
+            if (parts[0] === "yes" && parts[1]) {
+                current = { ssid: parts[1], strength: Number(parts[2]) || 0 }
+                return
+            }
+        }
+        current = null
     }
 
     function fields(line) {
@@ -67,8 +102,9 @@ Item {
         networks.clear()
         for (const network of sorted)
             networks.append(network)
+        current = sorted[0]?.active ? { ssid: sorted[0].ssid, strength: sorted[0].strength } : null
         if (!networks.count)
-            message = "No networks found. Check that Wi-Fi is enabled."
+            message = "No networks found."
     }
 
     function connect(ssid, password) {
@@ -84,14 +120,65 @@ Item {
     function disconnect(device) {
         if (!device || busy)
             return
-        console.warn("Wi-Fi disconnect requested for", device)
-        console.trace()
         message = "Disconnecting…"
         disconnectProcess.command = ["nmcli", "--wait", "15", "device", "disconnect", device]
         disconnectProcess.running = true
     }
 
     ListModel { id: networks }
+
+    Timer {
+        interval: 5000
+        running: root.active
+        repeat: true
+        triggeredOnStart: true
+        onTriggered: root.update()
+    }
+
+    Process {
+        id: radio
+        environment: ({ LC_ALL: "C" })
+        command: ["nmcli", "-t", "-f", "WIFI", "radio"]
+        stdout: StdioCollector { id: radioOutput }
+        stderr: StdioCollector {}
+        onExited: code => {
+            if (code === 0 && !radioSwitch.running)
+                root.enabled = radioOutput.text.trim() === "enabled"
+            root.loaded = true
+        }
+    }
+
+    Process {
+        id: currentQuery
+        environment: ({ LC_ALL: "C" })
+        command: ["nmcli", "-t", "-e", "yes", "-f", "ACTIVE,SSID,SIGNAL", "device", "wifi", "list", "--rescan", "no"]
+        stdout: StdioCollector { id: currentOutput }
+        stderr: StdioCollector {}
+        onExited: code => {
+            if (code === 0)
+                root.loadCurrent(currentOutput.text)
+        }
+    }
+
+    Process {
+        id: radioSwitch
+        environment: ({ LC_ALL: "C" })
+        stdout: StdioCollector {}
+        stderr: StdioCollector {}
+        onExited: code => {
+            if (code !== 0)
+                root.message = "Unable to turn Wi-Fi " + (root.enabled ? "on." : "off.")
+            root.update()
+            if (root.enabled)
+                retryScan.restart()
+        }
+    }
+
+    Timer {
+        id: retryScan
+        interval: 3000
+        onTriggered: root.refresh()
+    }
 
     Process {
         id: scan
