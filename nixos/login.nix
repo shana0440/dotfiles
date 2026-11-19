@@ -40,13 +40,7 @@ in
 {
   services.greetd = {
     enable = true;
-    settings = {
-      initial_session = {
-        command = startHyprland;
-        user = config.user.name;
-      };
-      default_session.command = "${showGreeter}";
-    };
+    settings.default_session.command = "${showGreeter}";
   };
 
   fonts.packages = [ pkgs.inter pkgs.adwaita-fonts ];
