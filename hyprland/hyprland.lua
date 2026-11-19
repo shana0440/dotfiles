@@ -16,6 +16,9 @@ hl.monitor({
 local renderXwaylandAtNativeResolution = { force_zero_scaling = true }
 hl.config({ xwayland = renderXwaylandAtNativeResolution })
 
+local neverSwitchToHdrForFullscreen = 0
+hl.config({ render = { cm_auto_hdr = neverSwitchToHdrForFullscreen } })
+
 local servicesWithoutGraphicalSessionTarget = "fcitx5-daemon.service awww.service"
 hl.on("hyprland.start", function ()
     hl.exec_cmd("vicinae server")
