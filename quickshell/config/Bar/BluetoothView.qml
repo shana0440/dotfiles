@@ -11,6 +11,7 @@ Item {
     property bool active: false
     property int maximumHeight: 560
     signal closeRequested()
+    signal backRequested()
 
     readonly property var adapter: Services.Bluetooth.adapter
     readonly property bool powered: Services.Bluetooth.enabled
@@ -357,9 +358,23 @@ Item {
                 width: parent.width
                 height: 32
 
-                Column {
+                Components.IconButton {
+                    id: back
+                    x: -6
                     anchors.verticalCenter: parent.verticalCenter
-                    width: parent.width - controls.width - 12
+                    width: 32
+                    height: 32
+                    iconSize: 18
+                    icon: "back"
+                    tooltip: "Back to settings"
+                    onClicked: root.backRequested()
+                }
+                Column {
+                    anchors.left: back.right
+                    anchors.leftMargin: 2
+                    anchors.right: controls.left
+                    anchors.rightMargin: 12
+                    anchors.verticalCenter: parent.verticalCenter
                     spacing: 2
 
                     Text {

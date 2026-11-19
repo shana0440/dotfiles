@@ -56,14 +56,14 @@ PanelWindow {
     }
 
     function openDashboard(tab) {
-        centerIsland.open(["home", "media", "audio", "notifications", "network", "bluetooth", "system", "usage", "pomodoro", "power"].includes(tab) ? tab : "home")
+        centerIsland.open(["home", "media", "notifications", "network", "settings", "system", "usage", "pomodoro", "power"].includes(tab) ? tab : "home")
     }
 
     Connections {
         target: Services.Bluetooth
         function onRequestChanged() {
             if (Services.Bluetooth.request)
-                root.openDashboard("bluetooth")
+                centerIsland.openBluetooth()
         }
     }
 

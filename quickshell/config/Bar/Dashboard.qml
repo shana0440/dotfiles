@@ -13,10 +13,9 @@ Item {
     readonly property alias calendar: homeView.calendar
     readonly property bool inputMethodsOpen: tab === "home" && homeView.inputMethodsOpen
     readonly property Item currentPage: tab === "media" ? mediaView
-        : tab === "audio" ? audioView
         : tab === "notifications" ? notificationList
         : tab === "network" ? networkView
-        : tab === "bluetooth" ? bluetoothView
+        : tab === "settings" ? settingsView
         : tab === "system" ? systemView
         : tab === "usage" ? usageView
         : tab === "pomodoro" ? pomodoroView
@@ -37,17 +36,16 @@ Item {
 
     readonly property var tabList: [
         { tab: "home", icon: "home", tooltip: "Home",
-            keywords: ["calendar", "date", "weather", "input method", "keyboard", "theme"] },
+            keywords: ["calendar", "date", "weather", "input method", "keyboard"] },
         { tab: "media", icon: "disc", tooltip: "Now playing",
             keywords: ["media", "music", "song", "track", "player"] },
-        { tab: "audio", icon: "speaker", tooltip: "Audio",
-            keywords: ["volume", "sound", "speaker", "headphones", "microphone", "mic", "output", "input"] },
         { tab: "notifications", icon: "notifications", tooltip: "Notifications",
             keywords: ["alerts", "messages"] },
         { tab: "network", icon: "wifi", tooltip: "Network",
             keywords: ["wifi", "wi-fi", "wlan", "ethernet", "internet", "ssid", "connections"] },
-        { tab: "bluetooth", icon: "bluetooth", tooltip: "Bluetooth",
-            keywords: ["bt", "pair", "devices", "headphones"] },
+        { tab: "settings", icon: "settings", tooltip: "Settings",
+            keywords: ["volume", "sound", "speaker", "headphones", "microphone", "mic", "output", "input",
+                "bluetooth", "bt", "pair", "devices", "theme", "dark", "transparent"] },
         { tab: "system", icon: "systemStatus", tooltip: "System",
             keywords: ["cpu", "gpu", "memory", "ram", "vram", "storage", "disk"] },
         { tab: "usage", icon: "usage", tooltip: "Usage",
@@ -91,6 +89,10 @@ Item {
 
     function showInputMethods() {
         homeView.inputMethodsOpen = true
+    }
+
+    function showBluetooth() {
+        settingsView.page = "bluetooth"
     }
 
     function focusSearch() {
@@ -285,11 +287,6 @@ Item {
                 width: root.pageWidth
                 active: root.active && root.tab === "media"
             },
-            AudioView {
-                id: audioView
-                width: root.pageWidth
-                maximumHeight: root.maximumHeight - root.searchHeight
-            },
             NotificationView {
                 id: notificationList
                 width: root.pageWidth
@@ -302,11 +299,11 @@ Item {
                 active: root.active && root.tab === "network"
                 onCloseRequested: root.closeRequested()
             },
-            BluetoothView {
-                id: bluetoothView
+            SettingsView {
+                id: settingsView
                 width: root.pageWidth
                 maximumHeight: root.maximumHeight - root.searchHeight
-                active: root.active && root.tab === "bluetooth"
+                active: root.active && root.tab === "settings"
                 onCloseRequested: root.closeRequested()
             },
             SystemView {

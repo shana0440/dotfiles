@@ -126,19 +126,6 @@ Item {
             ClockFace {
                 id: clockFace
                 active: root.active && !root.inputMethodsOpen
-
-                Components.IconButton {
-                    anchors.top: parent.top
-                    anchors.right: parent.right
-                    anchors.margins: 8
-                    width: 32
-                    height: 32
-                    iconSize: 18
-                    icon: Theme.Colors.transparentTheme ? "themeTransparent" : "themeDark"
-                    iconColor: Theme.Colors.foreground
-                    tooltip: Theme.Colors.transparentTheme ? "Use dark theme" : "Use transparent theme"
-                    onClicked: Theme.Colors.toggleTheme()
-                }
             }
         }
 

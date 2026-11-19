@@ -48,6 +48,11 @@ Components.Island {
         dashboard.showInputMethods()
     }
 
+    function openBluetooth() {
+        open("settings")
+        dashboard.showBluetooth()
+    }
+
     function cycleTab(step) {
         dashboard.cycle(step)
     }
@@ -70,7 +75,7 @@ Components.Island {
     }
 
     function showVolume() {
-        if (expanded && expandedView === "audio")
+        if (expanded && expandedView === "settings")
             return
         expanded = false
         volumeVisible = true
