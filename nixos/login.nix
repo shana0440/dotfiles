@@ -43,6 +43,17 @@ in
     settings.default_session.command = "${showGreeter}";
   };
 
+  systemd.user.services.login-keyring-default = {
+    description = "Use the Login keyring as the default Secret Service collection";
+    wantedBy = [ "graphical-session.target" ];
+    partOf = [ "graphical-session.target" ];
+    unitConfig.ConditionUser = config.user.name;
+    serviceConfig = {
+      Type = "oneshot";
+      ExecStart = "${pkgs.systemd}/bin/busctl --user --timeout=10s call org.freedesktop.secrets /org/freedesktop/secrets org.freedesktop.Secret.Service SetAlias so default /org/freedesktop/secrets/collection/login";
+    };
+  };
+
   fonts.packages = [ pkgs.inter pkgs.adwaita-fonts ];
 
   systemd.tmpfiles.rules = [ "d /var/lib/login-ui 0755 ${config.user.name} users -" ];
