@@ -287,7 +287,7 @@ Scope {
                         x: hand.width / 2 - width / 2 + spread * hand.cardWidth
                         y: hand.height - height * 1.12 + spread * spread * hand.cardHeight * 0.035
                             - pick * hand.cardHeight * 0.07
-                        z: chosen ? root.items.length : index
+                        z: chosen ? root.items.length : root.items.length - 1 - index
                         rotation: spread * 7
                         transformOrigin: Item.Bottom
                         scale: 0.94 + pick * 0.1
