@@ -19,7 +19,9 @@ in
 
   programs.hyprland = {
     enable = true;
-    package = hyprland.packages.${system}.hyprland;
+    package = hyprland.packages.${system}.hyprland.overrideAttrs (old: {
+      patches = (old.patches or [ ]) ++ [ ./hyprland-exclusive-layer-focus.patch ];
+    });
     portalPackage = hyprland.packages.${system}.xdg-desktop-portal-hyprland;
   };
   nix.settings = {

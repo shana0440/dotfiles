@@ -1,0 +1,18 @@
+diff --git a/src/managers/input/InputManager.cpp b/src/managers/input/InputManager.cpp
+index b39f439..d9714a5 100644
+--- a/src/managers/input/InputManager.cpp
++++ b/src/managers/input/InputManager.cpp
+@@ -1852,8 +1852,11 @@ void CInputManager::refocusPointer() {
+ 
+ bool CInputManager::refocusLastWindow(PHLMONITOR pMonitor) {
+     if (!m_exclusiveKeyboardLSes.empty()) {
+-        LOG(Log::DEBUG, "CInputManager::refocusLastWindow: ignoring, exclusive LS present.");
+-        return false;
++        const auto TOPEXCLUSIVE = m_exclusiveKeyboardLSes.back().lock();
++        if (!TOPEXCLUSIVE || !TOPEXCLUSIVE->wlSurface())
++            return false;
++        Desktop::focusState()->rawSurfaceFocus(TOPEXCLUSIVE->wlSurface()->resource());
++        return true;
+     }
+ 
+     auto constraintGuard = m_pointerConstraints.suspend();
