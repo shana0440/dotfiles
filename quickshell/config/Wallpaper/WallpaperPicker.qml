@@ -209,6 +209,7 @@ Scope {
                 }
             }
             MouseArea { anchors.fill: parent; onClicked: root.close() }
+            HoverHandler { id: torch }
             Item {
                 id: hand
                 anchors { left: parent.left; right: parent.right; top: parent.top; bottom: bar.top; bottomMargin: 24 }
@@ -240,6 +241,14 @@ Scope {
                         readonly property bool current: modelData.path === root.targetPath
                         property real pick: chosen ? 1 : 0
                         Behavior on pick { NumberAnimation { duration: 220; easing.type: Easing.OutCubic } }
+                        readonly property real mouseDistance: Math.hypot(torch.point.position.x - x - width / 2,
+                            torch.point.position.y - y - height / 2)
+                        readonly property real fullLight: hand.cardWidth * 0.3
+                        readonly property real noLight: hand.cardWidth * 1.3
+                        property real light: torch.hovered
+                            ? Math.max(0, Math.min(1, (noLight - mouseDistance) / (noLight - fullLight)))
+                            : 0
+                        Behavior on light { NumberAnimation { duration: 160; easing.type: Easing.OutCubic } }
                         property real push: root.selected < 0 ? 0 : Math.sign(index - root.selected) * hand.grow / 2
                         Behavior on push { NumberAnimation { duration: 220; easing.type: Easing.OutCubic } }
 
@@ -321,7 +330,7 @@ Scope {
                                 anchors.fill: parent
                                 radius: parent.radius
                                 color: "#000000"
-                                opacity: Math.min(1, card.distance) * 0.35 * (1 - card.pick)
+                                opacity: 0.4 * (1 - card.pick) * (1 - Math.min(1, card.light))
                             }
                         }
                         MouseArea {
