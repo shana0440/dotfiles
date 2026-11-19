@@ -183,7 +183,7 @@ Scope {
         screen: root.chosenScreen
         visible: root.opened || stage.opacity > 0
         anchors { top: true; bottom: true; left: true; right: true }
-        exclusiveZone: 0
+        exclusionMode: ExclusionMode.Ignore
         color: "transparent"
         WlrLayershell.layer: WlrLayer.Overlay
         WlrLayershell.namespace: "quickshell-wallpaper"
