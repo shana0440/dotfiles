@@ -259,9 +259,8 @@ Scope {
                 opacity: root.preparing ? 0 : 1
                 readonly property real cardHeight: Math.max(1, Math.min(height * 0.5, 440))
                 readonly property real cardWidth: cardHeight * 0.72
-                readonly property real centerGap: cardWidth * 0.86
-                readonly property real fanStep: cardWidth * 0.52
-                readonly property real reach: Math.max(1, Math.ceil((width / 2 - centerGap) / fanStep) + 1)
+                readonly property real step: 0.6
+                readonly property real reach: Math.max(1, Math.ceil(width / 2 / (cardWidth * step)) + 1)
                 property real position: root.view
                 Behavior on position {
                     enabled: !root.preparing
@@ -276,8 +275,7 @@ Scope {
                         required property int index
                         readonly property real offset: index - hand.position
                         readonly property real distance: Math.abs(offset)
-                        readonly property real spread: Math.sign(offset)
-                            * (Math.min(distance, 1) * hand.centerGap + Math.max(distance - 1, 0) * hand.fanStep) / hand.cardWidth
+                        readonly property real spread: offset * hand.step
                         readonly property bool chosen: index === root.selected
                         readonly property bool current: modelData.path === root.targetPath
                         property real pick: chosen ? 1 : 0
