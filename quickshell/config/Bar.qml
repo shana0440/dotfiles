@@ -20,8 +20,8 @@ PanelWindow {
 
     Binding {
         target: Services.InputMethod
-        property: "dashboardOpen"
-        value: root.menuOpen
+        property: "pickerOpen"
+        value: root.menuOpen && !root.menuNeedsKeyboardFocus
     }
 
     Binding {
@@ -137,7 +137,7 @@ PanelWindow {
     function grabKeyboard() {
         Qt.callLater(() => {
             if (root.menuOpen && root.menuNeedsKeyboardFocus)
-                barContent.forceActiveFocus()
+                centerIsland.focusSearch()
         })
     }
 

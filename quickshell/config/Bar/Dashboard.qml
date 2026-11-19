@@ -93,6 +93,10 @@ Item {
         homeView.inputMethodsOpen = true
     }
 
+    function focusSearch() {
+        searchField.forceActiveFocus()
+    }
+
     function typeIntoSearch(text) {
         if (!query && !text.trim())
             return false
@@ -115,7 +119,7 @@ Item {
         width: root.width - 16
         height: 36
         radius: 8
-        visible: root.query.length > 0
+        visible: root.query.length > 0 || searchField.preeditText.length > 0
         color: Theme.Colors.background
         border.width: 1
         border.color: searchField.activeFocus ? Theme.Colors.muted : Theme.Colors.ring
@@ -141,7 +145,13 @@ Item {
             font.weight: Theme.Fonts.weight
             font.pixelSize: 13
             clip: true
-            Keys.onEscapePressed: clear()
+            Keys.onEscapePressed: event => {
+                if (text)
+                    clear()
+                else
+                    event.accepted = false
+            }
+            Keys.onSpacePressed: event => event.accepted = !text
 
             Text {
                 anchors.right: parent.right
@@ -154,7 +164,6 @@ Item {
                 font.pixelSize: 12
             }
             onAccepted: clear()
-            onTextChanged: if (!text) focus = false
         }
     }
 

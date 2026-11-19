@@ -74,7 +74,7 @@ Scope {
         property real lift: hiddenLift
         property real tilt: 1
         property real exitPeak: 0
-        readonly property real hiddenLift: win.implicitHeight + phone.height * 0.15
+        readonly property real hiddenLift: win.stageHeight + phone.height * 0.15
     }
 
     ParallelAnimation {
@@ -100,32 +100,57 @@ Scope {
         NumberAnimation { target: stage; property: "tilt"; to: 1; duration: 440; easing.type: Easing.InQuad }
     }
 
-    HyprlandFocusGrab {
-        windows: [win]
-        active: root.raised && win.visible
-        onCleared: root.close()
+    Variants {
+        model: Quickshell.screens.filter(screen => screen !== root.chosenScreen)
+
+        PanelWindow {
+            required property var modelData
+            screen: modelData
+            visible: root.raised
+            anchors { top: true; bottom: true; left: true; right: true }
+            exclusionMode: ExclusionMode.Ignore
+            color: "transparent"
+            WlrLayershell.layer: WlrLayer.Overlay
+            WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
+
+            MouseArea {
+                anchors.fill: parent
+                acceptedButtons: Qt.AllButtons
+                onPressed: root.close()
+            }
+        }
     }
 
     PanelWindow {
         id: win
         readonly property real headroom: root.bounce + phone.height * 0.12
+        readonly property real stageHeight: phone.height * root.visibleShare + headroom
         screen: root.chosenScreen
         visible: root.raised || exitAnim.running
-        anchors { bottom: true; left: true; right: true }
-        implicitHeight: phone.height * root.visibleShare + headroom
-        exclusiveZone: 0
+        anchors { top: true; bottom: true; left: true; right: true }
+        exclusionMode: ExclusionMode.Ignore
         color: "transparent"
-        mask: Region { item: phone }
+        mask: Region { item: root.raised ? outside : phone }
         WlrLayershell.layer: WlrLayer.Overlay
         WlrLayershell.namespace: "quickshell-phone"
-        WlrLayershell.keyboardFocus: root.raised ? WlrKeyboardFocus.OnDemand : WlrKeyboardFocus.None
+        WlrLayershell.keyboardFocus: root.raised ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
+
+        MouseArea {
+            id: outside
+            anchors.fill: parent
+            acceptedButtons: Qt.AllButtons
+            onPressed: mouse => {
+                if (!phone.contains(mapToItem(phone, mouse.x, mouse.y)))
+                    root.close()
+            }
+        }
 
         PhoneBody {
             id: phone
             height: Math.round(Math.min((win.screen?.height ?? 1080) * 0.8, 860))
             width: Math.round(height * 0.49)
             x: win.width * root.horizontalCenterShare - width / 2
-            y: win.headroom + stage.lift
+            y: win.height - win.stageHeight + win.headroom + stage.lift
             transform: Rotation {
                 origin.x: phone.width / 2
                 origin.y: phone.height

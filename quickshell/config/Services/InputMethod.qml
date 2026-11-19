@@ -7,7 +7,7 @@ import Quickshell.Services.SystemTray
 Singleton {
     id: root
 
-    property bool dashboardOpen: false
+    property bool pickerOpen: false
     readonly property var inputItem: SystemTray.items.values.find(item => item.id === "Fcitx") ?? null
     readonly property string trayIcon: inputItem?.icon.replace("image://icon/", "") ?? ""
     readonly property string icon: iconOf(name)
@@ -16,8 +16,8 @@ Singleton {
     property string mozcIcon: "fcitx_mozc_hiragana"
     property var order: ["keyboard-us", "mozc", "chewing"]
 
-    onDashboardOpenChanged: {
-        if (dashboardOpen)
+    onPickerOpenChanged: {
+        if (pickerOpen)
             groupQuery.running = true
     }
     onTrayIconChanged: {
@@ -49,7 +49,7 @@ Singleton {
     Timer {
         interval: 1000
         repeat: true
-        running: !root.dashboardOpen
+        running: !root.pickerOpen
         onTriggered: currentQuery.running = true
     }
 
@@ -59,7 +59,7 @@ Singleton {
             "/controller", "org.fcitx.Fcitx.Controller1", "CurrentInputMethod"]
         stdout: StdioCollector {
             onStreamFinished: {
-                if (root.dashboardOpen)
+                if (root.pickerOpen)
                     return
                 try {
                     const name = JSON.parse(text).data[0]

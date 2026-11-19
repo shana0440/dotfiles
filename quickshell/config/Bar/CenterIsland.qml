@@ -52,6 +52,10 @@ Components.Island {
         dashboard.cycle(step)
     }
 
+    function focusSearch() {
+        dashboard.focusSearch()
+    }
+
     function typeIntoSearch(text) {
         return expanded && dashboard.typeIntoSearch(text)
     }
