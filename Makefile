@@ -1,4 +1,4 @@
-.PHONY: nixos nixos-update home home-linux home-mac home-wsl update
+.PHONY: nixos nixos-update home home-linux home-mac home-wsl update shell-memory
 
 DOTFILES := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
 
@@ -42,3 +42,12 @@ home-mac:
 
 home-wsl:
 	home-manager $(NIX_FLAGS) switch --flake "$(DOTFILES)#$(or $(HOME_CONFIG),kwguo-$(NIX_ARCH)-linux-wsl)"
+
+shell-memory:
+	@pids="$$(pgrep -f '^([^ ]*/)?quickshell( |$$)')"; \
+	if [ -z "$$pids" ]; then echo "quickshell is not running" >&2; exit 1; fi; \
+	for pid in $$pids; do \
+		echo "quickshell pid $$pid"; \
+		awk '/^(Rss|Pss|Private_Dirty|Swap):/ { printf "%-15s %8.1f MiB\n", $$1, $$2 / 1024 }' /proc/$$pid/smaps_rollup; \
+		awk '/^VmHWM:/ { printf "%-15s %8.1f MiB\n", "Peak_Rss:", $$2 / 1024 }' /proc/$$pid/status; \
+	done
