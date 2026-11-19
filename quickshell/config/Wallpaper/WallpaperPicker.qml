@@ -25,12 +25,14 @@ Scope {
     readonly property string targetPath: setters.length ? setters[setters.length - 1].path : currentPath
 
     function show() {
-        for (const setter of setters) setter.closeOnReady = false
         chosenScreen = Quickshell.screens.find(s => s.name === Hyprland.focusedMonitor?.name)
             ?? Quickshell.screens[0] ?? null
         message = ""
         preparing = true
         opened = true
+        collectCards.stop()
+        dealCards.stop()
+        hand.deal = 0
         query.start()
         if (!colonyWarm.running) colonyWarm.running = true
     }
@@ -41,10 +43,14 @@ Scope {
         Qt.callLater(() => {
             if (!opened || query.running || library.running) return
             preparing = false
+            if (items.length) dealCards.start()
             stage.forceActiveFocus()
         })
     }
     function close() {
+        if (!opened) return
+        dealCards.stop()
+        if (hand.deal > 0) collectCards.start()
         opened = false
         preparing = false
     }
@@ -62,17 +68,21 @@ Scope {
         if (path === targetPath) { close(); return }
         const setter = setterComponent.createObject(root, { path: path, order: ++started })
         setters = setters.concat([setter])
+        close()
         setter.running = true
     }
     function setterExited(setter, code, error) {
         setters = setters.filter(s => s !== setter)
         if (code === 0) {
             if (setter.order > finishedOrder) { finishedOrder = setter.order; currentPath = setter.path }
-            if (setter.closeOnReady) close()
         } else {
             message = error || "Wallpaper change failed"
             if (!setters.length) {
-                opened = true
+                if (!opened) {
+                    opened = true
+                    collectCards.stop()
+                    dealCards.start()
+                }
                 Qt.callLater(() => stage.forceActiveFocus())
             }
         }
@@ -147,16 +157,7 @@ Scope {
             id: setter
             required property string path
             required property int order
-            property bool closeOnReady: true
             command: ["wallpaper-set", path]
-            stdout: SplitParser {
-                onRead: data => {
-                    if (data === "transition-ready" && setter.closeOnReady) {
-                        setter.closeOnReady = false
-                        root.close()
-                    }
-                }
-            }
             stderr: StdioCollector { id: setError }
             onExited: code => root.setterExited(setter, code, setError.text)
         }
@@ -181,19 +182,21 @@ Scope {
     PanelWindow {
         id: win
         screen: root.chosenScreen
-        visible: root.opened || stage.opacity > 0
+        visible: root.opened || collectCards.running || stage.opacity > 0
         anchors { top: true; bottom: true; left: true; right: true }
         exclusionMode: ExclusionMode.Ignore
         color: "transparent"
         WlrLayershell.layer: WlrLayer.Overlay
         WlrLayershell.namespace: "quickshell-wallpaper"
         WlrLayershell.keyboardFocus: root.opened ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
+        mask: Region { item: root.opened ? stage : null }
 
         Item {
             id: stage
             anchors.fill: parent
             focus: true
-            opacity: root.opened ? 1 : 0
+            enabled: root.opened
+            opacity: root.opened || collectCards.running ? 1 : 0
             Behavior on opacity { NumberAnimation { duration: 140; easing.type: Easing.OutCubic } }
             Keys.onEscapePressed: root.close()
             Keys.onLeftPressed: root.move(-1)
@@ -213,7 +216,11 @@ Scope {
             Item {
                 id: hand
                 anchors { left: parent.left; right: parent.right; top: parent.top; bottom: bar.top; bottomMargin: 24 }
-                opacity: root.preparing ? 0 : 1
+                property real deal: 0
+                readonly property int dealDuration: 300
+                NumberAnimation { id: dealCards; target: hand; property: "deal"; to: 1; duration: hand.dealDuration }
+                NumberAnimation { id: collectCards; target: hand; property: "deal"; to: 0; duration: hand.dealDuration }
+                readonly property real deckY: height + 100 - cardHeight * 0.48 * Math.min(1, deal * 5)
                 readonly property real cardHeight: Math.max(1, Math.min(height * 0.5, 440))
                 readonly property real cardWidth: cardHeight * 0.72
                 readonly property real screenAspect: win.width / Math.max(1, win.height)
@@ -252,17 +259,23 @@ Scope {
                         property real push: root.selected < 0 ? 0 : Math.sign(index - root.selected) * hand.grow / 2
                         Behavior on push { NumberAnimation { duration: 220; easing.type: Easing.OutCubic } }
 
-                        visible: distance < hand.reach + 1
-                        width: hand.cardWidth + pick * hand.grow
+                        readonly property real dealDelay: 0.38 * Math.min(1, distance / hand.reach)
+                        readonly property real flight: Math.max(0, Math.min(1, (hand.deal - dealDelay) / 0.62))
+                        readonly property real fanned: flight * flight * (3 - 2 * flight)
+                        readonly property real fanY: hand.height - height * 1.12
+                            + spread * spread * hand.cardHeight * 0.035 - pick * hand.cardHeight * 0.07
+
+                        visible: hand.deal > 0 && distance < hand.reach + 1
+                        width: hand.cardWidth + pick * hand.grow * fanned
                         height: hand.cardHeight
-                        x: hand.width / 2 - width / 2 + spread * hand.cardWidth + push
-                        y: hand.height - height * 1.12 + spread * spread * hand.cardHeight * 0.035
-                            - pick * hand.cardHeight * 0.07
+                        x: hand.width / 2 - width / 2 + (spread * hand.cardWidth + push) * fanned
+                        y: hand.deckY + (fanY - hand.deckY) * fanned
                         z: chosen ? root.items.length : root.items.length - 1 - index
-                        rotation: spread * 7
+                        rotation: -8 + (spread * 7 + 8) * fanned
                         transformOrigin: Item.Bottom
-                        scale: 0.94 + pick * 0.1
-                        opacity: Math.max(0, Math.min(1, hand.reach + 0.5 - distance))
+                        scale: 0.72 + (0.22 + pick * 0.1) * fanned
+                        opacity: Math.min(1, hand.deal * 8)
+                            * Math.max(0, Math.min(1, hand.reach + 0.5 - distance))
 
                         RectangularShadow {
                             anchors.fill: face
