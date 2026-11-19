@@ -52,6 +52,7 @@ PanelWindow {
     onActiveWorkspaceChanged: {
         const from = shownWorkspace
         shownWorkspace = activeWorkspace
+        if (controller.opened && from !== activeWorkspace) reclaimKeyboard()
         if (!controller.opened || !from || !activeWorkspace || from === activeWorkspace) return
         previousWorkspace = from
         previousSpread = spreadOf(windowsOf(from))
@@ -72,14 +73,25 @@ PanelWindow {
     readonly property var spread: spreadOf(windows)
 
     property string selectedAddress: ""
+    property string pendingFocusAddress: ""
     property var dropWorkspaceId: null
 
     function chooseWindow(address) {
-        controller.focusWindow(address)
+        pendingFocusAddress = address
         controller.close()
     }
     function chooseWorkspace(id) {
         controller.focusWorkspace(id)
+    }
+    property bool reclaimingKeyboard: false
+    function reclaimKeyboard() {
+        reclaimingKeyboard = true
+        reclaimRelease.restart()
+    }
+    Timer {
+        id: reclaimRelease
+        interval: 50
+        onTriggered: win.reclaimingKeyboard = false
     }
     function dropWindow(address, target) {
         if (target !== null) controller.moveWindow(address, target)
@@ -113,12 +125,19 @@ PanelWindow {
 
     screen: screenInfo
     visible: controller.opened || progress > 0.002
+    onVisibleChanged: {
+        if (visible || !pendingFocusAddress) return
+        const address = pendingFocusAddress
+        pendingFocusAddress = ""
+        Qt.callLater(() => controller.focusWindow(address))
+    }
     color: "transparent"
     anchors { top: true; bottom: true; left: true; right: true }
     exclusionMode: ExclusionMode.Ignore
     WlrLayershell.layer: WlrLayer.Overlay
     WlrLayershell.namespace: "quickshell-overview"
-    WlrLayershell.keyboardFocus: controller.opened && focusedMonitor ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
+    WlrLayershell.keyboardFocus: !controller.opened || !focusedMonitor ? WlrKeyboardFocus.None
+        : reclaimingKeyboard ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.OnDemand
 
     Components.Spring {
         id: openSpring
@@ -139,6 +158,7 @@ PanelWindow {
         target: win.controller
         function onOpenedChanged() {
             win.dropWorkspaceId = null
+            win.reclaimingKeyboard = false
             if (win.controller.opened) {
                 win.shownWorkspace = win.activeWorkspace
                 win.previousWorkspace = null
