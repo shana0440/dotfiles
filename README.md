@@ -87,32 +87,12 @@ required).
 | `home.nix` / `macos.nix` / `wsl.nix` | Per-platform module imports |
 | `programs.nix`, `shell/`, `git/`, `neovim/`, `tmux/`, `agents/` | Shared CLI tools, Fish, editors, coding agents |
 | `applications.nix` | Desktop apps including Brave (Home Manager) and Steam (NixOS) |
+| `spotify/spotify.nix` | Spotify with Spicetify Marketplace (x86_64 Linux); configure themes and extensions here |
 | `hyprland/`, `quickshell/`, `kitty/`, `wallpaper/`, `screen-capture/` | Desktop Linux session |
 | `nixos/` | System configuration |
 | [`vpn/`](vpn/README.md), [`file-manager/`](file-manager/README.md), [`eagle/`](eagle/README.md), [`nexon/`](nexon/README.md) | Optional apps |
 | `agent-workspace/` | Isolated X11 desktops for coding agents |
 | `mei/` | The mei assistant daemon and its `mei` command (Linux desktop) |
-
-## Herdr
-
-`agents/agents.nix` installs `herdr-core` (`hc`) on Linux and macOS, and
-`herdr-app` on Linux and Apple Silicon Macs. Launch Herdr from your app menu
-or run `herdr-app`; use `hc --help` for persistent terminals and agent commands.
-Linux needs a working Vulkan driver.
-
-`make update` refreshes both upstream release manifests in `flake.lock` and
-installs the latest releases through Home Manager. Use it instead of Herdr's
-built-in updater for these Nix-managed packages. Remove any earlier manual
-installation from `~/.local/bin` if it shadows the Home Manager commands.
-
-## mei
-
-`mei/mei.nix` builds [mei](https://github.com/shana0440/mei) from the `mei`
-flake input, installs the `mei` command and runs the daemon as the `mei`
-systemd user service. `make update` moves it to the latest commit. The daemon
-runs agents with `pi-bolt`, so sign Pi-Bolt in to a model provider first. On
-first start it fills its home, `~/.local/share/mei`, with editable defaults.
-Use `mei --help` for commands and `journalctl --user -u mei` for its output.
 
 ## Desktop shortcuts
 
