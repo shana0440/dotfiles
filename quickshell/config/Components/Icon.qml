@@ -43,6 +43,7 @@ Item {
         recordRegion: "square-dashed",
         stop: "square",
         notifications: "bell",
+        notificationsOff: "bell-off",
         home: "house",
         keyboard: "keyboard",
         disc: "disc-3",

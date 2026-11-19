@@ -45,7 +45,7 @@ Item {
             keywords: ["ethernet", "internet", "connections", "ip", "speed"] },
         { tab: "settings", icon: "settings", tooltip: "Settings",
             keywords: ["volume", "sound", "speaker", "headphones", "microphone", "mic", "output", "input",
-                "wifi", "wi-fi", "wlan", "ssid", "bluetooth", "bt", "pair", "devices", "theme", "dark", "transparent"] },
+                "wifi", "wi-fi", "wlan", "ssid", "bluetooth", "bt", "pair", "devices", "theme", "dark", "transparent", "do not disturb", "dnd", "quiet"] },
         { tab: "system", icon: "systemStatus", tooltip: "System",
             keywords: ["cpu", "gpu", "memory", "ram", "vram", "storage", "disk"] },
         { tab: "usage", icon: "usage", tooltip: "Usage",

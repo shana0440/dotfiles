@@ -22,10 +22,10 @@ Components.MergeableCircle {
 
     Components.Icon {
         anchors.centerIn: parent
-        action: "notifications"
+        action: Services.Notifications.doNotDisturb ? "notificationsOff" : "notifications"
         width: 18
         height: 18
-        iconColor: Services.Notifications.count > 0 ? Theme.Colors.foreground : Theme.Colors.foreground
+        iconColor: Theme.Colors.foreground
     }
 
     Rectangle {
@@ -47,7 +47,7 @@ Components.MergeableCircle {
     }
 
     Components.Tooltip {
-        text: "Notifications · " + Services.Notifications.count
+        text: "Notifications · " + Services.Notifications.count + (Services.Notifications.doNotDisturb ? " · Do Not Disturb" : "")
         shown: mouse.containsMouse || root.activeFocus
         alignment: Qt.AlignHCenter
     }

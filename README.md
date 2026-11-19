@@ -122,10 +122,11 @@ All bindings are in `hyprland/hyprland.lua`. The main ones:
   public internet addresses. The title shows first and the image follows;
   previews are cached for a week in `~/.cache/quickshell/link-previews`.
 - Tap `Super` to open the dashboard; type to [search it](#dashboard-search).
-  Its settings tab holds the output and input volume, Wi-Fi, Bluetooth and
-  the dark/transparent theme. Click a `>` to pick an audio device, join a
-  Wi-Fi network or manage Bluetooth devices; click the Wi-Fi, Bluetooth or
-  theme tile itself to toggle it. The network tab shows connection status.
+  Its settings tab holds the output and input volume, Wi-Fi, Bluetooth, the
+  dark/transparent theme and Do Not Disturb. Click a `>` to pick an audio
+  device, join a Wi-Fi network or manage Bluetooth devices; click a tile itself
+  to toggle it. Do Not Disturb keeps notifications in the list without popping
+  them up, except urgent ones. The network tab shows connection status.
 
 ### Dashboard search
 
@@ -143,7 +144,7 @@ Each tab matches its name and these keywords (`tabList` in
 | Now playing | media, music, song, track, player |
 | Notifications | alerts, messages |
 | Network | ethernet, internet, connections, ip, speed |
-| Settings | volume, sound, speaker, headphones, microphone, mic, output, input, wifi, wi-fi, wlan, ssid, bluetooth, bt, pair, devices, theme, dark, transparent |
+| Settings | volume, sound, speaker, headphones, microphone, mic, output, input, wifi, wi-fi, wlan, ssid, bluetooth, bt, pair, devices, theme, dark, transparent, do not disturb, dnd, quiet |
 | System | cpu, gpu, memory, ram, vram, storage, disk |
 | Usage | claude, codex, agent, limit, quota |
 | Pomodoro | timer, focus, break |

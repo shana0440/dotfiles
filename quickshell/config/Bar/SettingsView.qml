@@ -415,6 +415,15 @@ Item {
                 toggleLabel: Theme.Colors.transparentTheme ? "Use dark theme" : "Use transparent theme"
                 onToggled: Theme.Colors.toggleTheme()
             }
+            Tile {
+                width: tiles.tileWidth
+                icon: Services.Notifications.doNotDisturb ? "notificationsOff" : "notifications"
+                title: "Do Not Disturb"
+                detail: Services.Notifications.doNotDisturb ? "Pop-ups hidden" : "Off"
+                on: Services.Notifications.doNotDisturb
+                toggleLabel: Services.Notifications.doNotDisturb ? "Show notification pop-ups" : "Hide notification pop-ups"
+                onToggled: Services.Notifications.toggleDoNotDisturb()
+            }
         }
     }
 
