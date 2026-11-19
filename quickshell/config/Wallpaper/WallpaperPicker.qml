@@ -20,20 +20,19 @@ Scope {
     property int started: 0
     property int finishedOrder: 0
     property int selected: -1
-    property int view: -1
-    property bool pointing: false
-    property int hovered: -1
     property var chosenScreen: Quickshell.screens[0] ?? null
     readonly property bool busy: preparing || query.running || library.running
     readonly property string targetPath: setters.length ? setters[setters.length - 1].path : currentPath
 
     function show() {
-        for (const setter of setters) setter.closeOnReady = false
         chosenScreen = Quickshell.screens.find(s => s.name === Hyprland.focusedMonitor?.name)
             ?? Quickshell.screens[0] ?? null
         message = ""
         preparing = true
         opened = true
+        collectCards.stop()
+        dealCards.stop()
+        hand.deal = 0
         query.start()
         if (!colonyWarm.running) colonyWarm.running = true
     }
@@ -41,15 +40,17 @@ Scope {
         if (!opened || !preparing || query.running || library.running) return
         const index = items.findIndex(i => i.path === targetPath)
         selected = items.length ? Math.max(0, index) : -1
-        view = selected
-        pointing = false
         Qt.callLater(() => {
             if (!opened || query.running || library.running) return
             preparing = false
+            if (items.length) dealCards.start()
             stage.forceActiveFocus()
         })
     }
     function close() {
+        if (!opened) return
+        dealCards.stop()
+        if (hand.deal > 0) collectCards.start()
         opened = false
         preparing = false
     }
@@ -58,21 +59,7 @@ Scope {
     }
     function move(step) {
         if (!items.length || busy) return
-        pointing = false
         selected = clamp(selected + step)
-        view = selected
-    }
-    function point() {
-        pointing = true
-        if (hovered >= 0) selected = hovered
-    }
-    function hover(index, inside) {
-        if (inside) hovered = index
-        else if (hovered === index) hovered = -1
-        if (inside && pointing) selected = index
-    }
-    function scroll(step) {
-        if (items.length && !busy) view = clamp(view + step)
     }
     function apply() {
         if (busy || selected < 0 || !items.length) return
@@ -81,17 +68,21 @@ Scope {
         if (path === targetPath) { close(); return }
         const setter = setterComponent.createObject(root, { path: path, order: ++started })
         setters = setters.concat([setter])
+        close()
         setter.running = true
     }
     function setterExited(setter, code, error) {
         setters = setters.filter(s => s !== setter)
         if (code === 0) {
             if (setter.order > finishedOrder) { finishedOrder = setter.order; currentPath = setter.path }
-            if (setter.closeOnReady) close()
         } else {
             message = error || "Wallpaper change failed"
             if (!setters.length) {
-                opened = true
+                if (!opened) {
+                    opened = true
+                    collectCards.stop()
+                    dealCards.start()
+                }
                 Qt.callLater(() => stage.forceActiveFocus())
             }
         }
@@ -166,16 +157,7 @@ Scope {
             id: setter
             required property string path
             required property int order
-            property bool closeOnReady: true
             command: ["wallpaper-set", path]
-            stdout: SplitParser {
-                onRead: data => {
-                    if (data === "transition-ready" && setter.closeOnReady) {
-                        setter.closeOnReady = false
-                        root.close()
-                    }
-                }
-            }
             stderr: StdioCollector { id: setError }
             onExited: code => root.setterExited(setter, code, setError.text)
         }
@@ -200,19 +182,21 @@ Scope {
     PanelWindow {
         id: win
         screen: root.chosenScreen
-        visible: root.opened || stage.opacity > 0
+        visible: root.opened || collectCards.running || stage.opacity > 0
         anchors { top: true; bottom: true; left: true; right: true }
-        exclusiveZone: 0
+        exclusionMode: ExclusionMode.Ignore
         color: "transparent"
         WlrLayershell.layer: WlrLayer.Overlay
         WlrLayershell.namespace: "quickshell-wallpaper"
         WlrLayershell.keyboardFocus: root.opened ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
+        mask: Region { item: root.opened ? stage : null }
 
         Item {
             id: stage
             anchors.fill: parent
             focus: true
-            opacity: root.opened ? 1 : 0
+            enabled: root.opened
+            opacity: root.opened || collectCards.running ? 1 : 0
             Behavior on opacity { NumberAnimation { duration: 140; easing.type: Easing.OutCubic } }
             Keys.onEscapePressed: root.close()
             Keys.onLeftPressed: root.move(-1)
@@ -228,40 +212,24 @@ Scope {
                 }
             }
             MouseArea { anchors.fill: parent; onClicked: root.close() }
-            HoverHandler {
-                id: edge
-                readonly property real zone: stage.width * 0.15
-                readonly property real pointerX: point.position.x
-                readonly property bool inside: hovered && point.position.y < bar.y
-                readonly property int direction: !inside ? 0 : pointerX < zone ? -1 : pointerX > stage.width - zone ? 1 : 0
-                readonly property int urgency: direction < 0 ? Math.ceil((zone - pointerX) / zone * 3)
-                    : direction > 0 ? Math.ceil((pointerX - stage.width + zone) / zone * 3) : 0
-                property point last
-                onHoveredChanged: last = point.scenePosition
-                onPointChanged: {
-                    const now = point.scenePosition
-                    if (!hovered || (now.x === last.x && now.y === last.y)) return
-                    last = now
-                    root.point()
-                }
-            }
-            Timer {
-                running: root.opened && !root.busy && root.pointing && edge.direction !== 0
-                interval: [420, 420, 260, 140][edge.urgency]
-                repeat: true
-                triggeredOnStart: true
-                onTriggered: root.scroll(edge.direction)
-            }
-
+            HoverHandler { id: torch }
             Item {
                 id: hand
                 anchors { left: parent.left; right: parent.right; top: parent.top; bottom: bar.top; bottomMargin: 24 }
-                opacity: root.preparing ? 0 : 1
+                property real deal: 0
+                readonly property int dealDuration: 300
+                NumberAnimation { id: dealCards; target: hand; property: "deal"; to: 1; duration: hand.dealDuration }
+                NumberAnimation { id: collectCards; target: hand; property: "deal"; to: 0; duration: hand.dealDuration }
+                readonly property real deckY: height + 100 - cardHeight * 0.48 * Math.min(1, deal * 5)
                 readonly property real cardHeight: Math.max(1, Math.min(height * 0.5, 440))
                 readonly property real cardWidth: cardHeight * 0.72
+                readonly property real screenAspect: win.width / Math.max(1, win.height)
+                readonly property real chosenWidth: Math.min(width * 0.8,
+                    Math.max(cardWidth, (cardHeight - 8 - 50) * screenAspect + 16))
+                readonly property real grow: chosenWidth - cardWidth
                 readonly property real step: 0.6
                 readonly property real reach: Math.max(1, Math.ceil(width / 2 / (cardWidth * step)) + 1)
-                property real position: root.view
+                property real position: root.selected
                 Behavior on position {
                     enabled: !root.preparing
                     NumberAnimation { duration: 320; easing.type: Easing.OutCubic }
@@ -279,19 +247,35 @@ Scope {
                         readonly property bool chosen: index === root.selected
                         readonly property bool current: modelData.path === root.targetPath
                         property real pick: chosen ? 1 : 0
-                        Behavior on pick { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
+                        Behavior on pick { NumberAnimation { duration: 220; easing.type: Easing.OutCubic } }
+                        readonly property real mouseDistance: Math.hypot(torch.point.position.x - x - width / 2,
+                            torch.point.position.y - y - height / 2)
+                        readonly property real fullLight: hand.cardWidth * 0.3
+                        readonly property real noLight: hand.cardWidth * 1.3
+                        property real light: torch.hovered
+                            ? Math.max(0, Math.min(1, (noLight - mouseDistance) / (noLight - fullLight)))
+                            : 0
+                        Behavior on light { NumberAnimation { duration: 160; easing.type: Easing.OutCubic } }
+                        property real push: root.selected < 0 ? 0 : Math.sign(index - root.selected) * hand.grow / 2
+                        Behavior on push { NumberAnimation { duration: 220; easing.type: Easing.OutCubic } }
 
-                        visible: distance < hand.reach + 1
-                        width: hand.cardWidth
+                        readonly property real dealDelay: 0.38 * Math.min(1, distance / hand.reach)
+                        readonly property real flight: Math.max(0, Math.min(1, (hand.deal - dealDelay) / 0.62))
+                        readonly property real fanned: flight * flight * (3 - 2 * flight)
+                        readonly property real fanY: hand.height - height * 1.12
+                            + spread * spread * hand.cardHeight * 0.035 - pick * hand.cardHeight * 0.07
+
+                        visible: hand.deal > 0 && distance < hand.reach + 1
+                        width: hand.cardWidth + pick * hand.grow * fanned
                         height: hand.cardHeight
-                        x: hand.width / 2 - width / 2 + spread * hand.cardWidth
-                        y: hand.height - height * 1.12 + spread * spread * hand.cardHeight * 0.035
-                            - pick * hand.cardHeight * 0.07
+                        x: hand.width / 2 - width / 2 + (spread * hand.cardWidth + push) * fanned
+                        y: hand.deckY + (fanY - hand.deckY) * fanned
                         z: chosen ? root.items.length : root.items.length - 1 - index
-                        rotation: spread * 7
+                        rotation: -8 + (spread * 7 + 8) * fanned
                         transformOrigin: Item.Bottom
-                        scale: 0.94 + pick * 0.1
-                        opacity: Math.max(0, Math.min(1, hand.reach + 0.5 - distance))
+                        scale: 0.72 + (0.22 + pick * 0.1) * fanned
+                        opacity: Math.min(1, hand.deal * 8)
+                            * Math.max(0, Math.min(1, hand.reach + 0.5 - distance))
 
                         RectangularShadow {
                             anchors.fill: face
@@ -359,7 +343,7 @@ Scope {
                                 anchors.fill: parent
                                 radius: parent.radius
                                 color: "#000000"
-                                opacity: Math.min(1, card.distance) * 0.35 * (1 - card.pick)
+                                opacity: 0.4 * (1 - card.pick) * (1 - Math.min(1, card.light))
                             }
                         }
                         MouseArea {
@@ -367,10 +351,12 @@ Scope {
                             anchors.fill: parent
                             anchors.bottomMargin: -card.pick * hand.cardHeight * 0.07 / card.scale
                             enabled: !root.busy
-                            hoverEnabled: true
                             cursorShape: Qt.PointingHandCursor
-                            onContainsMouseChanged: root.hover(card.index, containsMouse)
-                            onClicked: { root.selected = card.index; root.apply() }
+                            onClicked: root.selected = card.index
+                            onDoubleClicked: mouse => {
+                                if (card.chosen) root.apply()
+                                else mouse.accepted = false
+                            }
                         }
                     }
                 }
@@ -424,7 +410,7 @@ Scope {
                             if (root.busy) return "Loading thumbnails…"
                             if (!root.items.length) return "Add JPG, PNG, or WebP images to " + root.directory
                             const status = root.label(root.items[root.selected]?.path ?? "")
-                            return (status ? status + "   ·   " : "") + "← → Browse   ·   Enter Apply to all monitors   ·   Esc Close"
+                            return (status ? status + "   ·   " : "") + "← → Browse   ·   Click to select   ·   Double-click or Enter to apply   ·   Esc Close"
                         }
                         color: root.message ? Theme.Colors.error : Theme.Colors.muted
                         font { family: Theme.Fonts.family; weight: Theme.Fonts.weight; pixelSize: 14 }
