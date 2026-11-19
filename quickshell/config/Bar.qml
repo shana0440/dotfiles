@@ -225,7 +225,10 @@ PanelWindow {
         focus: true
         Keys.onEscapePressed: root.closeMenus()
         Keys.onPressed: event => {
-            if (root.menuNeedsKeyboardFocus && event.key === Qt.Key_Space
+            if (centerIsland.expanded && (event.key === Qt.Key_PageDown || event.key === Qt.Key_PageUp)) {
+                centerIsland.cycleTab(event.key === Qt.Key_PageDown ? 1 : -1)
+                event.accepted = true
+            } else if (root.menuNeedsKeyboardFocus && event.key === Qt.Key_Space
                     && (event.modifiers & ~Qt.KeypadModifier) === Qt.ControlModifier) {
                 Services.InputMethod.next()
                 event.accepted = true
@@ -233,18 +236,6 @@ PanelWindow {
                     && event.text.length > 0 && !/[\x00-\x1f\x7f]/.test(event.text)) {
                 event.accepted = centerIsland.typeIntoSearch(event.text)
             }
-        }
-        Keys.onTabPressed: event => {
-            if (centerIsland.expanded)
-                centerIsland.cycleTab(1)
-            else
-                event.accepted = false
-        }
-        Keys.onBacktabPressed: event => {
-            if (centerIsland.expanded)
-                centerIsland.cycleTab(-1)
-            else
-                event.accepted = false
         }
 
         TapHandler {

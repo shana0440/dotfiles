@@ -121,7 +121,8 @@ All bindings are in `hyprland/hyprland.lua`. The main ones:
   Links in her replies get a preview card, fetched by `link-preview` only from
   public internet addresses. The title shows first and the image follows;
   previews are cached for a week in `~/.cache/quickshell/link-previews`.
-- Tap `Super` to open the dashboard; type to [search it](#dashboard-search).
+- Tap `Super` to open the dashboard; `Page Down` / `Page Up` switch tabs and
+  typing [searches it](#dashboard-search).
   Its settings tab holds the output and input volume, Wi-Fi, Bluetooth, the
   dark/transparent theme and Do Not Disturb. Click a `>` to pick an audio
   device, join a Wi-Fi network or manage Bluetooth devices; click a tile itself
@@ -131,9 +132,10 @@ All bindings are in `hyprland/hyprland.lua`. The main ones:
 ### Dashboard search
 
 With the dashboard open, start typing to search it. Only matching tabs stay in
-the sidebar, and the best match opens: `wifi` jumps to the network tab. On the
-usage tab, `claude` or `codex` shows only that card. `Tab` steps through
-matches, `Enter` keeps the current tab, `Esc` clears the search.
+the sidebar, and the best match opens: `wifi` jumps to the settings tab. On the
+usage tab, `claude` or `codex` shows only that card. `Page Down` /
+`Page Up` step through the matches, `Enter` keeps the current tab, `Esc` clears
+the search.
 
 Each tab matches its name and these keywords (`tabList` in
 `quickshell/config/Bar/Dashboard.qml`):
