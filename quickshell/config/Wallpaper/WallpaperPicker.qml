@@ -20,6 +20,9 @@ Scope {
     property int started: 0
     property int finishedOrder: 0
     property int selected: -1
+    property int view: -1
+    property bool pointing: false
+    property int hovered: -1
     property var chosenScreen: Quickshell.screens[0] ?? null
     readonly property bool busy: preparing || query.running || library.running
     readonly property string targetPath: setters.length ? setters[setters.length - 1].path : currentPath
@@ -38,6 +41,8 @@ Scope {
         if (!opened || !preparing || query.running || library.running) return
         const index = items.findIndex(i => i.path === targetPath)
         selected = items.length ? Math.max(0, index) : -1
+        view = selected
+        pointing = false
         Qt.callLater(() => {
             if (!opened || query.running || library.running) return
             preparing = false
@@ -48,9 +53,26 @@ Scope {
         opened = false
         preparing = false
     }
+    function clamp(index) {
+        return Math.max(0, Math.min(items.length - 1, index))
+    }
     function move(step) {
-        if (items.length && !busy)
-            selected = Math.max(0, Math.min(items.length - 1, selected + step))
+        if (!items.length || busy) return
+        pointing = false
+        selected = clamp(selected + step)
+        view = selected
+    }
+    function point() {
+        pointing = true
+        if (hovered >= 0) selected = hovered
+    }
+    function hover(index, inside) {
+        if (inside) hovered = index
+        else if (hovered === index) hovered = -1
+        if (inside && pointing) selected = index
+    }
+    function scroll(step) {
+        if (items.length && !busy) view = clamp(view + step)
     }
     function apply() {
         if (busy || selected < 0 || !items.length) return
@@ -206,6 +228,30 @@ Scope {
                 }
             }
             MouseArea { anchors.fill: parent; onClicked: root.close() }
+            HoverHandler {
+                id: edge
+                readonly property real zone: stage.width * 0.15
+                readonly property real pointerX: point.position.x
+                readonly property bool inside: hovered && point.position.y < bar.y
+                readonly property int direction: !inside ? 0 : pointerX < zone ? -1 : pointerX > stage.width - zone ? 1 : 0
+                readonly property int urgency: direction < 0 ? Math.ceil((zone - pointerX) / zone * 3)
+                    : direction > 0 ? Math.ceil((pointerX - stage.width + zone) / zone * 3) : 0
+                property point last
+                onHoveredChanged: last = point.scenePosition
+                onPointChanged: {
+                    const now = point.scenePosition
+                    if (!hovered || (now.x === last.x && now.y === last.y)) return
+                    last = now
+                    root.point()
+                }
+            }
+            Timer {
+                running: root.opened && !root.busy && root.pointing && edge.direction !== 0
+                interval: [420, 420, 260, 140][edge.urgency]
+                repeat: true
+                triggeredOnStart: true
+                onTriggered: root.scroll(edge.direction)
+            }
 
             Item {
                 id: hand
@@ -216,7 +262,7 @@ Scope {
                 readonly property real centerGap: cardWidth * 0.86
                 readonly property real fanStep: cardWidth * 0.52
                 readonly property real reach: Math.max(1, Math.ceil((width / 2 - centerGap) / fanStep) + 1)
-                property real position: root.selected
+                property real position: root.view
                 Behavior on position {
                     enabled: !root.preparing
                     NumberAnimation { duration: 320; easing.type: Easing.OutCubic }
@@ -230,24 +276,23 @@ Scope {
                         required property int index
                         readonly property real offset: index - hand.position
                         readonly property real distance: Math.abs(offset)
-                        readonly property real raise: Math.max(0, 1 - distance)
                         readonly property real spread: Math.sign(offset)
                             * (Math.min(distance, 1) * hand.centerGap + Math.max(distance - 1, 0) * hand.fanStep) / hand.cardWidth
                         readonly property bool chosen: index === root.selected
                         readonly property bool current: modelData.path === root.targetPath
-                        property real hover: pointer.containsMouse && !chosen ? 1 : 0
-                        Behavior on hover { NumberAnimation { duration: 160; easing.type: Easing.OutCubic } }
+                        property real pick: chosen ? 1 : 0
+                        Behavior on pick { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
 
                         visible: distance < hand.reach + 1
                         width: hand.cardWidth
                         height: hand.cardHeight
                         x: hand.width / 2 - width / 2 + spread * hand.cardWidth
                         y: hand.height - height * 1.12 + spread * spread * hand.cardHeight * 0.035
-                            - raise * hand.cardHeight * 0.06 - hover * hand.cardHeight * 0.08
-                        z: Math.min(1000 - distance + (pointer.containsMouse ? 1.5 : 0), 1000 - Math.min(distance, 0.5))
+                            - pick * hand.cardHeight * 0.07
+                        z: chosen ? root.items.length : index
                         rotation: spread * 7
                         transformOrigin: Item.Bottom
-                        scale: 0.94 + raise * 0.1 + hover * 0.03
+                        scale: 0.94 + pick * 0.1
                         opacity: Math.max(0, Math.min(1, hand.reach + 0.5 - distance))
 
                         RectangularShadow {
@@ -263,9 +308,8 @@ Scope {
                             anchors.fill: parent
                             radius: 22
                             color: Theme.Colors.solidSurface
-                            border.width: card.chosen || card.hover > 0 ? 2 : 1
-                            border.color: card.chosen ? Qt.alpha(Theme.Colors.foreground, 0.7)
-                                : Qt.tint(Theme.Colors.edge, Qt.alpha(Theme.Colors.foreground, card.hover * 0.55))
+                            border.width: card.chosen ? 2 : 1
+                            border.color: card.chosen ? Qt.alpha(Theme.Colors.foreground, 0.7) : Theme.Colors.edge
 
                             ClippingRectangle {
                                 id: art
@@ -317,17 +361,18 @@ Scope {
                                 anchors.fill: parent
                                 radius: parent.radius
                                 color: "#000000"
-                                opacity: Math.min(1, card.distance) * 0.35 * (1 - card.hover)
+                                opacity: Math.min(1, card.distance) * 0.35 * (1 - card.pick)
                             }
                         }
                         MouseArea {
                             id: pointer
                             anchors.fill: parent
-                            anchors.bottomMargin: -card.hover * hand.cardHeight * 0.08
+                            anchors.bottomMargin: -card.pick * hand.cardHeight * 0.07 / card.scale
                             enabled: !root.busy
                             hoverEnabled: true
                             cursorShape: Qt.PointingHandCursor
-                            onClicked: if (card.chosen) root.apply(); else root.selected = card.index
+                            onContainsMouseChanged: root.hover(card.index, containsMouse)
+                            onClicked: { root.selected = card.index; root.apply() }
                         }
                     }
                 }
