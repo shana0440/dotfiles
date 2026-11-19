@@ -13,13 +13,21 @@ Rectangle {
     color: checked ? Theme.Colors.foreground : Theme.Colors.track
     opacity: enabled ? 1 : 0.4
     activeFocusOnTab: true
-    border.width: activeFocus ? 2 : 0
-    border.color: Theme.Colors.muted
     Accessible.role: Accessible.CheckBox
     Accessible.name: label
     Accessible.checked: checked
     Keys.onReturnPressed: toggled()
     Keys.onSpacePressed: toggled()
+
+    Rectangle {
+        anchors.fill: parent
+        anchors.margins: -3
+        radius: height / 2
+        visible: toggle.activeFocus
+        color: Theme.Colors.transparent
+        border.width: 2
+        border.color: Theme.Colors.muted
+    }
 
     Rectangle {
         y: 3

@@ -67,6 +67,8 @@ Item {
         radius: 12
         color: armed ? Theme.Colors.foreground
             : tileMouse.containsMouse || activeFocus ? Theme.Colors.surfaceHover : Theme.Colors.surface
+        border.width: activeFocus ? 2 : 0
+        border.color: Theme.Colors.muted
         activeFocusOnTab: true
         Accessible.role: Accessible.Button
         Accessible.name: armed ? armedLabel : label

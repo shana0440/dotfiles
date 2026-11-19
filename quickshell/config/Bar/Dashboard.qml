@@ -11,7 +11,7 @@ Item {
     property date today: new Date()
     property int maximumHeight: 560
     readonly property alias calendar: homeView.calendar
-    readonly property bool inputMethodsOpen: tab === "home" && homeView.inputMethodsOpen
+    readonly property bool inputMethodsOpen: tab === "settings" && settingsView.page === "inputMethod"
     readonly property Item currentPage: tab === "media" ? mediaView
         : tab === "notifications" ? notificationList
         : tab === "network" ? networkView
@@ -36,7 +36,7 @@ Item {
 
     readonly property var tabList: [
         { tab: "home", icon: "home", tooltip: "Home",
-            keywords: ["calendar", "date", "weather", "input method", "keyboard"] },
+            keywords: ["calendar", "date", "weather"] },
         { tab: "media", icon: "disc", tooltip: "Now playing",
             keywords: ["media", "music", "song", "track", "player"] },
         { tab: "notifications", icon: "notifications", tooltip: "Notifications",
@@ -45,7 +45,8 @@ Item {
             keywords: ["ethernet", "internet", "connections", "ip", "speed"] },
         { tab: "settings", icon: "settings", tooltip: "Settings",
             keywords: ["volume", "sound", "speaker", "headphones", "microphone", "mic", "output", "input",
-                "wifi", "wi-fi", "wlan", "ssid", "bluetooth", "bt", "pair", "devices", "theme", "dark", "transparent", "do not disturb", "dnd", "quiet"] },
+                "wifi", "wi-fi", "wlan", "ssid", "bluetooth", "bt", "pair", "devices", "theme", "dark", "transparent", "do not disturb", "dnd", "quiet",
+                "input method", "keyboard", "language", "ime"] },
         { tab: "system", icon: "systemStatus", tooltip: "System",
             keywords: ["cpu", "gpu", "memory", "ram", "vram", "storage", "disk"] },
         { tab: "usage", icon: "usage", tooltip: "Usage",
@@ -88,7 +89,7 @@ Item {
     }
 
     function showInputMethods() {
-        homeView.inputMethodsOpen = true
+        settingsView.page = "inputMethod"
     }
 
     function showBluetooth() {
@@ -105,6 +106,29 @@ Item {
         searchField.insert(searchField.cursorPosition, text)
         searchField.forceActiveFocus()
         return true
+    }
+
+    function moveFocus(forward) {
+        const page = currentPage
+        const inPage = item => {
+            for (let ancestor = item; ancestor; ancestor = ancestor.parent) {
+                if (ancestor === page)
+                    return true
+            }
+            return false
+        }
+        const focused = Window.activeFocusItem
+        const start = focused && focused !== page && inPage(focused) ? focused : page
+        let item = start
+        for (let steps = 0; steps < 1000; steps++) {
+            item = item.nextItemInFocusChain(forward)
+            if (!item || item === start)
+                return
+            if (item !== page && inPage(item)) {
+                item.forceActiveFocus(Qt.TabFocusReason)
+                return
+            }
+        }
     }
 
     function cycle(step) {

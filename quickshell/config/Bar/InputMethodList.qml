@@ -18,31 +18,84 @@ Item {
     property var modeEntries: kanaMenu.children.values.filter(entry =>
         entry.icon.endsWith("/fcitx_mozc_hiragana") || entry.icon.endsWith("/fcitx_mozc_katakana_full"))
     readonly property bool showKanaModes: japanese
+    property int cursor: -1
+    readonly property bool backPointed: cursor === 0
+    readonly property int stopCount: 1 + inputRepeater.count + (showKanaModes ? kanaRepeater.count : 0)
+    signal backRequested()
+    readonly property var keyBindings: [
+        { name: "Escape", key: "Escape", call: "close" },
+        { name: "Tab", key: "Tab", call: "next" },
+        { name: "ShiftTab", key: "SHIFT + Tab", call: "previous" },
+        { name: "Return", key: "Return", call: "activate" },
+        { name: "Space", key: "space", call: "activate" }
+    ]
+
+    function choiceAt(stop) {
+        const index = stop - 1
+        return index < inputRepeater.count ? inputRepeater.itemAt(index) : kanaRepeater.itemAt(index - inputRepeater.count)
+    }
+
+    function step(direction) {
+        let stop = cursor
+        for (let tried = 0; tried < stopCount; tried++) {
+            stop = stop < 0 && direction < 0 ? stopCount - 1 : (stop + direction + stopCount) % stopCount
+            if (stop === 0 || choiceAt(stop)?.enabled) {
+                cursor = stop
+                return
+            }
+        }
+    }
+
+    function activateCursor() {
+        if (backPointed) {
+            backRequested()
+            return
+        }
+        const choice = cursor > 0 ? choiceAt(cursor) : null
+        if (choice?.enabled)
+            choice.activate()
+    }
+
+    Connections {
+        target: Services.InputMethod
+        enabled: root.active
+        function onPickerStepped(direction) { root.step(direction) }
+        function onPickerActivated() { root.activateCursor() }
+    }
 
     implicitHeight: content.implicitHeight
 
-    function syncEscapeBinding() {
-        if (escapeBinding.running)
-            return
-        escapeBinding.requestedActive = root.active
-        escapeBinding.command = ["hyprctl", "eval",
-            "if not qsInputMenuEscape then "
-            + "qsInputMenuEscape = hl.bind('Escape', hl.dsp.exec_cmd('quickshell ipc call inputMenu close')) end; "
-            + "qsInputMenuEscape:set_enabled(" + (root.active ? "true" : "false") + ")"]
-        escapeBinding.running = true
+    function bindingsScript(enabled) {
+        return keyBindings.map(binding => {
+            const handle = "qsInputMenu" + binding.name
+            const command = "quickshell --path " + Quickshell.shellDir + " ipc call inputMenu " + binding.call
+            return (enabled ? "if not " + handle + " then " + handle + " = hl.bind('" + binding.key
+                    + "', hl.dsp.exec_cmd('" + command + "')) end; " : "")
+                + "if " + handle + " then " + handle + ":set_enabled(" + enabled + ") end"
+        }).join("; ")
     }
 
-    onActiveChanged: syncEscapeBinding()
-    Component.onCompleted: syncEscapeBinding()
-    Component.onDestruction: Quickshell.execDetached(["hyprctl", "eval",
-        "if qsInputMenuEscape then qsInputMenuEscape:set_enabled(false) end"])
+    function syncKeyBindings() {
+        if (keyBindingSync.running)
+            return
+        keyBindingSync.requestedActive = root.active
+        keyBindingSync.command = ["hyprctl", "eval", bindingsScript(root.active)]
+        keyBindingSync.running = true
+    }
+
+    onActiveChanged: {
+        cursor = -1
+        syncKeyBindings()
+    }
+    Component.onCompleted: syncKeyBindings()
+    Component.onDestruction: Quickshell.execDetached(["hyprctl", "eval", bindingsScript(false)])
 
     Process {
-        id: escapeBinding
+        id: keyBindingSync
         property bool requestedActive: false
         onExited: {
             if (requestedActive !== root.active)
-                root.syncEscapeBinding()
+                root.syncKeyBindings()
         }
     }
 
@@ -50,7 +103,7 @@ Item {
         target: Hyprland
         function onRawEvent(event) {
             if (event.name === "configreloaded")
-                root.syncEscapeBinding()
+                root.syncKeyBindings()
         }
     }
 
@@ -71,6 +124,8 @@ Item {
         property bool compact: false
         property string methodName: ""
         property bool selected: entry?.checkState === Qt.Checked
+        property int cursorIndex: -1
+        readonly property bool pointed: cursorIndex >= 0 && root.cursor === cursorIndex
         signal activated()
 
         function activate() {
@@ -86,8 +141,10 @@ Item {
         radius: 8
         enabled: root.available && (entry?.enabled ?? false)
         opacity: enabled ? 1 : 0.4
-        color: selected || mouse.containsMouse || activeFocus
+        color: selected || mouse.containsMouse || activeFocus || pointed
             ? Theme.Colors.highlight : Theme.Colors.transparent
+        border.width: pointed ? 2 : 0
+        border.color: Theme.Colors.muted
         activeFocusOnTab: true
         Accessible.role: Accessible.Button
         Accessible.name: description
@@ -126,7 +183,7 @@ Item {
         }
         Components.Tooltip {
             text: choice.description
-            shown: choice.compact && (mouse.containsMouse || choice.activeFocus)
+            shown: choice.compact && (mouse.containsMouse || choice.activeFocus || choice.pointed)
         }
     }
 
@@ -148,10 +205,12 @@ Item {
         }
 
         Repeater {
+            id: inputRepeater
             model: root.inputEntries
             Choice {
                 required property var modelData
                 required property int index
+                cursorIndex: 1 + index
                 entry: modelData
                 methodName: Services.InputMethod.order[index] ?? ""
                 selected: Services.InputMethod.name === methodName
@@ -174,6 +233,7 @@ Item {
             spacing: 6
             visible: root.showKanaModes
             Repeater {
+                id: kanaRepeater
                 model: [
                     { icon: "fcitx_mozc_hiragana", label: "あ", description: "Hiragana" },
                     { icon: "fcitx_mozc_katakana_full", label: "ア", description: "Katakana" }
@@ -182,6 +242,7 @@ Item {
                     required property var modelData
                     required property int index
                     width: (content.width - 6) / 2
+                    cursorIndex: 1 + inputRepeater.count + index
                     entry: root.modeEntries.find(entry => entry.icon.endsWith("/" + modelData.icon)) ?? null
                     label: modelData.label
                     description: modelData.description

@@ -70,6 +70,9 @@ PanelWindow {
     IpcHandler {
         target: "inputMenu"
         function close() { root.closeMenus() }
+        function next() { Services.InputMethod.pickerStepped(1) }
+        function previous() { Services.InputMethod.pickerStepped(-1) }
+        function activate() { Services.InputMethod.pickerActivated() }
     }
 
     onMenuNeedsKeyboardFocusChanged: {
@@ -224,6 +227,18 @@ PanelWindow {
         anchors.rightMargin: root.islandMargin
         focus: true
         Keys.onEscapePressed: root.closeMenus()
+        Keys.onTabPressed: event => {
+            if (centerIsland.expanded)
+                centerIsland.moveFocus(true)
+            else
+                event.accepted = false
+        }
+        Keys.onBacktabPressed: event => {
+            if (centerIsland.expanded)
+                centerIsland.moveFocus(false)
+            else
+                event.accepted = false
+        }
         Keys.onPressed: event => {
             if (centerIsland.expanded && (event.key === Qt.Key_PageDown || event.key === Qt.Key_PageUp)) {
                 centerIsland.cycleTab(event.key === Qt.Key_PageDown ? 1 : -1)

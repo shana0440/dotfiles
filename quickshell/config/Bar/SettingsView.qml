@@ -21,8 +21,9 @@ Item {
 
     implicitWidth: 480
     implicitHeight: page === "bluetooth" ? bluetoothView.implicitHeight
+        : page === "inputMethod" ? inputMethodPage.implicitHeight
         : page === "wifi" ? wifiView.implicitHeight
-        : page ? Math.min(maximumHeight, pageHeader.height + 12 + devicePage.implicitHeight + 40)
+        : page ? devicePage.implicitHeight
         : home.implicitHeight + 40
     clip: true
 
@@ -64,6 +65,10 @@ Item {
         if (connectedBluetooth.length > 1)
             return connectedBluetooth.length + " devices"
         return "On"
+    }
+
+    InputMethodState {
+        id: inputMethod
     }
 
     WifiController {
@@ -425,50 +430,57 @@ Item {
                 onToggled: Services.Notifications.toggleDoNotDisturb()
             }
         }
-    }
 
-    Item {
-        x: 20 + 24 * (1 - pageSpring.value)
-        y: 20
-        width: parent.width - 40
-        height: root.height - 40
-        opacity: pageSpring.value
-        visible: opacity > 0 && (root.shownPage === "output" || root.shownPage === "input")
-        enabled: root.page === "output" || root.page === "input"
-
-        Item {
-            id: pageHeader
+        Rectangle {
+            id: inputMethodRow
             width: parent.width
-            height: 32
+            height: 60
+            radius: 12
+            color: inputMethodMouse.containsMouse || activeFocus ? Theme.Colors.surfaceHover : Theme.Colors.surface
+            border.width: activeFocus ? 2 : 0
+            border.color: Theme.Colors.muted
+            activeFocusOnTab: true
+            Accessible.role: Accessible.Button
+            Accessible.name: "Input method, " + inputMethod.description
+            Keys.onReturnPressed: root.page = "inputMethod"
+            Keys.onSpacePressed: root.page = "inputMethod"
 
-            Components.IconButton {
-                id: back
-                x: -6
+            Rectangle {
+                id: inputMethodBadge
+                x: 12
                 anchors.verticalCenter: parent.verticalCenter
                 width: 32
                 height: 32
-                iconSize: 18
-                icon: "back"
-                tooltip: "Back to settings"
-                onClicked: root.page = ""
+                radius: 16
+                color: Theme.Colors.track
+
+                Text {
+                    anchors.centerIn: parent
+                    text: inputMethod.label
+                    color: Theme.Colors.foreground
+                    font.family: Theme.Fonts.family
+                    font.weight: Theme.Fonts.weight
+                    font.pixelSize: text.length > 1 ? 11 : 14
+                }
             }
             Column {
-                anchors.left: back.right
-                anchors.leftMargin: 2
-                anchors.right: parent.right
+                anchors.left: inputMethodBadge.right
+                anchors.leftMargin: 10
+                anchors.right: inputMethodChevron.left
+                anchors.rightMargin: 8
                 anchors.verticalCenter: parent.verticalCenter
                 spacing: 2
 
                 Text {
-                    text: root.pickingInput ? "Input" : "Output"
+                    text: "Input method"
                     color: Theme.Colors.foreground
                     font.family: Theme.Fonts.family
-                    font.pixelSize: 16
-                    font.bold: true
+                    font.weight: Theme.Fonts.weight
+                    font.pixelSize: 13
                 }
                 Text {
                     width: parent.width
-                    text: root.labelOf(root.pickingInput ? root.source : root.sink) || "Nothing selected"
+                    text: inputMethod.description
                     textFormat: Text.PlainText
                     elide: Text.ElideRight
                     color: Theme.Colors.muted
@@ -477,89 +489,141 @@ Item {
                     font.pixelSize: 11
                 }
             }
+            Components.Icon {
+                id: inputMethodChevron
+                anchors.right: parent.right
+                anchors.rightMargin: 14
+                anchors.verticalCenter: parent.verticalCenter
+                width: 16
+                height: 16
+                action: "forward"
+                iconColor: Theme.Colors.muted
+            }
+            MouseArea {
+                id: inputMethodMouse
+                anchors.fill: parent
+                hoverEnabled: true
+                cursorShape: Qt.PointingHandCursor
+                onClicked: root.page = "inputMethod"
+            }
         }
+    }
+
+    NestedPage {
+        id: devicePage
+        x: 24 * (1 - pageSpring.value)
+        width: root.width
+        maximumHeight: root.maximumHeight
+        opacity: pageSpring.value
+        visible: opacity > 0 && (root.shownPage === "output" || root.shownPage === "input")
+        enabled: root.page === "output" || root.page === "input"
+        title: root.pickingInput ? "Input" : "Output"
+        subtitle: root.labelOf(root.pickingInput ? root.source : root.sink) || "Nothing selected"
+        onBackRequested: root.page = ""
 
         Flickable {
             x: -8
-            y: pageHeader.height + 12
             width: parent.width + 16
-            height: parent.height - y
+            height: Math.min(contentHeight, devicePage.bodyMaximumHeight)
             contentWidth: width
-            contentHeight: devicePage.height
+            contentHeight: deviceList.implicitHeight
             boundsBehavior: Flickable.StopAtBounds
             clip: true
 
-            Column {
-                id: devicePage
-                readonly property var current: root.pickingInput ? root.source : root.sink
-                readonly property var choices: root.devices(root.pickingInput)
-                width: parent.width
-                spacing: 2
+        Column {
+            id: deviceList
+            readonly property var current: root.pickingInput ? root.source : root.sink
+            readonly property var choices: root.devices(root.pickingInput)
+            width: parent.width
+            spacing: 2
 
-                Text {
-                    visible: devicePage.choices.length === 0
-                    leftPadding: 12
-                    text: !Pipewire.ready ? "Connecting to PipeWire" : root.pickingInput ? "No microphones" : "No output devices"
-                    color: Theme.Colors.muted
-                    font.family: Theme.Fonts.family
-                    font.weight: Theme.Fonts.weight
-                    font.pixelSize: 12
-                }
+            Text {
+                visible: deviceList.choices.length === 0
+                leftPadding: 12
+                text: !Pipewire.ready ? "Connecting to PipeWire" : root.pickingInput ? "No microphones" : "No output devices"
+                color: Theme.Colors.muted
+                font.family: Theme.Fonts.family
+                font.weight: Theme.Fonts.weight
+                font.pixelSize: 12
+            }
 
-                Repeater {
-                    model: devicePage.choices
+            Repeater {
+                model: deviceList.choices
 
-                    Rectangle {
-                        id: choice
-                        required property var modelData
-                        readonly property bool selected: devicePage.current === modelData
-                        readonly property string label: root.labelOf(modelData)
+                Rectangle {
+                    id: choice
+                    required property var modelData
+                    readonly property bool selected: deviceList.current === modelData
+                    readonly property string label: root.labelOf(modelData)
 
-                        width: parent.width
-                        height: 36
-                        radius: 8
-                        color: rowMouse.containsMouse || activeFocus ? Theme.Colors.highlight : Theme.Colors.transparent
-                        activeFocusOnTab: true
-                        Accessible.role: Accessible.RadioButton
-                        Accessible.name: label
-                        Accessible.checked: selected
-                        Keys.onReturnPressed: root.select(root.pickingInput, modelData)
-                        Keys.onSpacePressed: root.select(root.pickingInput, modelData)
+                    width: parent.width
+                    height: 36
+                    radius: 8
+                    color: rowMouse.containsMouse || activeFocus ? Theme.Colors.highlight : Theme.Colors.transparent
+                    activeFocusOnTab: true
+                    Accessible.role: Accessible.RadioButton
+                    Accessible.name: label
+                    Accessible.checked: selected
+                    Keys.onReturnPressed: root.select(root.pickingInput, modelData)
+                    Keys.onSpacePressed: root.select(root.pickingInput, modelData)
 
-                        Components.Icon {
-                            x: 10
-                            anchors.verticalCenter: parent.verticalCenter
-                            width: 16
-                            height: 16
-                            visible: choice.selected
-                            action: "check"
-                        }
-                        Text {
-                            x: 36
-                            anchors.verticalCenter: parent.verticalCenter
-                            width: parent.width - x - 10
-                            text: choice.label
-                            textFormat: Text.PlainText
-                            elide: Text.ElideRight
-                            color: choice.selected ? Theme.Colors.foreground : Theme.Colors.muted
-                            font.family: Theme.Fonts.family
-                            font.weight: Theme.Fonts.weight
-                            font.pixelSize: 13
-                        }
-                        MouseArea {
-                            id: rowMouse
-                            anchors.fill: parent
-                            hoverEnabled: true
-                            cursorShape: Qt.PointingHandCursor
-                            onClicked: root.select(root.pickingInput, choice.modelData)
-                        }
-                        Components.Tooltip {
-                            text: choice.label
-                            shown: rowMouse.containsMouse && choice.label.length > 40
-                        }
+                    Components.Icon {
+                        x: 10
+                        anchors.verticalCenter: parent.verticalCenter
+                        width: 16
+                        height: 16
+                        visible: choice.selected
+                        action: "check"
+                    }
+                    Text {
+                        x: 36
+                        anchors.verticalCenter: parent.verticalCenter
+                        width: parent.width - x - 10
+                        text: choice.label
+                        textFormat: Text.PlainText
+                        elide: Text.ElideRight
+                        color: choice.selected ? Theme.Colors.foreground : Theme.Colors.muted
+                        font.family: Theme.Fonts.family
+                        font.weight: Theme.Fonts.weight
+                        font.pixelSize: 13
+                    }
+                    MouseArea {
+                        id: rowMouse
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: root.select(root.pickingInput, choice.modelData)
+                    }
+                    Components.Tooltip {
+                        text: choice.label
+                        shown: rowMouse.containsMouse && choice.label.length > 40
                     }
                 }
             }
+        }
+        }
+    }
+
+    NestedPage {
+        id: inputMethodPage
+        x: 24 * (1 - pageSpring.value)
+        width: root.width
+        maximumHeight: root.maximumHeight
+        opacity: pageSpring.value
+        visible: opacity > 0 && root.shownPage === "inputMethod"
+        enabled: root.page === "inputMethod"
+        title: "Input method"
+        subtitle: inputMethod.description
+        backPointed: inputMethodList.backPointed
+        onBackRequested: root.page = ""
+
+        InputMethodList {
+            id: inputMethodList
+            x: -8
+            width: parent.width + 16
+            active: root.active && root.page === "inputMethod"
+            inputItem: inputMethod.inputItem
+            onBackRequested: root.page = ""
         }
     }
 

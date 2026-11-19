@@ -5,13 +5,11 @@ import "../Theme" as Theme
 import "../Components" as Components
 import "../Services" as Services
 
-Item {
+NestedPage {
     id: root
 
     property bool active: false
-    property int maximumHeight: 560
     signal closeRequested()
-    signal backRequested()
 
     readonly property var adapter: Services.Bluetooth.adapter
     readonly property bool powered: Services.Bluetooth.enabled
@@ -29,9 +27,6 @@ Item {
         .filter(device => !device.paired && device.deviceName.length > 0)
         .sort((a, b) => a.name.localeCompare(b.name))
     readonly property var connected: pairedDevices.filter(device => device.connected)
-
-    implicitWidth: 480
-    implicitHeight: Math.min(maximumHeight, content.implicitHeight + 40)
 
     onActiveChanged: {
         message = ""
@@ -132,8 +127,8 @@ Item {
         radius: 8
         color: primary ? (buttonMouse.containsMouse ? Qt.tint(Theme.Colors.foreground, "#2e0c0c0d") : Theme.Colors.foreground)
             : buttonMouse.containsMouse || activeFocus ? Theme.Colors.highlight : Theme.Colors.transparent
-        border.width: primary ? 0 : 1
-        border.color: Theme.Colors.ring
+        border.width: activeFocus ? 2 : primary ? 0 : 1
+        border.color: activeFocus ? Theme.Colors.muted : Theme.Colors.ring
         opacity: enabled ? 1 : 0.4
         activeFocusOnTab: true
         Accessible.role: Accessible.Button
@@ -178,8 +173,18 @@ Item {
         width: parent.width
         height: heightSpring.value
         radius: 8
-        color: expanded || rowMouse.containsMouse ? Theme.Colors.highlight : Theme.Colors.transparent
+        color: expanded || rowMouse.containsMouse || activeFocus ? Theme.Colors.highlight : Theme.Colors.transparent
         clip: true
+        activeFocusOnTab: device.paired
+        Accessible.role: Accessible.Button
+        Accessible.name: device.name
+        Keys.onReturnPressed: row.toggleExpanded()
+        Keys.onSpacePressed: row.toggleExpanded()
+
+        function toggleExpanded() {
+            if (device.paired)
+                root.expandedAddress = expanded ? "" : device.address
+        }
 
         Components.Spring {
             id: heightSpring
@@ -205,10 +210,7 @@ Item {
             anchors.fill: parent
             hoverEnabled: true
             cursorShape: row.device.paired ? Qt.PointingHandCursor : Qt.ArrowCursor
-            onClicked: {
-                if (row.device.paired)
-                    root.expandedAddress = row.expanded ? "" : row.device.address
-            }
+            onClicked: row.toggleExpanded()
         }
 
         Components.Icon {
@@ -291,11 +293,37 @@ Item {
         }
     }
 
+    title: "Bluetooth"
+    subtitle: root.statusText()
+    actions: [
+        Components.Switch {
+            anchors.verticalCenter: parent.verticalCenter
+            label: root.powered ? "Turn Bluetooth off" : "Turn Bluetooth on"
+            checked: root.powered
+            enabled: Services.Bluetooth.available && root.adapter?.state !== BluetoothAdapterState.Blocked
+            onToggled: Services.Bluetooth.setEnabled(!root.powered)
+        },
+        Item {
+            width: 4
+            height: 1
+        },
+        Components.IconButton {
+            anchors.verticalCenter: parent.verticalCenter
+            width: 32
+            height: 32
+            iconSize: 16
+            icon: "settings"
+            tooltip: "Advanced settings"
+            onClicked: {
+                root.closeRequested()
+                Quickshell.execDetached(["kitty", "--class", "bluetooth-settings", "-e", "bluetoothctl"])
+            }
+        }
+    ]
+
     Flickable {
-        x: 20
-        y: 20
-        width: parent.width - 40
-        height: parent.height - 40
+        width: parent.width
+        height: Math.min(contentHeight, root.bodyMaximumHeight)
         contentWidth: width
         contentHeight: content.implicitHeight
         boundsBehavior: Flickable.StopAtBounds
@@ -305,76 +333,6 @@ Item {
             id: content
             width: parent.width
             spacing: 16
-
-            Item {
-                width: parent.width
-                height: 32
-
-                Components.IconButton {
-                    id: back
-                    x: -6
-                    anchors.verticalCenter: parent.verticalCenter
-                    width: 32
-                    height: 32
-                    iconSize: 18
-                    icon: "back"
-                    tooltip: "Back to settings"
-                    onClicked: root.backRequested()
-                }
-                Column {
-                    anchors.left: back.right
-                    anchors.leftMargin: 2
-                    anchors.right: controls.left
-                    anchors.rightMargin: 12
-                    anchors.verticalCenter: parent.verticalCenter
-                    spacing: 2
-
-                    Text {
-                        text: "Bluetooth"
-                        color: Theme.Colors.foreground
-                        font.family: Theme.Fonts.family
-                        font.pixelSize: 16
-                        font.bold: true
-                    }
-                    Text {
-                        width: parent.width
-                        text: root.statusText()
-                        textFormat: Text.PlainText
-                        elide: Text.ElideRight
-                        color: Theme.Colors.muted
-                        font.family: Theme.Fonts.family
-                        font.weight: Theme.Fonts.weight
-                        font.pixelSize: 11
-                    }
-                }
-                Row {
-                    id: controls
-                    anchors.right: parent.right
-                    anchors.verticalCenter: parent.verticalCenter
-                    spacing: 8
-
-                    Components.Switch {
-                        anchors.verticalCenter: parent.verticalCenter
-                        label: root.powered ? "Turn Bluetooth off" : "Turn Bluetooth on"
-                        checked: root.powered
-                        enabled: Services.Bluetooth.available && root.adapter?.state !== BluetoothAdapterState.Blocked
-                        onToggled: Services.Bluetooth.setEnabled(!root.powered)
-                    }
-                    Components.IconButton {
-                        anchors.verticalCenter: parent.verticalCenter
-                        width: 32
-                        height: 32
-                        iconSize: 16
-                        icon: "settings"
-                        tooltip: "Advanced settings"
-                        onClicked: {
-                            root.closeRequested()
-                            Quickshell.execDetached(["kitty", "--class", "bluetooth-settings", "-e", "bluetoothctl"])
-                        }
-                    }
-                }
-            }
-
             Column {
                 width: parent.width
                 spacing: 8
@@ -483,6 +441,7 @@ Item {
 
                         TextInput {
                             id: valueInput
+                            activeFocusOnTab: true
                             anchors.fill: parent
                             anchors.leftMargin: 12
                             anchors.rightMargin: 12

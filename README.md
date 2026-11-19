@@ -121,13 +121,15 @@ All bindings are in `hyprland/hyprland.lua`. The main ones:
   Links in her replies get a preview card, fetched by `link-preview` only from
   public internet addresses. The title shows first and the image follows;
   previews are cached for a week in `~/.cache/quickshell/link-previews`.
-- Tap `Super` to open the dashboard; `Page Down` / `Page Up` switch tabs and
-  typing [searches it](#dashboard-search).
+- Tap `Super` to open the dashboard; `Page Down` / `Page Up` switch tabs,
+  `Tab` / `Shift+Tab` move between the buttons of the current tab and `Enter` or
+  `Space` presses one, and typing [searches it](#dashboard-search).
   Its settings tab holds the output and input volume, Wi-Fi, Bluetooth, the
-  dark/transparent theme and Do Not Disturb. Click a `>` to pick an audio
-  device, join a Wi-Fi network or manage Bluetooth devices; click a tile itself
-  to toggle it. Do Not Disturb keeps notifications in the list without popping
-  them up, except urgent ones. The network tab shows connection status.
+  dark/transparent theme, Do Not Disturb and the input method. Click a `>` to
+  pick an audio device, join a Wi-Fi network, manage Bluetooth devices or
+  switch input method; click a tile itself to toggle it. Do Not Disturb keeps
+  notifications in the list without popping them up, except urgent ones. The
+  network tab shows connection status.
 
 ### Dashboard search
 
@@ -142,11 +144,11 @@ Each tab matches its name and these keywords (`tabList` in
 
 | Tab | Keywords |
 |---|---|
-| Home | calendar, date, weather, input method, keyboard |
+| Home | calendar, date, weather |
 | Now playing | media, music, song, track, player |
 | Notifications | alerts, messages |
 | Network | ethernet, internet, connections, ip, speed |
-| Settings | volume, sound, speaker, headphones, microphone, mic, output, input, wifi, wi-fi, wlan, ssid, bluetooth, bt, pair, devices, theme, dark, transparent, do not disturb, dnd, quiet |
+| Settings | volume, sound, speaker, headphones, microphone, mic, output, input, wifi, wi-fi, wlan, ssid, bluetooth, bt, pair, devices, theme, dark, transparent, do not disturb, dnd, quiet, input method, keyboard, language, ime |
 | System | cpu, gpu, memory, ram, vram, storage, disk |
 | Usage | claude, codex, agent, limit, quota |
 | Pomodoro | timer, focus, break |
@@ -160,8 +162,9 @@ first `make home`.
 - `Ctrl+F1` / `Ctrl+F2` / `Ctrl+F3`: English / Mozc / Chewing.
 - `Ctrl+Space`: cycle input methods.
 - `Super+Ctrl+Space`: toggle Hiragana ↔ Katakana in Mozc.
-- The bar shows the current one beside the notification bell; click it, or open
-  the dashboard's home tab (tap `Super`), to pick another.
+- The bar shows the current one beside the notification bell; click it, or use
+  the input method row in the dashboard's settings tab, to pick another. In the
+  list, `Tab` / `Shift+Tab` move, `Enter` or `Space` picks and `Esc` closes.
 - Engine list and shortcuts live in `hyprland/hyprland.nix`; other preferences
   in `fcitx5-configtool`.
 

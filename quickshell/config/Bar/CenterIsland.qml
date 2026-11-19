@@ -44,7 +44,7 @@ Components.Island {
     }
 
     function openInputMethods() {
-        open("home")
+        open("settings")
         dashboard.showInputMethods()
     }
 
@@ -55,6 +55,10 @@ Components.Island {
 
     function cycleTab(step) {
         dashboard.cycle(step)
+    }
+
+    function moveFocus(forward) {
+        dashboard.moveFocus(forward)
     }
 
     function focusSearch() {

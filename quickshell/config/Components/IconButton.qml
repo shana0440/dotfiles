@@ -19,6 +19,8 @@ Rectangle {
     color: highlighted
         ? (mouse.containsMouse ? Qt.tint(Theme.Colors.foreground, "#2e0c0c0d") : Theme.Colors.foreground)
         : selected || mouse.containsMouse || activeFocus ? Theme.Colors.highlight : Theme.Colors.transparent
+    border.width: activeFocus && highlighted ? 2 : 0
+    border.color: Theme.Colors.muted
     opacity: enabled ? 1 : 0.4
     activeFocusOnTab: true
     Accessible.role: Accessible.Button
