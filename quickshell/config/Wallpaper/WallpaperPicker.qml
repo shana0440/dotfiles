@@ -1,8 +1,10 @@
 import QtQuick
+import QtQuick.Effects
 import Quickshell
 import Quickshell.Io
 import Quickshell.Wayland
 import Quickshell.Hyprland
+import Quickshell.Widgets
 import "../Theme" as Theme
 import "../Components" as Components
 
@@ -17,6 +19,7 @@ Scope {
     property var setters: []
     property int started: 0
     property int finishedOrder: 0
+    property int selected: -1
     property var chosenScreen: Quickshell.screens[0] ?? null
     readonly property bool busy: preparing || query.running || library.running
     readonly property string targetPath: setters.length ? setters[setters.length - 1].path : currentPath
@@ -34,11 +37,7 @@ Scope {
     function finishOpening() {
         if (!opened || !preparing || query.running || library.running) return
         const index = items.findIndex(i => i.path === targetPath)
-        carousel.cancelFlick()
-        carousel.currentIndex = items.length ? Math.max(0, index) : -1
-        carousel.forceLayout()
-        if (carousel.currentIndex >= 0)
-            carousel.positionViewAtIndex(carousel.currentIndex, ListView.Center)
+        selected = items.length ? Math.max(0, index) : -1
         Qt.callLater(() => {
             if (!opened || query.running || library.running) return
             preparing = false
@@ -51,11 +50,11 @@ Scope {
     }
     function move(step) {
         if (items.length && !busy)
-            carousel.currentIndex = Math.max(0, Math.min(items.length - 1, carousel.currentIndex + step))
+            selected = Math.max(0, Math.min(items.length - 1, selected + step))
     }
     function apply() {
-        if (busy || carousel.currentIndex < 0 || !items.length) return
-        const path = items[carousel.currentIndex].path
+        if (busy || selected < 0 || !items.length) return
+        const path = items[selected].path
         message = ""
         if (path === targetPath) { close(); return }
         const setter = setterComponent.createObject(root, { path: path, order: ++started })
@@ -77,7 +76,7 @@ Scope {
         setter.destroy()
     }
     function label(path) {
-        if (path === targetPath) return setters.length ? "Applying  ·  " : "Current wallpaper  ·  "
+        if (path === targetPath) return setters.length ? "Applying" : "Current"
         return ""
     }
 
@@ -118,7 +117,7 @@ Scope {
             onStreamFinished: {
                 try {
                     const result = JSON.parse(text)
-                    carousel.currentIndex = -1
+                    root.selected = -1
                     root.items = result.items
                     root.directory = result.directory
                     if (result.errors.length) root.message = result.errors.length + " image(s) could not be loaded"
@@ -171,7 +170,7 @@ Scope {
         function apply(): void { if (root.opened) root.apply() }
         function state(): string {
             return JSON.stringify({open: root.opened, busy: root.busy, count: root.items.length,
-                selected: root.items[carousel.currentIndex]?.path ?? "", current: root.currentPath,
+                selected: root.items[root.selected]?.path ?? "", current: root.currentPath,
                 applying: root.setters.map(s => s.path), error: root.message})
         }
     }
@@ -198,118 +197,203 @@ Scope {
             Keys.onRightPressed: root.move(1)
             Keys.onReturnPressed: root.apply()
             Keys.onEnterPressed: root.apply()
+
+            Rectangle {
+                anchors.fill: parent
+                gradient: Gradient {
+                    GradientStop { position: 0; color: "#33000000" }
+                    GradientStop { position: 1; color: "#cc000000" }
+                }
+            }
             MouseArea { anchors.fill: parent; onClicked: root.close() }
 
-            Components.Surface {
-                anchors.centerIn: parent
-                width: Math.max(1, Math.min(parent.width - 32, 1100))
-                height: Math.max(1, Math.min(parent.height - 48, 620))
-                color: Theme.Colors.panel
-                radius: 20
-                border.color: Theme.Colors.ring
-                clip: true
-
-                Text {
-                    font.family: Theme.Fonts.family
-                    anchors { top: parent.top; topMargin: 24; horizontalCenter: parent.horizontalCenter }
-                    text: "Wallpapers"
-                    color: Theme.Colors.foreground
-                    font { pixelSize: 24; bold: true }
+            Item {
+                id: hand
+                anchors { left: parent.left; right: parent.right; top: parent.top; bottom: bar.top; bottomMargin: 24 }
+                opacity: root.preparing ? 0 : 1
+                readonly property real cardHeight: Math.max(1, Math.min(height * 0.5, 440))
+                readonly property real cardWidth: cardHeight * 0.72
+                readonly property real centerGap: cardWidth * 0.86
+                readonly property real fanStep: cardWidth * 0.52
+                readonly property real reach: Math.max(1, Math.ceil((width / 2 - centerGap) / fanStep) + 1)
+                property real position: root.selected
+                Behavior on position {
+                    enabled: !root.preparing
+                    NumberAnimation { duration: 320; easing.type: Easing.OutCubic }
                 }
-                ListView {
-                    id: carousel
-                    anchors { left: parent.left; right: parent.right; top: parent.top; topMargin: 80; bottom: footer.top; bottomMargin: 16 }
-                    orientation: ListView.Horizontal
-                    opacity: root.preparing ? 0 : 1
+
+                Repeater {
                     model: root.items
-                    readonly property real cardWidth: Math.max(1, Math.min(width * 0.62, height * 1.65))
-                    readonly property real cardHeight: cardWidth / 1.6
-                    readonly property real slotWidth: cardWidth * 0.60
-                    preferredHighlightBegin: (width - slotWidth) / 2
-                    preferredHighlightEnd: (width + slotWidth) / 2
-                    highlightRangeMode: ListView.StrictlyEnforceRange
-                    highlightMoveDuration: root.preparing ? 0 : 220
-                    snapMode: ListView.SnapToItem
-                    boundsBehavior: Flickable.StopAtBounds
-                    interactive: !root.busy
-                    cacheBuffer: Math.max(0, width)
                     delegate: Item {
-                        id: slot
+                        id: card
                         required property var modelData
                         required property int index
-                        width: carousel.slotWidth
-                        height: carousel.height
-                        readonly property real distance: Math.abs((x + width / 2 - carousel.contentX - carousel.width / 2) / width)
-                        z: 100 - distance
-                        opacity: Math.max(0, 1 - distance * 0.23)
-                        Rectangle {
-                            id: cardFrame
-                            readonly property real skew: -0.16
-                            anchors.centerIn: parent
-                            width: carousel.cardWidth
-                            height: carousel.cardHeight
-                            scale: Math.max(0.5, 1 - slot.distance * 0.26)
-                            color: Theme.Colors.background
-                            border { width: 3; color: slot.index === carousel.currentIndex ? Theme.Colors.foreground : Theme.Colors.ring }
-                            transform: Matrix4x4 {
-                                matrix: Qt.matrix4x4(1, cardFrame.skew, 0, -cardFrame.height * cardFrame.skew / 2, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1)
-                            }
-                            Item {
-                                id: imageClip
-                                readonly property real skew: parent.skew
-                                anchors.fill: parent
-                                anchors.margins: 3
-                                clip: true
+                        readonly property real offset: index - hand.position
+                        readonly property real distance: Math.abs(offset)
+                        readonly property real raise: Math.max(0, 1 - distance)
+                        readonly property real spread: Math.sign(offset)
+                            * (Math.min(distance, 1) * hand.centerGap + Math.max(distance - 1, 0) * hand.fanStep) / hand.cardWidth
+                        readonly property bool chosen: index === root.selected
+                        readonly property bool current: modelData.path === root.targetPath
+                        property real hover: pointer.containsMouse && !chosen ? 1 : 0
+                        Behavior on hover { NumberAnimation { duration: 160; easing.type: Easing.OutCubic } }
 
+                        visible: distance < hand.reach + 1
+                        width: hand.cardWidth
+                        height: hand.cardHeight
+                        x: hand.width / 2 - width / 2 + spread * hand.cardWidth
+                        y: hand.height - height * 1.12 + spread * spread * hand.cardHeight * 0.035
+                            - raise * hand.cardHeight * 0.06 - hover * hand.cardHeight * 0.08
+                        z: Math.min(1000 - distance + (pointer.containsMouse ? 1.5 : 0), 1000 - Math.min(distance, 0.5))
+                        rotation: spread * 7
+                        transformOrigin: Item.Bottom
+                        scale: 0.94 + raise * 0.1 + hover * 0.03
+                        opacity: Math.max(0, Math.min(1, hand.reach + 0.5 - distance))
+
+                        RectangularShadow {
+                            anchors.fill: face
+                            radius: face.radius
+                            offset.y: 10
+                            blur: 32
+                            spread: -6
+                            color: "#99000000"
+                        }
+                        Rectangle {
+                            id: face
+                            anchors.fill: parent
+                            radius: 22
+                            color: Theme.Colors.solidSurface
+                            border.width: card.chosen || card.hover > 0 ? 2 : 1
+                            border.color: card.chosen ? Qt.alpha(Theme.Colors.foreground, 0.7)
+                                : Qt.tint(Theme.Colors.edge, Qt.alpha(Theme.Colors.foreground, card.hover * 0.55))
+
+                            ClippingRectangle {
+                                id: art
+                                anchors { left: parent.left; right: parent.right; top: parent.top; margins: 8 }
+                                height: parent.height - 8 - caption.height
+                                radius: 15
+                                color: Theme.Colors.background
                                 Image {
-                                    id: artwork
-                                    anchors.centerIn: parent
-                                    width: parent.width + Math.abs(imageClip.skew) * height
-                                    height: parent.height
-                                    transform: Matrix4x4 {
-                                        matrix: Qt.matrix4x4(1, -imageClip.skew, 0, artwork.height * imageClip.skew / 2, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1)
-                                    }
-                                    source: slot.modelData.thumbnail
+                                    anchors.fill: parent
+                                    source: card.visible ? card.modelData.thumbnail : ""
                                     fillMode: Image.PreserveAspectCrop
                                     asynchronous: true
-                                    sourceSize.width: 900
+                                    sourceSize.height: 600
                                 }
                             }
-                            MouseArea {
-                                anchors.fill: parent
-                                enabled: !root.busy
-                                cursorShape: Qt.PointingHandCursor
-                                onClicked: carousel.currentIndex = slot.index
-                                onDoubleClicked: { carousel.currentIndex = slot.index; root.apply() }
+                            Rectangle {
+                                anchors { top: parent.top; right: parent.right; margins: 18 }
+                                visible: card.current
+                                width: 30; height: 30; radius: 15
+                                color: Theme.Colors.info
+                                border { width: 2; color: Theme.Colors.foreground }
+                                Components.Icon {
+                                    anchors.centerIn: parent
+                                    width: 16; height: 16
+                                    action: "check"
+                                    iconColor: Theme.Colors.foreground
+                                }
                             }
+                            Item {
+                                id: caption
+                                anchors { left: parent.left; right: parent.right; bottom: parent.bottom }
+                                height: 50
+                                Text {
+                                    anchors { left: parent.left; right: number.left; leftMargin: 18; rightMargin: 12; verticalCenter: parent.verticalCenter }
+                                    text: card.modelData.name.replace(/\.[^.]+$/, "")
+                                    color: Theme.Colors.foreground
+                                    font { family: Theme.Fonts.family; weight: Theme.Fonts.weight; pixelSize: 16 }
+                                    elide: Text.ElideRight
+                                }
+                                Text {
+                                    id: number
+                                    anchors { right: parent.right; rightMargin: 18; verticalCenter: parent.verticalCenter }
+                                    text: String(card.index + 1).padStart(2, "0")
+                                    color: Theme.Colors.muted
+                                    font { family: Theme.Fonts.family; weight: Theme.Fonts.weight; pixelSize: 14 }
+                                }
+                            }
+                            Rectangle {
+                                anchors.fill: parent
+                                radius: parent.radius
+                                color: "#000000"
+                                opacity: Math.min(1, card.distance) * 0.35 * (1 - card.hover)
+                            }
+                        }
+                        MouseArea {
+                            id: pointer
+                            anchors.fill: parent
+                            anchors.bottomMargin: -card.hover * hand.cardHeight * 0.08
+                            enabled: !root.busy
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: if (card.chosen) root.apply(); else root.selected = card.index
                         }
                     }
                 }
-                Column {
-                    id: footer
-                    anchors { left: parent.left; right: parent.right; bottom: parent.bottom; margins: 24 }
+            }
+
+            Components.Surface {
+                id: bar
+                anchors { horizontalCenter: parent.horizontalCenter; bottom: parent.bottom; bottomMargin: 32 }
+                width: Math.min(parent.width - 48, barRow.implicitWidth + 24)
+                height: 52
+                radius: 26
+                color: Theme.Colors.panel
+                border.color: Theme.Colors.ring
+                MouseArea { anchors.fill: parent }
+
+                Row {
+                    id: barRow
+                    anchors { left: parent.left; leftMargin: 12; verticalCenter: parent.verticalCenter }
                     spacing: 10
-                    Text {
-                        font.family: Theme.Fonts.family
-                        font.weight: Theme.Fonts.weight
-                        width: parent.width
-                        horizontalAlignment: Text.AlignHCenter
-                        text: root.busy ? "Loading thumbnails…"
-                            : root.items.length ? root.items[carousel.currentIndex]?.name ?? ""
-                            : "Add JPG, PNG, or WebP images to " + root.directory
-                        color: Theme.Colors.foreground
-                        font.pixelSize: 16
-                        elide: Text.ElideMiddle
+
+                    Components.IconButton {
+                        anchors.verticalCenter: parent.verticalCenter
+                        icon: "back"
+                        iconSize: 18
+                        radius: 18
+                        enabled: !root.busy && root.selected > 0
+                        onClicked: root.move(-1)
                     }
                     Text {
-                        font.family: Theme.Fonts.family
-                        font.weight: Theme.Fonts.weight
-                        width: parent.width
-                        horizontalAlignment: Text.AlignHCenter
-                        text: root.message || root.label(root.items[carousel.currentIndex]?.path ?? "") + "← → Browse   ·   Enter Apply to all monitors   ·   Esc Close"
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: root.items.length ? (root.selected + 1) + " / " + root.items.length : "0 / 0"
+                        color: Theme.Colors.foreground
+                        font { family: Theme.Fonts.family; weight: Theme.Fonts.weight; pixelSize: 15; features: { "tnum": 1 } }
+                    }
+                    Components.IconButton {
+                        anchors.verticalCenter: parent.verticalCenter
+                        icon: "forward"
+                        iconSize: 18
+                        radius: 18
+                        enabled: !root.busy && root.selected < root.items.length - 1
+                        onClicked: root.move(1)
+                    }
+                    Rectangle { anchors.verticalCenter: parent.verticalCenter; width: 1; height: 22; color: Theme.Colors.ring }
+                    Text {
+                        anchors.verticalCenter: parent.verticalCenter
+                        width: Math.min(implicitWidth, stage.width - 360)
+                        leftPadding: 6
+                        rightPadding: 6
+                        text: {
+                            if (root.message) return root.message
+                            if (root.busy) return "Loading thumbnails…"
+                            if (!root.items.length) return "Add JPG, PNG, or WebP images to " + root.directory
+                            const status = root.label(root.items[root.selected]?.path ?? "")
+                            return (status ? status + "   ·   " : "") + "← → Browse   ·   Enter Apply to all monitors   ·   Esc Close"
+                        }
                         color: root.message ? Theme.Colors.error : Theme.Colors.muted
-                        font.pixelSize: 13
-                        elide: Text.ElideRight
+                        font { family: Theme.Fonts.family; weight: Theme.Fonts.weight; pixelSize: 14 }
+                        elide: Text.ElideMiddle
+                    }
+                    Components.IconButton {
+                        anchors.verticalCenter: parent.verticalCenter
+                        icon: "close"
+                        iconSize: 18
+                        radius: 18
+                        highlighted: true
+                        onClicked: root.close()
                     }
                 }
             }
