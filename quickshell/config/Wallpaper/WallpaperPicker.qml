@@ -339,9 +339,10 @@ Scope {
                             anchors.bottomMargin: -card.pick * hand.cardHeight * 0.07 / card.scale
                             enabled: !root.busy
                             cursorShape: Qt.PointingHandCursor
-                            onClicked: {
+                            onClicked: root.selected = card.index
+                            onDoubleClicked: mouse => {
                                 if (card.chosen) root.apply()
-                                else root.selected = card.index
+                                else mouse.accepted = false
                             }
                         }
                     }
@@ -396,7 +397,7 @@ Scope {
                             if (root.busy) return "Loading thumbnails…"
                             if (!root.items.length) return "Add JPG, PNG, or WebP images to " + root.directory
                             const status = root.label(root.items[root.selected]?.path ?? "")
-                            return (status ? status + "   ·   " : "") + "← → Browse   ·   Click to select   ·   Click again or Enter to apply   ·   Esc Close"
+                            return (status ? status + "   ·   " : "") + "← → Browse   ·   Click to select   ·   Double-click or Enter to apply   ·   Esc Close"
                         }
                         color: root.message ? Theme.Colors.error : Theme.Colors.muted
                         font { family: Theme.Fonts.family; weight: Theme.Fonts.weight; pixelSize: 14 }
