@@ -18,41 +18,41 @@ let
       mv -f "$temp" ${wallpaper}
     '';
   };
-  theme = pkgs.runCommand "login-ui-sddm-theme" { } ''
-    dir=$out/share/sddm/themes/login-ui
-    mkdir -p $dir/Icons
-    cp ${./sddm-theme}/* $dir/
-    cp -r ${quickshell}/Login $dir/Login
-    cp -r ${quickshell}/Theme $dir/Theme
-    cp -r ${quickshell}/Icons/lucide $dir/Icons/lucide
-    chmod -R u+w $dir
-    rm -r $dir/Login/tests
-    cat > $dir/theme.conf <<EOF
-    [General]
-    background=${wallpaper}
-    EOF
+  greeter = pkgs.runCommand "login-ui-greeter" { } ''
+    mkdir -p $out/Icons
+    cp ${./greeter/shell.qml} $out/shell.qml
+    cp -r ${quickshell}/Login $out/Login
+    cp -r ${quickshell}/Theme $out/Theme
+    cp -r ${quickshell}/Icons/lucide $out/Icons/lucide
+    chmod -R u+w $out
+    rm -r $out/Login/tests
+  '';
+  startHyprland = "${config.programs.hyprland.package}/bin/start-hyprland";
+  showGreeter = pkgs.writeShellScript "login-ui-greeter" ''
+    export LOGIN_USER=${config.user.name}
+    export LOGIN_SESSION_COMMAND=${startHyprland}
+    export LOGIN_WALLPAPER=${wallpaper}
+    export QT_SCALE_FACTOR=1.5
+    export QT_WAYLAND_DISABLE_WINDOWDECORATION=1
+    exec ${pkgs.cage}/bin/cage -s -- ${pkgs.quickshell}/bin/quickshell --path ${greeter}
   '';
 in
 {
-  services.xserver.enable = true;
-  services.displayManager = {
-    sddm = {
-      enable = true;
-      theme = "login-ui";
-      extraPackages = [ pkgs.kdePackages.qtsvg ];
-      settings.General.GreeterEnvironment = "QT_SCREEN_SCALE_FACTORS=1.5";
+  services.greetd = {
+    enable = true;
+    settings = {
+      initial_session = {
+        command = startHyprland;
+        user = config.user.name;
+      };
+      default_session.command = "${showGreeter}";
     };
-    autoLogin = {
-      enable = true;
-      user = config.user.name;
-    };
-    defaultSession = "hyprland";
   };
 
-  environment.systemPackages = [ theme ];
   fonts.packages = [ pkgs.inter pkgs.adwaita-fonts ];
 
   systemd.tmpfiles.rules = [ "d /var/lib/login-ui 0755 ${config.user.name} users -" ];
+
   systemd.user.paths.login-wallpaper = {
     wantedBy = [ "default.target" ];
     unitConfig.ConditionUser = config.user.name;
