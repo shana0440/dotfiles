@@ -4,7 +4,7 @@ Nix configuration for a Hyprland + Quickshell desktop on NixOS, with the same
 shell, Git, Neovim, and tmux setup on macOS and WSL. User settings are managed
 by Home Manager (release 26.05); the system by `nixos/`.
 
-https://github.com/user-attachments/assets/7b0cae10-d5a4-413d-a6f8-f3a22615e800
+https://github.com/user-attachments/assets/cda1ae0f-2a2e-4336-83da-dc8da5054a2b
 
 The checkout must live at `~/dotfiles`: Git, Neovim, tmux, Kitty, and Hyprland
 configs are live links into it, and the NAS service reads its secret from it.
