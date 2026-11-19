@@ -44,12 +44,21 @@ Components.Island {
     }
 
     function openInputMethods() {
-        open("home")
+        open("settings")
         dashboard.showInputMethods()
+    }
+
+    function openBluetooth() {
+        open("settings")
+        dashboard.showBluetooth()
     }
 
     function cycleTab(step) {
         dashboard.cycle(step)
+    }
+
+    function moveFocus(forward) {
+        dashboard.moveFocus(forward)
     }
 
     function focusSearch() {
@@ -70,7 +79,7 @@ Components.Island {
     }
 
     function showVolume() {
-        if (expanded && expandedView === "audio")
+        if (expanded && expandedView === "settings")
             return
         expanded = false
         volumeVisible = true

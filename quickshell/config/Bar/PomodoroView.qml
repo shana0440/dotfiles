@@ -22,6 +22,8 @@ Item {
         radius: 8
         color: current ? Theme.Colors.foreground
             : chipMouse.containsMouse || activeFocus ? Theme.Colors.surfaceHover : Theme.Colors.surface
+        border.width: activeFocus ? 2 : 0
+        border.color: Theme.Colors.muted
         activeFocusOnTab: true
         Accessible.role: Accessible.Button
         Accessible.name: label.text

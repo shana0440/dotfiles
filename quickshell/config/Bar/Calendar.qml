@@ -1,5 +1,6 @@
 import QtQuick
 import "../Theme" as Theme
+import "../Components" as Components
 
 Item {
     id: calendar
@@ -34,22 +35,13 @@ Item {
                 width: parent.width
                 height: 28
 
-                Text {
-                    font.family: Theme.Fonts.family
-                    font.weight: Theme.Fonts.weight
+                Components.IconButton {
                     width: 28
                     height: parent.height
-                    text: "‹"
-                    color: Theme.Colors.foreground
-                    font.pixelSize: 22
-                    horizontalAlignment: Text.AlignHCenter
-                    verticalAlignment: Text.AlignVCenter
-
-                    MouseArea {
-                        anchors.fill: parent
-                        cursorShape: Qt.PointingHandCursor
-                        onClicked: calendar.changeMonth(-1)
-                    }
+                    iconSize: 16
+                    icon: "back"
+                    tooltip: "Previous month"
+                    onClicked: calendar.changeMonth(-1)
                 }
 
                 Text {
@@ -70,22 +62,13 @@ Item {
                     }
                 }
 
-                Text {
-                    font.family: Theme.Fonts.family
-                    font.weight: Theme.Fonts.weight
+                Components.IconButton {
                     width: 28
                     height: parent.height
-                    text: "›"
-                    color: Theme.Colors.foreground
-                    font.pixelSize: 22
-                    horizontalAlignment: Text.AlignHCenter
-                    verticalAlignment: Text.AlignVCenter
-
-                    MouseArea {
-                        anchors.fill: parent
-                        cursorShape: Qt.PointingHandCursor
-                        onClicked: calendar.changeMonth(1)
-                    }
+                    iconSize: 16
+                    icon: "forward"
+                    tooltip: "Next month"
+                    onClicked: calendar.changeMonth(1)
                 }
             }
 

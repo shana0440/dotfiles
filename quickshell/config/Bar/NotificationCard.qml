@@ -159,6 +159,8 @@ Rectangle {
                         color: primary
                             ? (mouse.containsMouse ? Qt.tint(Theme.Colors.foreground, "#2e0c0c0d") : Theme.Colors.foreground)
                             : mouse.containsMouse || activeFocus ? Theme.Colors.highlight : Theme.Colors.transparent
+                        border.width: activeFocus ? 2 : 0
+                        border.color: Theme.Colors.muted
                         scale: mouse.pressed ? 0.96 : 1
                         activeFocusOnTab: true
                         Accessible.role: Accessible.Button

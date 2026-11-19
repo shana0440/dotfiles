@@ -56,20 +56,23 @@ PanelWindow {
     }
 
     function openDashboard(tab) {
-        centerIsland.open(["home", "media", "audio", "notifications", "network", "bluetooth", "system", "usage", "pomodoro", "power"].includes(tab) ? tab : "home")
+        centerIsland.open(["home", "media", "notifications", "network", "settings", "system", "usage", "pomodoro", "power"].includes(tab) ? tab : "home")
     }
 
     Connections {
         target: Services.Bluetooth
         function onRequestChanged() {
             if (Services.Bluetooth.request)
-                root.openDashboard("bluetooth")
+                centerIsland.openBluetooth()
         }
     }
 
     IpcHandler {
         target: "inputMenu"
         function close() { root.closeMenus() }
+        function next() { Services.InputMethod.pickerStepped(1) }
+        function previous() { Services.InputMethod.pickerStepped(-1) }
+        function activate() { Services.InputMethod.pickerActivated() }
     }
 
     onMenuNeedsKeyboardFocusChanged: {
@@ -224,8 +227,23 @@ PanelWindow {
         anchors.rightMargin: root.islandMargin
         focus: true
         Keys.onEscapePressed: root.closeMenus()
+        Keys.onTabPressed: event => {
+            if (centerIsland.expanded)
+                centerIsland.moveFocus(true)
+            else
+                event.accepted = false
+        }
+        Keys.onBacktabPressed: event => {
+            if (centerIsland.expanded)
+                centerIsland.moveFocus(false)
+            else
+                event.accepted = false
+        }
         Keys.onPressed: event => {
-            if (root.menuNeedsKeyboardFocus && event.key === Qt.Key_Space
+            if (centerIsland.expanded && (event.key === Qt.Key_PageDown || event.key === Qt.Key_PageUp)) {
+                centerIsland.cycleTab(event.key === Qt.Key_PageDown ? 1 : -1)
+                event.accepted = true
+            } else if (root.menuNeedsKeyboardFocus && event.key === Qt.Key_Space
                     && (event.modifiers & ~Qt.KeypadModifier) === Qt.ControlModifier) {
                 Services.InputMethod.next()
                 event.accepted = true
@@ -233,18 +251,6 @@ PanelWindow {
                     && event.text.length > 0 && !/[\x00-\x1f\x7f]/.test(event.text)) {
                 event.accepted = centerIsland.typeIntoSearch(event.text)
             }
-        }
-        Keys.onTabPressed: event => {
-            if (centerIsland.expanded)
-                centerIsland.cycleTab(1)
-            else
-                event.accepted = false
-        }
-        Keys.onBacktabPressed: event => {
-            if (centerIsland.expanded)
-                centerIsland.cycleTab(-1)
-            else
-                event.accepted = false
         }
 
         TapHandler {

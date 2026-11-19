@@ -4,7 +4,7 @@ Nix configuration for a Hyprland + Quickshell desktop on NixOS, with the same
 shell, Git, Neovim, and tmux setup on macOS and WSL. User settings are managed
 by Home Manager (release 26.05); the system by `nixos/`.
 
-https://github.com/user-attachments/assets/7b0cae10-d5a4-413d-a6f8-f3a22615e800
+https://github.com/user-attachments/assets/cda1ae0f-2a2e-4336-83da-dc8da5054a2b
 
 The checkout must live at `~/dotfiles`: Git, Neovim, tmux, Kitty, and Hyprland
 configs are live links into it, and the NAS service reads its secret from it.
@@ -121,26 +121,34 @@ All bindings are in `hyprland/hyprland.lua`. The main ones:
   Links in her replies get a preview card, fetched by `link-preview` only from
   public internet addresses. The title shows first and the image follows;
   previews are cached for a week in `~/.cache/quickshell/link-previews`.
-- Tap `Super` to open the dashboard; type to [search it](#dashboard-search).
+- Tap `Super` to open the dashboard; `Page Down` / `Page Up` switch tabs,
+  `Tab` / `Shift+Tab` move between the buttons of the current tab and `Enter` or
+  `Space` presses one, and typing [searches it](#dashboard-search).
+  Its settings tab holds the output and input volume, Wi-Fi, Bluetooth, the
+  dark/transparent theme, Do Not Disturb and the input method. Click a `>` to
+  pick an audio device, join a Wi-Fi network, manage Bluetooth devices or
+  switch input method; click a tile itself to toggle it. Do Not Disturb keeps
+  notifications in the list without popping them up, except urgent ones. The
+  network tab shows connection status.
 
 ### Dashboard search
 
 With the dashboard open, start typing to search it. Only matching tabs stay in
-the sidebar, and the best match opens: `wifi` jumps to the network tab. On the
-usage tab, `claude` or `codex` shows only that card. `Tab` steps through
-matches, `Enter` keeps the current tab, `Esc` clears the search.
+the sidebar, and the best match opens: `wifi` jumps to the settings tab. On the
+usage tab, `claude` or `codex` shows only that card. `Page Down` /
+`Page Up` step through the matches, `Enter` keeps the current tab, `Esc` clears
+the search.
 
 Each tab matches its name and these keywords (`tabList` in
 `quickshell/config/Bar/Dashboard.qml`):
 
 | Tab | Keywords |
 |---|---|
-| Home | calendar, date, weather, input method, keyboard, theme |
+| Home | calendar, date, weather |
 | Now playing | media, music, song, track, player |
-| Audio | volume, sound, speaker, headphones, microphone, mic, output, input |
 | Notifications | alerts, messages |
-| Network | wifi, wi-fi, wlan, ethernet, internet, ssid, connections |
-| Bluetooth | bt, pair, devices, headphones |
+| Network | ethernet, internet, connections, ip, speed |
+| Settings | volume, sound, speaker, headphones, microphone, mic, output, input, wifi, wi-fi, wlan, ssid, bluetooth, bt, pair, devices, theme, dark, transparent, do not disturb, dnd, quiet, input method, keyboard, language, ime |
 | System | cpu, gpu, memory, ram, vram, storage, disk |
 | Usage | claude, codex, agent, limit, quota |
 | Pomodoro | timer, focus, break |
@@ -154,8 +162,9 @@ first `make home`.
 - `Ctrl+F1` / `Ctrl+F2` / `Ctrl+F3`: English / Mozc / Chewing.
 - `Ctrl+Space`: cycle input methods.
 - `Super+Ctrl+Space`: toggle Hiragana ↔ Katakana in Mozc.
-- The bar shows the current one beside the notification bell; click it, or open
-  the dashboard's home tab (tap `Super`), to pick another.
+- The bar shows the current one beside the notification bell; click it, or use
+  the input method row in the dashboard's settings tab, to pick another. In the
+  list, `Tab` / `Shift+Tab` move, `Enter` or `Space` picks and `Esc` closes.
 - Engine list and shortcuts live in `hyprland/hyprland.nix`; other preferences
   in `fcitx5-configtool`.
 

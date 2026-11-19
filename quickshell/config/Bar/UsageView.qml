@@ -78,8 +78,8 @@ Item {
         radius: 8
         color: primary ? (buttonMouse.containsMouse ? Qt.tint(Theme.Colors.foreground, "#2e0c0c0d") : Theme.Colors.foreground)
             : buttonMouse.containsMouse || activeFocus ? Theme.Colors.highlight : Theme.Colors.transparent
-        border.width: primary ? 0 : 1
-        border.color: Theme.Colors.ring
+        border.width: activeFocus ? 2 : primary ? 0 : 1
+        border.color: activeFocus ? Theme.Colors.muted : Theme.Colors.ring
         opacity: enabled ? 1 : 0.4
         activeFocusOnTab: true
         Accessible.role: Accessible.Button

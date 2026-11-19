@@ -2,6 +2,7 @@ pragma Singleton
 
 import QtQuick
 import Quickshell
+import Quickshell.Io
 import Quickshell.Services.Notifications
 import Quickshell.Hyprland
 import Quickshell.Wayland
@@ -24,6 +25,13 @@ Singleton {
     property bool focusBlocked: false
     property var pendingSender: []
     property var afterFocusReturns: []
+    property bool doNotDisturb: false
+
+    onDoNotDisturbChanged: savedSettings.doNotDisturb = doNotDisturb
+
+    function toggleDoNotDisturb() {
+        doNotDisturb = !doNotDisturb
+    }
 
     function hidePreview() {
         previewTimer.stop()
@@ -147,6 +155,8 @@ Singleton {
 
         onNotification: notification => {
             notification.tracked = true
+            if (root.doNotDisturb && notification.urgency !== NotificationUrgency.Critical)
+                return
             const repeat = !root.previewClosing && root.samePreview(root.preview, notification)
             root.previewCount = repeat ? root.previewCount + 1 : 1
             root.preview = notification
@@ -164,6 +174,20 @@ Singleton {
             root.previewRestarted()
             if (repeat)
                 root.previewRepeated()
+        }
+    }
+
+    FileView {
+        path: Quickshell.statePath("notifications.json")
+        blockLoading: true
+        watchChanges: false
+        printErrors: false
+        onAdapterUpdated: writeAdapter()
+        onLoaded: root.doNotDisturb = savedSettings.doNotDisturb
+
+        JsonAdapter {
+            id: savedSettings
+            property bool doNotDisturb: false
         }
     }
 

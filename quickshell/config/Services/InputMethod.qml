@@ -8,6 +8,8 @@ Singleton {
     id: root
 
     property bool pickerOpen: false
+    signal pickerStepped(int step)
+    signal pickerActivated()
     readonly property var inputItem: SystemTray.items.values.find(item => item.id === "Fcitx") ?? null
     readonly property string trayIcon: inputItem?.icon.replace("image://icon/", "") ?? ""
     readonly property string icon: iconOf(name)
