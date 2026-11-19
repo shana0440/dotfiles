@@ -27,7 +27,7 @@ Item {
     readonly property string title: notification?.summary ?? lastTitle
     readonly property string body: notification?.body ?? lastBody
     readonly property string app: notification?.appName ?? lastApp
-    readonly property string image: notification?.image ?? lastImage
+    readonly property string image: notification ? Services.Notifications.imageSource(notification) : lastImage
     readonly property string status: notification ? Services.Notifications.statusOf(notification) : lastStatus
     readonly property bool showsImage: status !== "success" && picture.status === Image.Ready
     readonly property var actions: (notification?.actions ?? []).slice(0, 2)

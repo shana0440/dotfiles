@@ -54,7 +54,7 @@ Rectangle {
                 Image {
                     id: picture
                     anchors.fill: parent
-                    source: root.notification ? root.notification.image : ""
+                    source: Services.Notifications.imageSource(root.notification)
                     sourceSize: Qt.size(56, 56)
                     asynchronous: true
                     fillMode: Image.PreserveAspectCrop

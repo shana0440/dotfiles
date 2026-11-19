@@ -59,6 +59,14 @@ Singleton {
         return notification.desktopEntry === "screen-capture" ? "success" : "info"
     }
 
+    function imageSource(notification) {
+        const image = notification?.image ?? ""
+        const iconProviderPath = image.startsWith("image://icon/") ? image.slice("image://icon/".length) : ""
+        if (!iconProviderPath.startsWith("/"))
+            return image
+        return "file://" + iconProviderPath.split("/").map(encodeURIComponent).join("/")
+    }
+
     function samePreview(a, b) {
         return a !== null && b !== null && a.appName === b.appName && a.summary === b.summary && a.body === b.body
     }
