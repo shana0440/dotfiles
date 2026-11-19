@@ -18,6 +18,8 @@ Scope {
     readonly property bool regionMode: modes[mode].region
     readonly property bool windowMode: modes[mode].window
     readonly property bool recordingMode: modes[mode].recording
+    readonly property bool selectionMissing: windowMode ? Services.Capture.selectedWindow === null
+        : regionMode && (Services.Capture.selectionRect.width <= 0 || Services.Capture.selectionRect.height <= 0)
     readonly property var modes: [
         { label: "1 · Capture entire desktop", region: false, window: false, recording: false },
         { label: "2 · Capture a window", region: false, window: true, recording: false },
@@ -38,7 +40,8 @@ Scope {
     }
 
     function configureSelection() {
-        const previous = Services.Capture.selectingRegion ? Services.Capture.selectionRect : null
+        const drawn = Services.Capture.selectionRect
+        const previous = Services.Capture.selectingRegion && drawn.width > 0 && drawn.height > 0 ? drawn : null
         const previousScreen = Services.Capture.selectionScreenName
         Services.Capture.cancelRegionSelection()
         Services.Capture.cancelWindowSelection()
@@ -52,10 +55,8 @@ Scope {
         if (!regionMode)
             return
         Services.Capture.beginRegionSelection(recordingMode ? "recording" : "screenshot", outputName)
-        Services.Capture.setRegionSelection(outputName, previous && previousScreen === outputName ? previous : {
-            x: outputScreen.width * 0.2, y: outputScreen.height * 0.2,
-            width: outputScreen.width * 0.6, height: outputScreen.height * 0.5
-        })
+        if (previous && previousScreen === outputName)
+            Services.Capture.setRegionSelection(outputName, previous)
     }
 
     function chooseMode(index) {
@@ -78,7 +79,7 @@ Scope {
         }
         if (pendingRecording.running || Services.Capture.takingScreenshot)
             return
-        if (!Services.Capture.previewActive || (windowMode && Services.Capture.selectedWindow === null))
+        if (!Services.Capture.previewActive || selectionMissing)
             return
         menuOpen = false
         if (windowMode) {
@@ -257,8 +258,7 @@ Scope {
                             ? "Stop · " + Services.Capture.recordingElapsedSeconds + "s"
                             : root.recordingMode ? "Record" : "Capture"
                         enabled: !Services.Capture.recordingCommandRunning
-                            && (Services.Capture.recording || (Services.Capture.previewActive
-                                && (!root.windowMode || Services.Capture.selectedWindow !== null)))
+                            && (Services.Capture.recording || (Services.Capture.previewActive && !root.selectionMissing))
                         Layout.leftMargin: 4
                         Layout.preferredWidth: 96
                         Layout.preferredHeight: 40
