@@ -29,6 +29,7 @@ description: Control the user's Linux desktop (Hyprland and the Quickshell deskt
 | Volume | `wpctl get-volume @DEFAULT_AUDIO_SINK@`, `wpctl set-volume @DEFAULT_AUDIO_SINK@ 40%` |
 | Wi-Fi, Bluetooth | `nmcli`, `bluetoothctl` |
 | Agent usage limits | `agent-usage` |
+| Apps started in the tray at login | `app-autostart list`; start one again with `app-autostart start <name>` |
 
 `hyprctl dispatch` takes Lua; `hyprland/hyprland.lua` in the dotfiles shows
 more `hl.dsp` dispatchers. Act through these commands only. When something has

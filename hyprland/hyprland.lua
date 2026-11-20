@@ -23,6 +23,7 @@ local servicesWithoutGraphicalSessionTarget = "fcitx5-daemon.service awww.servic
 hl.on("hyprland.start", function ()
     hl.exec_cmd("vicinae server")
     hl.exec_cmd("quickshell")
+    hl.exec_cmd("app-autostart")
     hl.exec_cmd("systemctl --user import-environment WAYLAND_DISPLAY DISPLAY XDG_CURRENT_DESKTOP"
         .. " && systemctl --user restart " .. servicesWithoutGraphicalSessionTarget)
 end)
