@@ -8,6 +8,9 @@ shell, Git, Neovim, and tmux setup on macOS and WSL.
 - This codebase is yours: you decide how it is built, and you maintain it
   from now on.
 - Let code explain itself instead of using comments.
+- Give every feature commands an agent can run to read and change it: a CLI,
+  or a Quickshell IPC target with a `state` function. List new commands and
+  IPC targets in `mei/skills/desktop/SKILL.md`.
 
 # Documentation
 
