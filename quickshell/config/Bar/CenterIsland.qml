@@ -33,8 +33,10 @@ Components.Island {
         : Math.min(16, targetHeight / 2)
 
     function close() {
-        expanded = false
-        Services.Notifications.hidePreview()
+        if (expanded)
+            expanded = false
+        else
+            Services.Notifications.hidePreview()
     }
 
     function open(view) {
@@ -74,7 +76,6 @@ Components.Island {
         function onReceived() {
             root.volumeVisible = false
             volumeTimeout.stop()
-            root.expanded = false
         }
     }
 
@@ -95,6 +96,18 @@ Components.Island {
             else
                 root.volumeVisible = false
         }
+    }
+
+    Binding {
+        target: Services.Notifications
+        property: "held"
+        value: root.expanded
+    }
+
+    Binding {
+        target: Services.Notifications
+        property: "listShown"
+        value: root.expanded && root.expandedView === "notifications"
     }
 
     onExpandedChanged: {

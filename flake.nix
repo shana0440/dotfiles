@@ -83,13 +83,6 @@
           enableAiSearch = false;
         };
 
-        x86_64-linux.eagle-wine = import ./eagle/package.nix {
-          pkgs = import nixpkgs {
-            system = "x86_64-linux";
-            config.allowUnfree = true;
-          };
-        };
-
         x86_64-linux.nexon-launcher = import ./nexon/package.nix {
           pkgs = import nixpkgs {
             system = "x86_64-linux";

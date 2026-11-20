@@ -15,6 +15,9 @@ in
 {
   home.packages = [ mei ];
 
+  xdg.dataFile."mei/.agents/skills/desktop".source = config.lib.file.mkOutOfStoreSymlink
+    "${config.dotfiles.directory}/mei/skills/desktop";
+
   systemd.user.services.mei = {
     Unit.Description = "mei personal assistant daemon";
     Service = {

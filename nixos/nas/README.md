@@ -10,8 +10,8 @@ machines without a NAS.
 2. **Shared Folder → Edit → NFS Permissions**: allow this machine's LAN IP with
    read/write.
 3. NFS checks numeric user/group IDs, not SMB logins. Make sure your Linux UID
-   can access the files (set server-side permissions or mapping; avoid "map all
-   users to admin").
+   can access the files: set server-side permissions, or a mapping that keeps
+   each user's own ID.
 4. Note the export path DSM shows, e.g. `/volume1/homes`.
 
 NFS here is unencrypted and trusts the client's user IDs; only allow trusted

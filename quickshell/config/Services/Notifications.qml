@@ -26,8 +26,46 @@ Singleton {
     property var pendingSender: []
     property var afterFocusReturns: []
     property bool doNotDisturb: false
+    property bool held: false
+    property bool listShown: false
+    property var waiting: null
+    property real waitingSince: 0
+    readonly property int waitingExpiresMs: 30000
 
     onDoNotDisturbChanged: savedSettings.doNotDisturb = doNotDisturb
+    onListShownChanged: if (listShown) waiting = null
+    onHeldChanged: {
+        if (held || waiting === null)
+            return
+        const notification = waiting
+        waiting = null
+        if (isSticky(notification) || Date.now() - waitingSince < waitingExpiresMs)
+            present(notification)
+    }
+
+    function isSticky(notification) {
+        return notification.expireTimeout === 0 || notification.urgency === NotificationUrgency.Critical
+    }
+
+    function present(notification) {
+        const repeat = !previewClosing && samePreview(preview, notification)
+        previewCount = repeat ? previewCount + 1 : 1
+        preview = notification
+        closeTimer.stop()
+        previewClosing = false
+        previewPaused = false
+        previewTimer.stop()
+        const sticky = isSticky(notification)
+        previewDuration = sticky ? 0 : notification.expireTimeout > 0 ? notification.expireTimeout : 5000
+        if (!sticky) {
+            previewTimer.remaining = previewDuration
+            previewTimer.resume()
+        }
+        received()
+        previewRestarted()
+        if (repeat)
+            previewRepeated()
+    }
 
     function toggleDoNotDisturb() {
         doNotDisturb = !doNotDisturb
@@ -157,23 +195,24 @@ Singleton {
             notification.tracked = true
             if (root.doNotDisturb && notification.urgency !== NotificationUrgency.Critical)
                 return
-            const repeat = !root.previewClosing && root.samePreview(root.preview, notification)
-            root.previewCount = repeat ? root.previewCount + 1 : 1
-            root.preview = notification
-            closeTimer.stop()
-            root.previewClosing = false
-            root.previewPaused = false
-            previewTimer.stop()
-            const sticky = notification.expireTimeout === 0 || notification.urgency === NotificationUrgency.Critical
-            root.previewDuration = sticky ? 0 : notification.expireTimeout > 0 ? notification.expireTimeout : 5000
-            if (!sticky) {
-                previewTimer.remaining = root.previewDuration
-                previewTimer.resume()
+            if (root.listShown)
+                return
+            if (root.held) {
+                root.waiting = notification
+                root.waitingSince = Date.now()
+                return
             }
-            root.received()
-            root.previewRestarted()
-            if (repeat)
-                root.previewRepeated()
+            root.present(notification)
+        }
+    }
+
+    IpcHandler {
+        target: "notifications"
+        function doNotDisturb(enabled: bool): void { root.doNotDisturb = enabled }
+        function dismissAll(): void { root.dismissAll() }
+        function state(): string {
+            return JSON.stringify({ doNotDisturb: root.doNotDisturb, notifications: root.notifications.map(n => ({
+                app: n.appName, summary: n.summary, body: n.body })) })
         }
     }
 

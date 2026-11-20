@@ -6,3 +6,6 @@ secrets.json.*
 *.plaintext.*
 
 __pycache__/
+
+# Agents' local workspace: test scripts, recordings, screenshots, and debug logs
+.agents/

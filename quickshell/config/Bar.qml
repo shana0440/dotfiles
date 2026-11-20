@@ -53,6 +53,9 @@ PanelWindow {
         }
         function open(tab: string): void { root.openDashboard(tab) }
         function close(): void { centerIsland.close() }
+        function state(): string {
+            return JSON.stringify({ open: centerIsland.expanded, tab: centerIsland.expandedView })
+        }
     }
 
     function openDashboard(tab) {

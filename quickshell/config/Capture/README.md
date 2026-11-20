@@ -16,6 +16,5 @@ then **Capture**/**Record** (or Enter). Esc closes it.
 - **Region:** drag, then move or resize with the handles.
 - While recording, the bar shows elapsed time and **Stop**.
 
-Screenshots are copied to the clipboard and saved in `~/Pictures/Screenshots`;
-recordings (with system audio, no microphone) in `~/Videos/Recordings`. The
-same actions are available as [`screen-capture-*` commands](../../../screen-capture/README.md).
+Captures are saved by the [`screen-capture-*` commands](../../../screen-capture/README.md),
+which also work on their own.

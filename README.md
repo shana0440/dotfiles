@@ -62,8 +62,9 @@ make nixos-update  # Update the NixOS channel and rebuild.
 make shell-memory  # Show memory usage of the running Quickshell desktop shell (Linux).
 ```
 
-Override the profile with `make home HOME_CONFIG=<profile>`. Never change
-`home.stateVersion` or `system.stateVersion` to update packages.
+Override the profile with `make home HOME_CONFIG=<profile>`. Keep
+`home.stateVersion` and `system.stateVersion` as they are; updating packages
+doesn't involve them.
 
 What needs which command:
 
@@ -73,7 +74,7 @@ What needs which command:
 - `.nix` files under the Home Manager profiles: `make home`.
 - `nixos/`, and the `nixos` modules of `applications.nix`, `vpn/`, and
   `file-manager/`: `make nixos`.
-- Fish is generated from `shell/fish.nix`; do not edit its generated files. The
+- Fish is generated from `shell/fish.nix`; edit that file. The
   login shell is set by NixOS (`make nixos`, then log in again).
 
 The first Neovim launch downloads plugins and Mason language servers (network
@@ -110,54 +111,8 @@ All bindings are in `hyprland/hyprland.lua`. The main ones:
 - `Super+Shift+S`: screen capture ([details](quickshell/config/Capture/README.md)).
 - `Super+Shift+L`: lock the screen.
 - `Super+Shift+W`: wallpaper picker ([details](wallpaper/README.md)).
-- `Super+K`: slide up a phone for chatting with [mei](https://github.com/shana0440/mei); press again or click outside it to
-  slide it away. It talks to the mei daemon at `$MEI_HOME/state/mei.sock` (default
-  `~/.local/share/mei`) and shows mei as offline when the daemon is not running.
-  Press `Ctrl+V` in the message box to attach a copied screenshot, image file,
-  or screen recording. Review or remove the attachment before sending it, with
-  or without a caption. Sent images appear in chat, and recordings open in
-  your default video player. Mei receives the local file path.
-  Tap her photo to open settings, where you can pick her photo with the desktop
-  file chooser, rename her (saved with `mei config set character.name`), edit her character file in mei's home (her
-  language and tone; `CHARACTER.md` unless `[character] file` points elsewhere),
-  open her schedules to turn each on or off or remove it, pick the chat background
-  (the default one or an image of your own), and reset her memory. A
-  reset permanently deletes her memory and chat history after you confirm it.
-  Links in her replies get a preview card, fetched by `link-preview` only from
-  public internet addresses. The title shows first and the image follows;
-  previews are cached for a week in `~/.cache/quickshell/link-previews`.
-- Tap `Super` to open the dashboard; `Page Down` / `Page Up` switch tabs,
-  `Tab` / `Shift+Tab` move between the buttons of the current tab and `Enter` or
-  `Space` presses one, and typing [searches it](#dashboard-search).
-  Its settings tab holds the output and input volume, Wi-Fi, Bluetooth, the
-  dark/transparent theme, Do Not Disturb and the input method. Click a `>` to
-  pick an audio device, join a Wi-Fi network, manage Bluetooth devices or
-  switch input method; click a tile itself to toggle it. Do Not Disturb keeps
-  notifications in the list without popping them up, except urgent ones. The
-  network tab shows connection status.
-
-### Dashboard search
-
-With the dashboard open, start typing to search it. Only matching tabs stay in
-the sidebar, and the best match opens: `wifi` jumps to the settings tab. On the
-usage tab, `claude` or `codex` shows only that card. `Page Down` /
-`Page Up` step through the matches, `Enter` keeps the current tab, `Esc` clears
-the search.
-
-Each tab matches its name and these keywords (`tabList` in
-`quickshell/config/Bar/Dashboard.qml`):
-
-| Tab | Keywords |
-|---|---|
-| Home | calendar, date, weather |
-| Now playing | media, music, song, track, player |
-| Notifications | alerts, messages |
-| Network | ethernet, internet, connections, ip, speed |
-| Settings | volume, sound, speaker, headphones, microphone, mic, output, input, wifi, wi-fi, wlan, ssid, bluetooth, bt, pair, devices, theme, dark, transparent, do not disturb, dnd, quiet, input method, keyboard, language, ime |
-| System | cpu, gpu, memory, ram, vram, storage, disk |
-| Usage | claude, codex, agent, limit, quota |
-| Pomodoro | timer, focus, break |
-| Power | shutdown, power off, restart, reboot, lock, log out, logout |
+- `Super+K`: phone for chatting with mei ([details](quickshell/config/Phone/README.md)).
+- Tap `Super`: dashboard ([details](quickshell/config/Bar/README.md)).
 
 ### Input methods
 
@@ -191,14 +146,3 @@ Nix store.
   computer under **Screen Mirroring** on an Apple device on the same LAN.
 - **iPhone webcam:** see [`nixos/iphone-webcam.md`](nixos/iphone-webcam.md).
 - **NAS mount:** see [`nixos/nas/`](nixos/nas/README.md).
-- **Weather:** the pill left of the bar's clock shows the current weather from
-  [wttr.in](https://wttr.in), located by your public IP; hover it for details, or click it to open
-  the dashboard's home tab. It stays hidden while offline.
-- **Agent usage:** the Quickshell dashboard's usage tab shows Claude and Codex
-  subscription limits (`agent-usage` on the command line). It reads the logins
-  saved by Pi, Claude Code, or Codex CLI without refreshing them, so those tools
-  stay signed in. `agent-usage reset-codex [CREDIT_ID]` redeems an earned Codex
-  limit reset.
-- **Pomodoro:** the dashboard's pomodoro tab runs 25-minute focus sessions with
-  5-minute breaks and a 15-minute break after every fourth. A notification marks
-  the end of each phase. `quickshell ipc call pomodoro toggle` starts or pauses it.

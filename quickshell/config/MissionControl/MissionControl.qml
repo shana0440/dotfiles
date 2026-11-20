@@ -70,6 +70,7 @@ Scope {
         function toggle(): void { if (root.opened) root.close(); else root.show() }
         function open(): void { root.show() }
         function close(): void { root.close() }
+        function state(): string { return JSON.stringify({ open: root.opened }) }
     }
 
     Variants {

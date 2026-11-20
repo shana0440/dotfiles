@@ -134,7 +134,7 @@ Scope {
         function open(): void { root.openMenu() }
         function close(): void { if (root.menuOpen) root.dismiss() }
         function stop(): void { Services.Capture.stopRecording() }
-        function status(): string {
+        function state(): string {
             return JSON.stringify({
                 recording: Services.Capture.recording,
                 mode: Services.Capture.recordingMode,
