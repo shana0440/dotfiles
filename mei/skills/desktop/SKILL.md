@@ -25,6 +25,7 @@ description: Control the user's Linux desktop (Hyprland and the Quickshell deskt
 | Set the wallpaper | `wallpaper-set <image>` (images live in `~/Pictures/Wallpapers`) |
 | Take a screenshot or record | `screen-capture-screenshot full`, `screen-capture-record full <monitor>`, `screen-capture-record stop` |
 | Show the user something | `notify-send '<title>' '<body>'` |
+| Turn notification sounds on or off | `quickshell ipc call notifications sound true` or `quickshell ipc call notifications sound false` |
 | Use the clipboard | `wl-copy`, `wl-paste` |
 | Volume | `wpctl get-volume @DEFAULT_AUDIO_SINK@`, `wpctl set-volume @DEFAULT_AUDIO_SINK@ 40%` |
 | Wi-Fi, Bluetooth | `nmcli`, `bluetoothctl` |

@@ -26,6 +26,7 @@ Singleton {
     property var pendingSender: []
     property var afterFocusReturns: []
     property bool doNotDisturb: false
+    property bool soundEnabled: true
     property bool held: false
     property bool listShown: false
     property var waiting: null
@@ -33,6 +34,7 @@ Singleton {
     readonly property int waitingExpiresMs: 30000
 
     onDoNotDisturbChanged: savedSettings.doNotDisturb = doNotDisturb
+    onSoundEnabledChanged: savedSettings.soundEnabled = soundEnabled
     onListShownChanged: if (listShown) waiting = null
     onHeldChanged: {
         if (held || waiting === null)
@@ -61,10 +63,18 @@ Singleton {
             previewTimer.remaining = previewDuration
             previewTimer.resume()
         }
+        playSound(notification)
         received()
         previewRestarted()
         if (repeat)
             previewRepeated()
+    }
+
+    function playSound(notification) {
+        if (!soundEnabled || chime.running || (doNotDisturb && notification.urgency !== NotificationUrgency.Critical))
+            return
+        const sound = Quickshell.shellPath("Sounds/" + statusOf(notification) + ".wav")
+        chime.exec(["pw-play", "--media-role", "Notification", sound])
     }
 
     function toggleDoNotDisturb() {
@@ -206,12 +216,15 @@ Singleton {
         }
     }
 
+    Process { id: chime }
+
     IpcHandler {
         target: "notifications"
         function doNotDisturb(enabled: bool): void { root.doNotDisturb = enabled }
+        function sound(enabled: bool): void { root.soundEnabled = enabled }
         function dismissAll(): void { root.dismissAll() }
         function state(): string {
-            return JSON.stringify({ doNotDisturb: root.doNotDisturb, notifications: root.notifications.map(n => ({
+            return JSON.stringify({ doNotDisturb: root.doNotDisturb, soundEnabled: root.soundEnabled, notifications: root.notifications.map(n => ({
                 app: n.appName, summary: n.summary, body: n.body })) })
         }
     }
@@ -222,11 +235,15 @@ Singleton {
         watchChanges: false
         printErrors: false
         onAdapterUpdated: writeAdapter()
-        onLoaded: root.doNotDisturb = savedSettings.doNotDisturb
+        onLoaded: {
+            root.doNotDisturb = savedSettings.doNotDisturb
+            root.soundEnabled = savedSettings.soundEnabled
+        }
 
         JsonAdapter {
             id: savedSettings
             property bool doNotDisturb: false
+            property bool soundEnabled: true
         }
     }
 
