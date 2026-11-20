@@ -266,6 +266,10 @@ for _, key in ipairs(keysAndButtonsThatCombineWithSuper) do
     end, { non_consuming = true, ignore_mods = true })
 end
 
+for _, button in ipairs({ "mouse:272", "mouse:273", "mouse:274" }) do
+    hl.bind(button, hl.dsp.event("pointerPressed"), { non_consuming = true, ignore_mods = true })
+end
+
 hl.bind(mainMod .. " + left",  hl.dsp.focus({ direction = "left" }))
 hl.bind(mainMod .. " + right", hl.dsp.focus({ direction = "right" }))
 hl.bind(mainMod .. " + up",    hl.dsp.focus({ direction = "up" }))

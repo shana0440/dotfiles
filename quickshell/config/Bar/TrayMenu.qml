@@ -14,6 +14,7 @@ PopupWindow {
     readonly property int shadowMargin: 16
     readonly property int gap: 8
     property real maxListHeight: 600
+    readonly property bool hovered: visible && menuHover.hovered
 
     function open(item) {
         trayItem = item
@@ -82,6 +83,8 @@ PopupWindow {
         color: Theme.Colors.panel
         border.width: 1
         border.color: Theme.Colors.edge
+
+        HoverHandler { id: menuHover }
 
         RectangularShadow {
             z: -1

@@ -48,7 +48,8 @@ Each tab matches its name and these keywords (`tabList` in `Dashboard.qml`):
 
 The island at the right of the bar lists open windows. When apps run in the
 background with a tray icon, a layers button appears at its end: click it to
-switch the island to those apps, and click it again to return to the windows.
+switch the island to those apps. Click it again, or click anywhere outside
+the island, to return to the windows.
 Click a background app to open it, middle-click for its secondary action, and
 right-click for its menu. In the menu, `Left` leaves a submenu and `Esc`
 closes it.

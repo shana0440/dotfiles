@@ -1,6 +1,7 @@
 import QtQuick
 import Quickshell
 import Quickshell.Io
+import Quickshell.Hyprland
 import Quickshell.Wayland
 import Quickshell.Services.SystemTray
 import "../Theme" as Theme
@@ -47,6 +48,17 @@ Components.Island {
         else
             item.activate()
     }
+
+    Connections {
+        target: Hyprland
+        function onRawEvent(event) {
+            if (event.name === "custom" && event.data === "pointerPressed" && root.showingBackground
+                    && !islandHover.hovered && !trayMenu.hovered)
+                root.backgroundShown = false
+        }
+    }
+
+    HoverHandler { id: islandHover }
 
     Connections {
         target: DesktopEntries
