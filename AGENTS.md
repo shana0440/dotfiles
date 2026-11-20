@@ -16,6 +16,8 @@ shell, Git, Neovim, and tmux setup on macOS and WSL.
 
 - Write for a new user of the repo, not as notes to yourself: no reasoning,
   history, test results, or details of this machine.
+- For each documentation change, name the task a reader could not do, or
+  would do wrong, without it. If you cannot name one, remove the change.
 - Keep documents short.
 - Say each thing in one document only; link to it from others instead of
   repeating it.
