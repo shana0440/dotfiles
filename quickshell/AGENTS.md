@@ -1,19 +1,11 @@
-# Quickshell validation
+# Verification
 
-- When the user requests Agent Workspace Linux testing, that request authorizes
-  launching an isolated Quickshell instance there. Do not ask again. Keep its
-  D-Bus session isolated and leave the user's desktop instance untouched.
-- Otherwise, use the user's already-running Quickshell instance. Do not launch
-  another instance or restart it unless the user explicitly asks.
-- Validate changes by interacting with the actual desktop and capturing
-  screenshots or screen recordings. Inspect the captured evidence yourself.
-- Do not add automated tests, offscreen harnesses, fake services, or fixtures.
-  Passing scripts, status queries, logs, and syntax checks are not proof that the
-  UI works.
-- Reproduce the reported workflow from its initial state, including transitions,
-  rather than checking only the final state. Do not claim success if a required
-  step is missing or fails in the recording.
-- Give the user the evidence file path and state any remaining failures honestly.
+- Record UI changes in an isolated session (below), with real services, and
+  keep the user's running Quickshell as it is.
+- Reproduce the workflow from its initial state through every transition.
+- Watch the screenshots and recording yourself, and report success only for
+  steps they show working. Give the user the file paths and any remaining
+  failures.
 
 # Recording a session
 
@@ -38,11 +30,9 @@ record_save
   `active_workspace_is`, `mei_answered`, `brightness`. Inspection: `hypr`,
   `shell_ipc`, `clipboard`, `shot`.
 - The screen is 1920x1080 at scale 1. The lock password is `$lock_password`.
-- `wait_for` only paces the script; inspect the screenshots and recording
-  before reporting.
 
 # Documentation
 
 - When changing a dashboard tab or its search keywords (`tabList` in
-  `config/Bar/Dashboard.qml`), update the keyword table under "Dashboard
-  search" in the root `README.md` to match.
+  `config/Bar/Dashboard.qml`), update the keyword table in
+  `config/Bar/README.md` to match.

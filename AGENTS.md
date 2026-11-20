@@ -8,7 +8,6 @@ shell, Git, Neovim, and tmux setup on macOS and WSL.
 - This codebase is yours: you decide how it is built, and you maintain it
   from now on.
 - Let code explain itself instead of using comments.
-- Don't write unit tests.
 
 # Documentation
 
@@ -21,6 +20,7 @@ shell, Git, Neovim, and tmux setup on macOS and WSL.
 
 # Verification
 
+- Verify by running the real thing and recording it, in place of unit tests.
 - After installing a new application, launch it in a headless Agent Workspace
   Linux desktop and record it for the user to review.
 - After changing the Quickshell UI, record the changed workflow in an isolated
