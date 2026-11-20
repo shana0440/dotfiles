@@ -23,6 +23,7 @@ local servicesWithoutGraphicalSessionTarget = "fcitx5-daemon.service awww.servic
 hl.on("hyprland.start", function ()
     hl.exec_cmd("vicinae server")
     hl.exec_cmd("quickshell")
+    hl.exec_cmd("app-autostart")
     hl.exec_cmd("systemctl --user import-environment WAYLAND_DISPLAY DISPLAY XDG_CURRENT_DESKTOP"
         .. " && systemctl --user restart " .. servicesWithoutGraphicalSessionTarget)
 end)
@@ -264,6 +265,10 @@ for _, key in ipairs(keysAndButtonsThatCombineWithSuper) do
             superTap.combined = true
         end
     end, { non_consuming = true, ignore_mods = true })
+end
+
+for _, button in ipairs({ "mouse:272", "mouse:273", "mouse:274" }) do
+    hl.bind(button, hl.dsp.event("pointerPressed"), { non_consuming = true, ignore_mods = true })
 end
 
 hl.bind(mainMod .. " + left",  hl.dsp.focus({ direction = "left" }))

@@ -88,7 +88,7 @@ required).
 | `config.nix` | Shared user settings |
 | `home.nix` / `macos.nix` / `wsl.nix` | Per-platform module imports |
 | `programs.nix`, `shell/`, `git/`, `neovim/`, `tmux/`, `agents/` | Shared CLI tools, Fish, editors, coding agents |
-| `applications.nix` | Desktop apps including Brave (Home Manager) and Steam (NixOS) |
+| `applications.nix` | Desktop apps including Brave (Home Manager) and Steam (NixOS), and the apps that start in the tray at login (`app-autostart list`) |
 | `spotify/spotify.nix` | Spotify with Spicetify Marketplace (x86_64 Linux); configure themes and extensions here |
 | `hyprland/`, `quickshell/`, `kitty/`, `wallpaper/`, `screen-capture/` | Desktop Linux session |
 | `nixos/` | System configuration |
@@ -113,6 +113,8 @@ All bindings are in `hyprland/hyprland.lua`. The main ones:
 - `Super+Shift+W`: wallpaper picker ([details](wallpaper/README.md)).
 - `Super+K`: phone for chatting with mei ([details](quickshell/config/Phone/README.md)).
 - Tap `Super`: dashboard ([details](quickshell/config/Bar/README.md)).
+- Layers button at the end of the right bar island: background apps
+  ([details](quickshell/config/Bar/README.md#background-apps)).
 
 ### Input methods
 

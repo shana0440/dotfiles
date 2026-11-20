@@ -156,8 +156,9 @@ PanelWindow {
 
     exclusionMode: ExclusionMode.Ignore
     color: Theme.Colors.transparent
-    WlrLayershell.keyboardFocus: menuNeedsKeyboardFocus && !Services.Capture.ownsInput
-        ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
+    WlrLayershell.keyboardFocus: Services.Capture.ownsInput ? WlrKeyboardFocus.None
+        : menuNeedsKeyboardFocus ? WlrKeyboardFocus.Exclusive
+        : appsIsland.menuOpen ? WlrKeyboardFocus.OnDemand : WlrKeyboardFocus.None
     readonly property bool showsAboveApps: menuOpen || centerIsland.notificationVisible || Services.Capture.recording
     WlrLayershell.layer: showsAboveApps ? WlrLayer.Overlay : WlrLayer.Bottom
 
@@ -301,7 +302,7 @@ PanelWindow {
             id: appsIsland
             bare: appsGoo.ready
             anchors.right: parent.right
-            height: root.compactIslandHeight
+            islandHeight: root.compactIslandHeight
             availableWidth: Math.max(0, parent.width - root.islandSpacing
                 - Math.max(centerIsland.x + centerIsland.width,
                     recordingStopIsland.visible ? recordingStopIsland.x + recordingStopIsland.width : 0,
