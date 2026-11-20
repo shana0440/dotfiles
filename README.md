@@ -148,3 +148,8 @@ Nix store.
   computer under **Screen Mirroring** on an Apple device on the same LAN.
 - **iPhone webcam:** see [`nixos/iphone-webcam.md`](nixos/iphone-webcam.md).
 - **NAS mount:** see [`nixos/nas/`](nixos/nas/README.md).
+
+## Credits
+
+- The Quickshell bar's island design is inspired by
+  [Ding](https://ding.yusufcengiz.dev/).
