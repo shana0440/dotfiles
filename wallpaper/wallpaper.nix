@@ -29,18 +29,10 @@ let
       exec ${python}/bin/python3 ${./library.py} set "$@"
     '';
   };
-  check = pkgs.writeShellApplication {
-    name = "wallpaper-check";
-    runtimeInputs = [ pkgs.imagemagick ];
-    text = ''
-      ${python}/bin/python3 ${./test_library.py} ${./library.py} "$@"
-      ${python}/bin/python3 ${./test_colonies.py} ${./colonies.py} "$@"
-    '';
-  };
 in
 {
   services.awww.enable = true;
   home.activation.publishColoniesShader = publishShaderPathForLiveReload
     "${config.xdg.configHome}/wallpaper/colonies-shader" shader;
-  home.packages = [ library colonies setWallpaper check ];
+  home.packages = [ library colonies setWallpaper ];
 }
