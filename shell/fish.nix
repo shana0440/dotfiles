@@ -3,6 +3,7 @@
 {
   programs.fish = {
     enable = true;
+    shellAliases.cd = "z";
   };
 
   programs.fzf = {
