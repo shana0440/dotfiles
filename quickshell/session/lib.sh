@@ -210,6 +210,9 @@ account required $pam_lib/pam_permit.so
 EOF
     printf '#!/bin/sh\nexec sleep infinity\n' > "$work/bin/bluetooth-pairing-agent"
     chmod +x "$work/bin/bluetooth-pairing-agent"
+    printf '#!/bin/sh\n[ "$1" = ipc ] && exec %s --path %s "$@"\nexec %s "$@"\n' \
+        "$(command -v quickshell)" "$work/config" "$(command -v quickshell)" > "$work/bin/quickshell"
+    chmod +x "$work/bin/quickshell"
     local record_command
     record_command=$(command -v screen-capture-record)
     cat > "$work/bin/screen-capture-record" <<EOF
@@ -277,7 +280,13 @@ start_mei() {
             cp -r --no-preserve=mode "$entry" "$work/mei/"
         done
     )
-    background isolated mei-daemon > "$work/mei.log" 2>&1
+    mkdir -p "$work/mei/.agents/skills"
+    local skill
+    for skill in "$repo"/mei/skills/*; do
+        rm -rf "$work/mei/.agents/skills/$(basename "$skill")"
+        cp -r --no-preserve=mode "$skill" "$work/mei/.agents/skills/"
+    done
+    background hypr mei-daemon > "$work/mei.log" 2>&1
     wait_for 60 test -S "$work/mei/state/mei.sock"
 }
 
@@ -313,14 +322,13 @@ session_start() {
         > "$work/input.log" 2>&1
     wait_for 40 grep -q ready "$work/input.log"
 
-    [ -z "$with_mei" ] || start_mei
-
     log "starting nested Hyprland"
     background host start-hyprland -- -c "$work/hyprland.lua" > "$work/hyprland.log" 2>&1
     wait_for 60 hyprland_ready
     wait_for 40 hypr_display_ready
     wait_for 40 monitor_ready
     wait_for 60 shell_ready
+    [ -z "$with_mei" ] || start_mei
     press alt+1 0.5
     move 1200 900
 }
