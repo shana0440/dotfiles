@@ -53,6 +53,7 @@ Item {
         network: "globe",
         back: "chevron-left",
         forward: "chevron-right",
+        down: "chevron-down",
         usage: "gauge",
         timer: "timer",
         reset: "rotate-ccw",

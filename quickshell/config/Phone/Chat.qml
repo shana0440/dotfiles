@@ -33,11 +33,16 @@ Item {
     signal settingsRequested
 
     property var attachment: null
+    property TextEdit selectedMessage: null
     property string pasteError: ""
     readonly property bool readyToSend: !clipboard.running && !Services.Mei.resetting
         && (attachment !== null || composer.text.trim() !== "")
 
     function focusPage() { composer.forceActiveFocus() }
+    function selectMessage(message) {
+        if (selectedMessage && selectedMessage !== message) selectedMessage.deselect()
+        selectedMessage = message
+    }
     function submit() {
         if (!readyToSend) return
         Services.Mei.send(composer.text, attachment)
@@ -104,6 +109,7 @@ Item {
         property real lastSwipeTime: 0
         readonly property real topY: originY - topMargin
         readonly property real bottomY: Math.max(topY, originY + contentHeight + bottomMargin - height)
+        readonly property bool farFromBottom: bottomY - contentY > height / 3
 
         function clampY(y) { return Math.max(topY, Math.min(bottomY, y)) }
 
@@ -118,6 +124,11 @@ Item {
             glide.to = to
             followBottom = to >= bottomY - 1
             glide.restart()
+        }
+
+        function goToBottom() {
+            cancelFlick()
+            glideBy(bottomY - contentY)
         }
 
         function swipe(event) {
@@ -151,6 +162,7 @@ Item {
         clip: true
         model: Services.Mei.messages
         boundsBehavior: Flickable.StopAtBounds
+        interactive: false
         onMovementEnded: followBottom = atYEnd
 
         NumberAnimation {
@@ -159,13 +171,14 @@ Item {
             property: "contentY"
             duration: 220
             easing.type: Easing.OutCubic
+            onFinished: if (history.followBottom) history.positionViewAtEnd()
         }
 
         WheelHandler {
             acceptedDevices: PointerDevice.Mouse | PointerDevice.TouchPad
             onWheel: event => history.wheel(event)
         }
-        onCountChanged: Qt.callLater(positionViewAtEnd)
+        onCountChanged: if (followBottom) Qt.callLater(positionViewAtEnd)
         onContentHeightChanged: if (followBottom) Qt.callLater(positionViewAtEnd)
         onHeightChanged: if (followBottom) Qt.callLater(positionViewAtEnd)
 
@@ -351,18 +364,23 @@ Item {
                             implicitHeight: bodyText.height * markdownLayoutScale
                             width: Math.min(implicitWidth, bubbleRow.maxTextWidth)
 
-                            Text {
+                            TextEdit {
                                 id: bodyText
                                 width: body.width / body.markdownLayoutScale
+                                readOnly: true
+                                selectByMouse: true
+                                activeFocusOnPress: false
+                                selectionColor: Qt.alpha(chat.accent, 0.45)
+                                selectedTextColor: chat.ink
+                                onSelectedTextChanged: if (selectedText) chat.selectMessage(bodyText)
                                 scale: body.markdownLayoutScale
                                 transformOrigin: Item.TopLeft
                                 text: bubbleRow.outgoing ? bubbleRow.content.caption : ChatMarkdown.format(
                                     bubbleRow.content.caption, Theme.Fonts.mono, font.pixelSize,
                                     chat.inlineCodeFill, chat.ink, chat.link)
-                                textFormat: bubbleRow.outgoing ? Text.PlainText : Text.MarkdownText
-                                wrapMode: Text.Wrap
+                                textFormat: bubbleRow.outgoing ? TextEdit.PlainText : TextEdit.MarkdownText
+                                wrapMode: TextEdit.Wrap
                                 color: chat.ink
-                                lineHeight: 1.08
                                 font {
                                     family: Theme.Fonts.family
                                     weight: Font.Normal
@@ -419,6 +437,35 @@ Item {
                     }
                 }
             }
+        }
+    }
+
+    Rectangle {
+        id: bottomButton
+        readonly property bool shown: history.farFromBottom && !history.followBottom
+        anchors { right: parent.right; rightMargin: 12 * chat.pt; bottom: inputBar.top; bottomMargin: 12 * chat.pt }
+        width: 40 * chat.pt
+        height: width
+        radius: width / 2
+        color: Qt.alpha(chat.barFill, 0.94)
+        border { width: 1; color: chat.hairline }
+        opacity: shown ? 1 : 0
+        scale: shown ? 1 : 0.8
+        visible: opacity > 0
+        Behavior on opacity { NumberAnimation { duration: 160 } }
+        Behavior on scale { NumberAnimation { duration: 160; easing.type: Easing.OutCubic } }
+
+        Components.Icon {
+            anchors { centerIn: parent; verticalCenterOffset: 1 * chat.pt }
+            width: 22 * chat.pt
+            height: width
+            action: "down"
+            iconColor: chat.secondaryInk
+        }
+        MouseArea {
+            anchors.fill: parent
+            cursorShape: Qt.PointingHandCursor
+            onClicked: history.goToBottom()
         }
     }
 
@@ -592,6 +639,11 @@ Item {
                     onCursorRectangleChanged: composerScroll.contentY = Math.max(0,
                         Math.min(cursorRectangle.y, contentHeight - composerScroll.height))
                     Keys.onPressed: event => {
+                        if (event.matches(StandardKey.Copy) && !composer.selectedText && chat.selectedMessage) {
+                            event.accepted = true
+                            chat.selectedMessage.copy()
+                            return
+                        }
                         if (!event.matches(StandardKey.Paste)) return
                         event.accepted = true
                         if (clipboard.running) return
