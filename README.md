@@ -113,6 +113,10 @@ All bindings are in `hyprland/hyprland.lua`. The main ones:
 - `Super+K`: slide up a phone for chatting with [mei](https://github.com/shana0440/mei); press again or click outside it to
   slide it away. It talks to the mei daemon at `$MEI_HOME/state/mei.sock` (default
   `~/.local/share/mei`) and shows mei as offline when the daemon is not running.
+  Press `Ctrl+V` in the message box to attach a copied screenshot, image file,
+  or screen recording. Review or remove the attachment before sending it, with
+  or without a caption. Sent images appear in chat, and recordings open in
+  your default video player. Mei receives the local file path.
   Tap her photo to open settings, where you can pick her photo with the desktop
   file chooser, rename her (saved with `mei config set character.name`), edit her character file in mei's home (her
   language and tone; `CHARACTER.md` unless `[character] file` points elsewhere),

@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Shapes
 import Quickshell
+import Quickshell.Io
 import "../Theme" as Theme
 import "../Components" as Components
 import "../Services" as Services
@@ -29,11 +30,60 @@ Item {
     signal dismissed
     signal settingsRequested
 
+    property var attachment: null
+    property string pasteError: ""
+    readonly property bool readyToSend: !clipboard.running && !Services.Mei.resetting
+        && (attachment !== null || composer.text.trim() !== "")
+
     function focusPage() { composer.forceActiveFocus() }
     function submit() {
-        Services.Mei.send(composer.text)
+        if (!readyToSend) return
+        Services.Mei.send(composer.text, attachment)
+        attachment = null
+        pasteError = ""
         composer.clear()
         history.followBottom = true
+    }
+
+    function removeAttachment() {
+        if (attachment) discardAttachment.createObject(chat, { path: attachment.path })
+        attachment = null
+        pasteError = ""
+    }
+
+    Connections {
+        target: Services.Mei
+        function onResettingChanged() { if (Services.Mei.resetting) chat.removeAttachment() }
+    }
+
+    Process {
+        id: clipboard
+        command: ["mei-chat-clipboard", Services.Mei.home]
+        stdout: StdioCollector { id: clipboardOutput }
+        onExited: code => {
+            if (code !== 0 || !clipboardOutput.text) {
+                chat.pasteError = "Couldn't check the clipboard."
+                return
+            }
+            const result = JSON.parse(clipboardOutput.text)
+            if (result.error) chat.pasteError = result.error
+            else if (!result.path) {
+                if (composer.activeFocus) composer.paste()
+            } else if (chat.attachment || Services.Mei.resetting) {
+                discardAttachment.createObject(chat, { path: result.path })
+                if (chat.attachment) chat.pasteError = "Remove the current attachment before pasting another."
+            } else chat.attachment = result
+        }
+    }
+
+    Component {
+        id: discardAttachment
+        Process {
+            required property string path
+            command: ["mei-chat-clipboard", Services.Mei.home, path]
+            running: true
+            onExited: destroy()
+        }
     }
 
     Rectangle {
@@ -164,11 +214,13 @@ Item {
                     readonly property bool stampInline: !hasPreview && body.lineCount <= 1
                         && body.implicitWidth + stampWidth <= maxTextWidth
                     readonly property bool typing: row.streaming && row.text === ""
-                    readonly property var content: outgoing ? { caption: row.text, photos: [] }
+                    readonly property var content: outgoing ? Services.Mei.splitUserAttachment(row.text)
                         : Services.Mei.splitPhotos(row.text)
                     readonly property bool hasPhotos: content.photos.length > 0
+                    readonly property bool hasRecording: outgoing && content.recording !== ""
+                    readonly property bool hasMedia: hasPhotos || hasRecording
                     readonly property bool hasCaption: content.caption !== ""
-                    readonly property bool photoOnly: hasPhotos && !hasCaption
+                    readonly property bool mediaOnly: hasMedia && !hasCaption
                     readonly property string previewUrl: outgoing || hasPhotos ? ""
                         : Services.LinkPreviews.firstLink(content.caption, row.streaming)
                     readonly property var previewPage: previewUrl ? Services.LinkPreviews.pages[previewUrl] ?? null : null
@@ -176,7 +228,7 @@ Item {
                     readonly property real previewSpace: hasPreview ? linkPreview.height + 6 * chat.pt : 0
                     onPreviewUrlChanged: Services.LinkPreviews.fetch(previewUrl)
                     Component.onCompleted: Services.LinkPreviews.fetch(previewUrl)
-                    readonly property real captionTop: hasPhotos ? photos.height + 3 * chat.pt : 0
+                    readonly property real captionTop: hasMedia ? media.height + 3 * chat.pt : 0
                     readonly property real textWidth: Math.max(body.width + (stampInline ? stampWidth : 0),
                                                                stampWidth) + 24 * chat.pt
                     implicitHeight: card.height + (row.lastOfGroup ? 6 * chat.pt : 0)
@@ -186,11 +238,11 @@ Item {
                         readonly property real sharp: row.lastOfGroup ? 4 * chat.pt : 16 * chat.pt
                         x: bubbleRow.outgoing ? parent.width - width - 10 * chat.pt : 10 * chat.pt
                         width: bubbleRow.typing ? 58 * chat.pt
-                            : bubbleRow.photoOnly ? photos.width + 6 * chat.pt
-                            : Math.max(bubbleRow.textWidth, bubbleRow.hasPhotos ? photos.width + 6 * chat.pt : 0,
+                            : bubbleRow.mediaOnly ? media.width + 6 * chat.pt
+                            : Math.max(bubbleRow.textWidth, bubbleRow.hasMedia ? media.width + 6 * chat.pt : 0,
                                        bubbleRow.hasPreview ? bubbleRow.maxTextWidth + 24 * chat.pt : 0)
                         height: bubbleRow.typing ? 36 * chat.pt
-                            : bubbleRow.photoOnly ? photos.height + 6 * chat.pt
+                            : bubbleRow.mediaOnly ? media.height + 6 * chat.pt
                             : bubbleRow.captionTop + body.height + bubbleRow.previewSpace + (bubbleRow.stampInline ? 0 : stamp.height) + 14 * chat.pt
                         radius: 17 * chat.pt
                         bottomLeftRadius: bubbleRow.outgoing ? radius : sharp
@@ -241,8 +293,8 @@ Item {
                         }
 
                         Column {
-                            id: photos
-                            visible: !bubbleRow.typing && bubbleRow.hasPhotos
+                            id: media
+                            visible: !bubbleRow.typing && bubbleRow.hasMedia
                             x: 3 * chat.pt
                             y: 3 * chat.pt
                             spacing: 3 * chat.pt
@@ -255,6 +307,35 @@ Item {
                                     pt: chat.pt
                                 }
                             }
+                            Rectangle {
+                                visible: bubbleRow.hasRecording
+                                width: 200 * chat.pt
+                                height: 58 * chat.pt
+                                radius: 14 * chat.pt
+                                color: chat.incomingFill
+                                Row {
+                                    x: 12 * chat.pt
+                                    y: 10 * chat.pt
+                                    spacing: 8 * chat.pt
+                                    Components.Icon {
+                                        width: 16 * chat.pt
+                                        height: width
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        action: "play"
+                                        iconColor: chat.link
+                                    }
+                                    Text {
+                                        text: "Play recording"
+                                        color: chat.ink
+                                        font { family: Theme.Fonts.family; pixelSize: 15 * chat.pt }
+                                    }
+                                }
+                                MouseArea {
+                                    anchors.fill: parent
+                                    cursorShape: Qt.PointingHandCursor
+                                    onClicked: Qt.openUrlExternally(bubbleRow.content.recording)
+                                }
+                            }
                         }
 
                         Text {
@@ -263,7 +344,7 @@ Item {
                             x: 12 * chat.pt
                             y: bubbleRow.captionTop + 7 * chat.pt
                             width: Math.min(implicitWidth, bubbleRow.maxTextWidth)
-                            text: bubbleRow.outgoing ? row.text : bubbleRow.content.caption.replace(
+                            text: bubbleRow.outgoing ? bubbleRow.content.caption : bubbleRow.content.caption.replace(
                                 /\[([^\]]+)\]\(([^)\s]+)\)|(https?:\/\/[^\s<>()\]]+)/g,
                                 (match, label, target, bare) => '<a href="' + (target || bare) + '"><span style="color: '
                                     + chat.link + '">' + (label || bare) + '</span></a>')
@@ -290,7 +371,7 @@ Item {
                         }
 
                         Rectangle {
-                            visible: stamp.visible && bubbleRow.photoOnly
+                            visible: stamp.visible && bubbleRow.mediaOnly
                             anchors { fill: stamp; margins: -3 * chat.pt; leftMargin: -6 * chat.pt; rightMargin: -6 * chat.pt }
                             radius: height / 2
                             color: Qt.rgba(0, 0, 0, 0.5)
@@ -300,13 +381,13 @@ Item {
                             id: stamp
                             visible: !bubbleRow.typing
                             anchors {
-                                right: parent.right; rightMargin: (bubbleRow.photoOnly ? 14 : 10) * chat.pt
-                                bottom: parent.bottom; bottomMargin: (bubbleRow.photoOnly ? 12 : 5) * chat.pt
+                                right: parent.right; rightMargin: (bubbleRow.mediaOnly ? 14 : 10) * chat.pt
+                                bottom: parent.bottom; bottomMargin: (bubbleRow.mediaOnly ? 12 : 5) * chat.pt
                             }
                             spacing: 3 * chat.pt
                             Text {
                                 text: row.time
-                                color: bubbleRow.photoOnly ? "white"
+                                color: bubbleRow.mediaOnly ? "white"
                                     : bubbleRow.outgoing ? chat.outgoingStamp : chat.incomingStamp
                                 font { family: Theme.Fonts.family; pixelSize: 11 * chat.pt }
                             }
@@ -400,7 +481,8 @@ Item {
     Rectangle {
         id: inputBar
         anchors { left: parent.left; right: parent.right; bottom: parent.bottom; bottomMargin: chat.hiddenBottom }
-        height: field.height + 16 * chat.pt
+        height: field.height + 16 * chat.pt + (draft.visible ? draft.height + 6 * chat.pt : 0)
+            + (pasteNotice.visible ? pasteNotice.height + 4 * chat.pt : 0)
         color: chat.barFill
 
         Rectangle {
@@ -410,8 +492,67 @@ Item {
         }
 
         Rectangle {
+            id: draft
+            visible: chat.attachment !== null
+            anchors { top: parent.top; topMargin: 8 * chat.pt; left: field.left; right: field.right }
+            height: 52 * chat.pt
+            radius: 12 * chat.pt
+            color: chat.fieldFill
+
+            Image {
+                id: draftImage
+                visible: chat.attachment?.kind === "image"
+                source: visible ? chat.attachment.url : ""
+                anchors { left: parent.left; leftMargin: 6 * chat.pt; verticalCenter: parent.verticalCenter }
+                width: height
+                height: 40 * chat.pt
+                sourceSize.width: 160
+                fillMode: Image.PreserveAspectFit
+                asynchronous: true
+            }
+            Components.Icon {
+                visible: !draftImage.visible
+                anchors.centerIn: draftImage
+                width: 24 * chat.pt
+                height: width
+                action: "record"
+                iconColor: chat.link
+            }
+            Text {
+                anchors { left: draftImage.right; leftMargin: 8 * chat.pt; verticalCenter: parent.verticalCenter }
+                text: draftImage.visible ? "Image attached" : "Recording attached"
+                color: chat.ink
+                font { family: Theme.Fonts.family; pixelSize: 14 * chat.pt }
+            }
+            MouseArea {
+                anchors { right: parent.right; verticalCenter: parent.verticalCenter }
+                width: 40 * chat.pt
+                height: parent.height
+                cursorShape: Qt.PointingHandCursor
+                onClicked: { chat.removeAttachment(); chat.focusPage() }
+                Components.Icon {
+                    anchors.centerIn: parent
+                    width: 16 * chat.pt
+                    height: width
+                    action: "close"
+                    iconColor: chat.secondaryInk
+                }
+            }
+        }
+
+        Text {
+            id: pasteNotice
+            visible: chat.pasteError !== ""
+            anchors { bottom: field.top; bottomMargin: 4 * chat.pt; left: field.left; right: parent.right; rightMargin: 10 * chat.pt }
+            text: chat.pasteError
+            color: "#ffb4a7"
+            wrapMode: Text.Wrap
+            font { family: Theme.Fonts.family; pixelSize: 12 * chat.pt }
+        }
+
+        Rectangle {
             id: field
-            anchors { left: parent.left; leftMargin: 12 * chat.pt; right: sendButton.left; rightMargin: 8 * chat.pt; verticalCenter: parent.verticalCenter }
+            anchors { left: parent.left; leftMargin: 12 * chat.pt; right: sendButton.left; rightMargin: 8 * chat.pt; bottom: parent.bottom; bottomMargin: 8 * chat.pt }
             height: Math.min(composer.contentHeight, 5 * 21 * chat.pt) + 14 * chat.pt
             radius: 18 * chat.pt
             color: chat.fieldFill
@@ -434,6 +575,13 @@ Item {
                     font { family: Theme.Fonts.family; pixelSize: 16 * chat.pt }
                     onCursorRectangleChanged: composerScroll.contentY = Math.max(0,
                         Math.min(cursorRectangle.y, contentHeight - composerScroll.height))
+                    Keys.onPressed: event => {
+                        if (!event.matches(StandardKey.Paste)) return
+                        event.accepted = true
+                        if (clipboard.running) return
+                        chat.pasteError = ""
+                        clipboard.running = true
+                    }
                     Keys.onEscapePressed: chat.dismissed()
                     Keys.onReturnPressed: event => {
                         if (event.modifiers & Qt.ShiftModifier) event.accepted = false
@@ -453,7 +601,7 @@ Item {
 
         Rectangle {
             id: sendButton
-            readonly property bool ready: composer.text.trim() !== ""
+            readonly property bool ready: chat.readyToSend
             anchors { right: parent.right; rightMargin: 10 * chat.pt; bottom: field.bottom; bottomMargin: 1 * chat.pt }
             width: 32 * chat.pt
             height: width

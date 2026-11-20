@@ -26,6 +26,13 @@ let
       exec ${pkgs.python3.withPackages (ps: [ ps.dbus-next ])}/bin/python3 -u ${./scripts/pick_image.py} "$@"
     '';
   };
+  chatClipboard = pkgs.writeShellApplication {
+    name = "mei-chat-clipboard";
+    runtimeInputs = [ pkgs.wl-clipboard ];
+    text = ''
+      exec ${pkgs.python3}/bin/python3 ${./scripts/chat_clipboard.py} "$@"
+    '';
+  };
   linkPreview = pkgs.writeShellApplication {
     name = "link-preview";
     text = ''
@@ -51,6 +58,7 @@ in
       pkgs.cava
       pkgs.libnotify
       pkgs.wl-clipboard
+      chatClipboard
     ];
 
   xdg.configFile."quickshell".source = config.lib.file.mkOutOfStoreSymlink

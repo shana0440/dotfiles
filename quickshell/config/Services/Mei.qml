@@ -55,6 +55,19 @@ Singleton {
         return { caption: caption, photos: photos }
     }
 
+    function splitUserAttachment(text) {
+        const marker = /(?:^|\n\n)(Image|Recording) attachment: (\/[^\n]+)$/;
+        const match = marker.exec(text);
+        const folder = home + "/state/sessions/attachments/";
+        if (match && match[2].startsWith(folder)
+            && /^paste-[a-z0-9_]+\/(image\.(png|jpe?g|webp|gif|bmp)|recording\.(mp4|mkv|webm|mov))$/.test(match[2].slice(folder.length))) {
+            const url = imageUrl(match[2]);
+            return { caption: text.slice(0, match.index), photos: match[1] === "Image" ? [url] : [],
+                recording: match[1] === "Recording" ? url : "" };
+        }
+        return { caption: text, photos: [], recording: "" };
+    }
+
     function append(kind, text, ms) {
         messages.append({ kind: kind, text: text, time: ms ? clock(ms) : "", streaming: false })
         return messages.count - 1
@@ -66,13 +79,17 @@ Singleton {
         append("topic", topic, 0)
     }
 
-    function send(text) {
-        const trimmed = text.trim()
-        if (!trimmed) return
+    function send(text, attachment) {
+        let prompt = text.trim()
+        if (attachment) {
+            const label = attachment.kind === "image" ? "Image" : "Recording"
+            prompt += (prompt ? "\n\n" : "") + label + " attachment: " + attachment.path
+        }
+        if (!prompt) return
         historyVersion++
-        append("user", trimmed, Date.now())
+        append("user", prompt, Date.now())
         waiting++
-        requestComponent.createObject(root, { message: { type: "chat", text: trimmed, debug: true } })
+        requestComponent.createObject(root, { message: { type: "chat", text: prompt, debug: true } })
     }
 
     function announce(reply) {
