@@ -95,7 +95,7 @@ PanelWindow {
         id: restoreLostWindowFocus
         interval: 50
         onTriggered: {
-            if (!root.menuNeedsKeyboardFocus && root.keyboardUnfocused)
+            if (!Services.Capture.ownsInput && !root.menuNeedsKeyboardFocus && root.keyboardUnfocused)
                 focusRestoringExclusiveLayer.visible = true
             else
                 root.focusHandedBack()
@@ -120,7 +120,7 @@ PanelWindow {
         color: Theme.Colors.transparent
         exclusionMode: ExclusionMode.Ignore
         WlrLayershell.layer: WlrLayer.Overlay
-        WlrLayershell.keyboardFocus: WlrKeyboardFocus.Exclusive
+        WlrLayershell.keyboardFocus: Services.Capture.ownsInput ? WlrKeyboardFocus.None : WlrKeyboardFocus.Exclusive
         WlrLayershell.namespace: "quickshell-focus-relay"
         mask: Region {}
 
@@ -153,7 +153,8 @@ PanelWindow {
 
     exclusionMode: ExclusionMode.Ignore
     color: Theme.Colors.transparent
-    WlrLayershell.keyboardFocus: menuNeedsKeyboardFocus ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
+    WlrLayershell.keyboardFocus: menuNeedsKeyboardFocus && !Services.Capture.ownsInput
+        ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
     readonly property bool showsAboveApps: menuOpen || centerIsland.notificationVisible || Services.Capture.recording
     WlrLayershell.layer: showsAboveApps ? WlrLayer.Overlay : WlrLayer.Bottom
 

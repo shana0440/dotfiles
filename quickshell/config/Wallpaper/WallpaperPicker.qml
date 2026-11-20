@@ -7,6 +7,7 @@ import Quickshell.Hyprland
 import Quickshell.Widgets
 import "../Theme" as Theme
 import "../Components" as Components
+import "../Services" as Services
 
 Scope {
     id: root
@@ -188,7 +189,8 @@ Scope {
         color: "transparent"
         WlrLayershell.layer: WlrLayer.Overlay
         WlrLayershell.namespace: "quickshell-wallpaper"
-        WlrLayershell.keyboardFocus: root.opened ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
+        WlrLayershell.keyboardFocus: root.opened && !Services.Capture.ownsInput
+            ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
         mask: Region { item: root.opened ? stage : null }
 
         Item {

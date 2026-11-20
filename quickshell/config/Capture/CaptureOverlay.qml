@@ -23,14 +23,14 @@ Scope {
             color: Theme.Colors.transparent
             exclusionMode: ExclusionMode.Ignore
             WlrLayershell.namespace: "quickshell-capture-region"
-            WlrLayershell.layer: WlrLayer.Top
-            readonly property bool exclusiveBeforeToolbarMapsSoToolbarWinsPointer: Services.Capture.capturing
+            WlrLayershell.layer: interactive ? WlrLayer.Overlay : WlrLayer.Top
+            readonly property bool interactive: Services.Capture.capturing
                 || Services.Capture.previewActive || Services.Capture.selectingRegion
-            WlrLayershell.keyboardFocus: exclusiveBeforeToolbarMapsSoToolbarWinsPointer
+            WlrLayershell.keyboardFocus: interactive && !Services.Capture.toolbarVisible
                 ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
 
             anchors { top: true; bottom: true; left: true; right: true }
-            mask: Region { item: Services.Capture.previewActive || Services.Capture.selectingRegion ? overlay.contentItem : null }
+            mask: Region { item: overlay.interactive ? overlay.contentItem : null }
 
             Loader {
                 id: frameLoader

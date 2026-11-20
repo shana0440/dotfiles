@@ -10,6 +10,8 @@ Singleton {
     property var preview: null
     property bool previewActive: false
     property bool capturing: false
+    property bool toolbarVisible: false
+    readonly property bool ownsInput: capturing || toolbarVisible
     property var frameScreens: ({})
     property var grabbedFrames: ({})
     property bool saving: false

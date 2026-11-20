@@ -6,6 +6,7 @@ import Quickshell.Hyprland
 import "Layout.js" as Layout
 import "../Theme" as Theme
 import "../Components" as Components
+import "../Services" as Services
 
 PanelWindow {
     id: win
@@ -136,7 +137,7 @@ PanelWindow {
     exclusionMode: ExclusionMode.Ignore
     WlrLayershell.layer: WlrLayer.Overlay
     WlrLayershell.namespace: "quickshell-overview"
-    WlrLayershell.keyboardFocus: !controller.opened || !focusedMonitor ? WlrKeyboardFocus.None
+    WlrLayershell.keyboardFocus: !controller.opened || !focusedMonitor || Services.Capture.ownsInput ? WlrKeyboardFocus.None
         : reclaimingKeyboard ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.OnDemand
 
     Components.Spring {

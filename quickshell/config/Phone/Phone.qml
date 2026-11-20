@@ -133,7 +133,8 @@ Scope {
         mask: Region { item: root.raised ? outside : phone }
         WlrLayershell.layer: WlrLayer.Overlay
         WlrLayershell.namespace: "quickshell-phone"
-        WlrLayershell.keyboardFocus: root.raised ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
+        WlrLayershell.keyboardFocus: root.raised && !Services.Capture.ownsInput
+            ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
 
         MouseArea {
             id: outside

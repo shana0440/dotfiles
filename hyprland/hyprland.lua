@@ -370,3 +370,15 @@ hl.layer_rule({
 
     no_anim = true,
 })
+
+hl.layer_rule({
+    name    = "capture-preview-priority",
+    match   = { namespace = "^quickshell-capture-region$" },
+    order   = -100,
+})
+
+hl.layer_rule({
+    name    = "capture-toolbar-priority",
+    match   = { namespace = "^quickshell-capture-toolbar$" },
+    order   = -101,
+})
