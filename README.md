@@ -113,6 +113,8 @@ All bindings are in `hyprland/hyprland.lua`. The main ones:
 - `Super+Shift+W`: wallpaper picker ([details](wallpaper/README.md)).
 - `Super+K`: phone for chatting with mei ([details](quickshell/config/Phone/README.md)).
 - Tap `Super`: dashboard ([details](quickshell/config/Bar/README.md)).
+- Layers button at the end of the right bar island: background apps
+  ([details](quickshell/config/Bar/README.md#background-apps)).
 
 ### Input methods
 

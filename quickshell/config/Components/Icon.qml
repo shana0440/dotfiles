@@ -67,6 +67,7 @@ Item {
         character: "user-pen",
         schedules: "calendar-clock",
         background: "image",
+        backgroundApps: "layers",
         name: "id-card",
         clearNotifications: "list-x",
         weatherClear: "sun",
