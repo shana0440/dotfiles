@@ -104,6 +104,7 @@ Item {
         property real lastSwipeTime: 0
         readonly property real topY: originY - topMargin
         readonly property real bottomY: Math.max(topY, originY + contentHeight + bottomMargin - height)
+        readonly property bool farFromBottom: bottomY - contentY > height / 3
 
         function clampY(y) { return Math.max(topY, Math.min(bottomY, y)) }
 
@@ -118,6 +119,11 @@ Item {
             glide.to = to
             followBottom = to >= bottomY - 1
             glide.restart()
+        }
+
+        function goToBottom() {
+            cancelFlick()
+            glideBy(bottomY - contentY)
         }
 
         function swipe(event) {
@@ -159,6 +165,7 @@ Item {
             property: "contentY"
             duration: 220
             easing.type: Easing.OutCubic
+            onFinished: if (history.followBottom) history.positionViewAtEnd()
         }
 
         WheelHandler {
@@ -419,6 +426,35 @@ Item {
                     }
                 }
             }
+        }
+    }
+
+    Rectangle {
+        id: bottomButton
+        readonly property bool shown: history.farFromBottom && !history.followBottom
+        anchors { right: parent.right; rightMargin: 12 * chat.pt; bottom: inputBar.top; bottomMargin: 12 * chat.pt }
+        width: 40 * chat.pt
+        height: width
+        radius: width / 2
+        color: Qt.alpha(chat.barFill, 0.94)
+        border { width: 1; color: chat.hairline }
+        opacity: shown ? 1 : 0
+        scale: shown ? 1 : 0.8
+        visible: opacity > 0
+        Behavior on opacity { NumberAnimation { duration: 160 } }
+        Behavior on scale { NumberAnimation { duration: 160; easing.type: Easing.OutCubic } }
+
+        Components.Icon {
+            anchors { centerIn: parent; verticalCenterOffset: 1 * chat.pt }
+            width: 22 * chat.pt
+            height: width
+            action: "down"
+            iconColor: chat.secondaryInk
+        }
+        MouseArea {
+            anchors.fill: parent
+            cursorShape: Qt.PointingHandCursor
+            onClicked: history.goToBottom()
         }
     }
 
