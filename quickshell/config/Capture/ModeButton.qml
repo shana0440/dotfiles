@@ -19,6 +19,6 @@ Components.IconButton {
         width: 8
         height: 8
         radius: 4
-        color: Theme.Colors.error
+        color: Theme.Colors.recording
     }
 }

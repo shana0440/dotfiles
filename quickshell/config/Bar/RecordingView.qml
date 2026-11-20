@@ -1,12 +1,10 @@
 import QtQuick
 import "../Theme" as Theme
-import "../Components" as Components
 
 Item {
     id: root
 
     property int elapsedSeconds: 0
-    property bool stopping: false
     readonly property string elapsedText: {
         const total = Math.max(0, elapsedSeconds)
         const hours = Math.floor(total / 3600)
@@ -15,73 +13,63 @@ Item {
         const clock = String(minutes).padStart(2, "0") + ":" + String(seconds).padStart(2, "0")
         return hours > 0 ? String(hours).padStart(2, "0") + ":" + clock : clock
     }
-    signal stopRequested()
 
     implicitWidth: 300
     implicitHeight: 32
+    Accessible.role: Accessible.StaticText
+    Accessible.name: "Screen Recording, " + elapsedText
 
-    Item {
-        id: details
-        x: 12
-        width: stopButton.x - x - 8
-        height: parent.height
-        Accessible.role: Accessible.StaticText
-        Accessible.name: "Screen Recording, " + root.elapsedText
+    function centeredTextY(baseline, bounds) {
+        return height / 2 - baseline - (bounds.y + bounds.height / 2)
+    }
 
-        Row {
-            anchors.fill: parent
-            spacing: 8
+    Rectangle {
+        id: recordingDot
+        anchors.left: parent.left
+        anchors.leftMargin: 14
+        anchors.verticalCenter: parent.verticalCenter
+        width: 8
+        height: width
+        radius: width / 2
+        color: Theme.Colors.recording
+    }
 
-            Rectangle {
-                id: recordingDot
-                anchors.verticalCenter: parent.verticalCenter
-                width: 6
-                height: 6
-                radius: width / 2
-                color: Theme.Colors.error
-            }
+    Text {
+        id: recordingLabel
+        anchors.left: recordingDot.right
+        anchors.leftMargin: 8
+        anchors.right: elapsedTime.left
+        anchors.rightMargin: 12
+        y: root.centeredTextY(baselineOffset, labelMetrics.tightBoundingRect)
+        font.family: Theme.Fonts.family
+        font.weight: Theme.Fonts.weight
+        font.pixelSize: 13
+        text: "Screen Recording"
+        color: Theme.Colors.foreground
+        elide: Text.ElideRight
 
-            Text {
-                id: elapsedTime
-                font.weight: Theme.Fonts.weight
-                height: parent.height
-                text: root.elapsedText
-                color: Theme.Colors.error
-                font.family: "monospace"
-                font.pixelSize: 13
-                verticalAlignment: Text.AlignVCenter
-            }
-
-            Text {
-                font.family: Theme.Fonts.family
-                font.weight: Theme.Fonts.weight
-                width: parent.width - recordingDot.width - elapsedTime.width - 2 * parent.spacing
-                height: parent.height
-                text: "Screen Recording"
-                color: Theme.Colors.foreground
-                font.pixelSize: 13
-                elide: Text.ElideRight
-                verticalAlignment: Text.AlignVCenter
-            }
+        TextMetrics {
+            id: labelMetrics
+            font: recordingLabel.font
+            text: recordingLabel.text
         }
     }
 
-    Components.IconButton {
-        id: stopButton
+    Text {
+        id: elapsedTime
         anchors.right: parent.right
-        anchors.rightMargin: 4
-        anchors.verticalCenter: parent.verticalCenter
-        width: 24
-        height: 24
-        radius: height / 2
-        border.width: 1
-        border.color: Theme.Colors.foreground
-        icon: "stop"
-        iconSize: 14
-        iconFilled: true
-        iconColor: Theme.Colors.error
-        tooltip: root.stopping ? "Finishing recording…" : "Stop recording"
-        enabled: !root.stopping
-        onClicked: root.stopRequested()
+        anchors.rightMargin: 14
+        y: root.centeredTextY(baselineOffset, timerMetrics.tightBoundingRect)
+        font.family: "monospace"
+        font.weight: Theme.Fonts.weight
+        font.pixelSize: 13
+        text: root.elapsedText
+        color: Theme.Colors.foreground
+
+        TextMetrics {
+            id: timerMetrics
+            font: elapsedTime.font
+            text: "00:00"
+        }
     }
 }

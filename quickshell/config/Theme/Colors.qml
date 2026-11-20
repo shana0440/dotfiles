@@ -53,6 +53,7 @@ QtObject {
 
     readonly property color success: "#4ade80"
     readonly property color error: "#f87171"
+    readonly property color recording: "#ff493c"
     readonly property color warning: "#fbbf24"
     readonly property color info: "#60a5fa"
 

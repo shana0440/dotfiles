@@ -186,8 +186,6 @@ Components.Island {
         RecordingView {
             id: recordingView
             elapsedSeconds: Services.Capture.recordingElapsedSeconds
-            stopping: Services.Capture.recordingCommandRunning
-            onStopRequested: Services.Capture.stopRecording()
         },
         DingToast {
             id: toast

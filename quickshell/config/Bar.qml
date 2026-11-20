@@ -177,6 +177,7 @@ PanelWindow {
         item: root.menuOpen ? root.contentItem : workspaceIsland
         Region { item: appsIsland.visible ? appsIsland : null }
         Region { item: centerIsland }
+        Region { item: recordingStopIsland.visible ? recordingStopIsland : null }
         Region { item: mediaIsland.visible ? mediaIsland : null }
         Region { item: weatherIsland.visible ? weatherIsland : null }
         Region { item: notificationIsland.visible ? notificationIsland : null }
@@ -273,18 +274,34 @@ PanelWindow {
             }
         }
 
+        Components.IslandGoo {
+            id: workspaceGoo
+            target: workspaceIsland
+            shaderSource: centerGoo
+        }
+
         BarComponents.WorkspaceIsland {
             id: workspaceIsland
+            bare: workspaceGoo.ready
             anchors.left: parent.left
             height: root.compactIslandHeight
         }
 
+        Components.IslandGoo {
+            id: appsGoo
+            target: appsIsland
+            shaderSource: centerGoo
+        }
+
         BarComponents.AppsIsland {
             id: appsIsland
+            bare: appsGoo.ready
             anchors.right: parent.right
             height: root.compactIslandHeight
             availableWidth: Math.max(0, parent.width - root.islandSpacing
-                - (inputIsland.visible ? inputIsland.x + inputIsland.width : centerIsland.x + centerIsland.width))
+                - Math.max(centerIsland.x + centerIsland.width,
+                    recordingStopIsland.visible ? recordingStopIsland.x + recordingStopIsland.width : 0,
+                    inputIsland.visible ? inputIsland.x + inputIsland.width : 0))
         }
 
         Components.IslandGoo {
@@ -302,6 +319,27 @@ PanelWindow {
             clearness: Theme.Colors.centerClearness
             anchors.horizontalCenter: parent.horizontalCenter
             availableHeight: Math.min(560, Math.max(144, root.height - root.islandMargin * 2))
+        }
+
+        Components.IslandGoo {
+            id: recordingStopGoo
+            target: recordingStopIsland
+            shaderSource: centerGoo
+            z: 1
+        }
+
+        BarComponents.RecordingStopIsland {
+            id: recordingStopIsland
+            bare: recordingStopGoo.ready
+            anchors.left: centerIsland.right
+            anchors.leftMargin: root.islandSpacing
+            height: root.compactIslandHeight
+            width: height
+            clearness: centerIsland.clearness
+            visible: centerIsland.showingRecording
+            stopping: Services.Capture.recordingCommandRunning
+            onStopRequested: Services.Capture.stopRecording()
+            z: 1
         }
 
         BarComponents.MediaIsland {

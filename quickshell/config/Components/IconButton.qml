@@ -29,6 +29,7 @@ Rectangle {
     Keys.onSpacePressed: root.clicked()
 
     Icon {
+        visible: root.iconSize > 0
         anchors.centerIn: parent
         width: root.iconSize
         height: root.iconSize
