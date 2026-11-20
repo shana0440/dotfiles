@@ -102,6 +102,12 @@ Scope {
         }
     }
 
+    Binding {
+        target: Services.Capture
+        property: "toolbarVisible"
+        value: root.menuOpen
+    }
+
     Component.onDestruction: Services.Capture.cleanupPreview()
 
     Timer {
