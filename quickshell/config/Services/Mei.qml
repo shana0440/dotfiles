@@ -167,15 +167,30 @@ Singleton {
     }
 
     function showHistory(events) {
-        messages.clear()
-        lastTopic = ""
+        const rows = []
+        const row = (kind, text, ms) => rows.push({ kind: kind, text: text, time: ms ? clock(ms) : "", streaming: false })
+        let topic = ""
         for (const event of events) {
             if (event.type !== "user.message" || (event.status !== "done" && event.status !== "failed")) continue
-            append("user", event.payload.text, event.createdAt)
-            noteTopic(event.topic)
-            if (event.error) append("notice", event.error, 0)
-            else append("mei", event.result, event.finishedAt)
+            row("user", event.payload.text, event.createdAt)
+            if (event.topic && event.topic !== topic) {
+                topic = event.topic
+                row("topic", topic, 0)
+            }
+            if (event.error) row("notice", event.error, 0)
+            else row("mei", event.result, event.finishedAt)
         }
+        lastTopic = topic
+
+        let kept = 0
+        while (kept < rows.length && kept < messages.count) {
+            const shown = messages.get(kept)
+            if (shown.kind !== rows[kept].kind || shown.text !== rows[kept].text
+                || shown.time !== rows[kept].time || shown.streaming) break
+            kept++
+        }
+        if (kept < messages.count) messages.remove(kept, messages.count - kept)
+        for (const fresh of rows.slice(kept)) messages.append(fresh)
     }
 
     Component {

@@ -165,7 +165,7 @@ Item {
             acceptedDevices: PointerDevice.Mouse | PointerDevice.TouchPad
             onWheel: event => history.wheel(event)
         }
-        onCountChanged: Qt.callLater(positionViewAtEnd)
+        onCountChanged: if (followBottom) Qt.callLater(positionViewAtEnd)
         onContentHeightChanged: if (followBottom) Qt.callLater(positionViewAtEnd)
         onHeightChanged: if (followBottom) Qt.callLater(positionViewAtEnd)
 
