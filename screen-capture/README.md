@@ -11,5 +11,6 @@ screen-capture-record region                 # select with the mouse
 screen-capture-record stop
 ```
 
-Screenshots go to `~/Pictures/Screenshots` and the clipboard; recordings to
-`~/Videos/Recordings`.
+Screenshots go to `~/Pictures/Screenshots` and the clipboard. Finished recordings
+are saved in `~/Videos/Recordings` and copied as files you can paste in Nautilus.
+The clipboard holds a reference to the saved MP4, not the video contents.

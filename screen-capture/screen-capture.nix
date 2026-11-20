@@ -20,7 +20,7 @@ let
   };
   recordingFinished = pkgs.writeShellApplication {
     name = "screen-capture-recording-finished";
-    runtimeInputs = [ pkgs.coreutils captureNotification ];
+    runtimeInputs = with pkgs; [ coreutils python3 systemd wl-clipboard captureNotification ];
     text = builtins.readFile ./scripts/recording_finished.sh;
   };
   windowRecording = pkgs.writeShellApplication {

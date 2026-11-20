@@ -13,6 +13,16 @@ if [[ -f "$session_file" ]]; then
 fi
 rm -f -- "$session_file"
 
+copy_recording_for_nautilus() {
+    local file_uri
+    file_uri=$(python3 -c 'import sys; from pathlib import Path; print(Path(sys.argv[1]).absolute().as_uri())' "$1") || return
+    systemd-run --user --quiet --collect --service-type=exec \
+        --setenv="WAYLAND_DISPLAY=$WAYLAND_DISPLAY" \
+        --setenv="XDG_RUNTIME_DIR=$XDG_RUNTIME_DIR" \
+        -- "$(command -v wl-copy)" --foreground --type x-special/gnome-copied-files $'copy\n'"$file_uri"
+}
+
 if [[ "${SERVICE_RESULT:-}" == success && -s "$recording_path" ]]; then
+    copy_recording_for_nautilus "$recording_path" || true
     screen-capture-notify recording "$recording_path" || true
 fi
