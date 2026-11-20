@@ -21,7 +21,7 @@
         discord
         bitwarden-desktop
         telegram-desktop
-        signal-desktop
+        signalInTray
         remmina
         uxplay
         zen-browser.packages.${pkgs.stdenv.hostPlatform.system}.beta
@@ -39,6 +39,14 @@
         (import ./nexon/package.nix { inherit pkgs; })
       ];
       supported = pkg: lib.meta.availableOn pkgs.stdenv.hostPlatform pkg;
+
+      signalInTray = pkgs.symlinkJoin {
+        name = "signal-desktop-in-tray";
+        paths = [ pkgs.signal-desktop ];
+        nativeBuildInputs = [ pkgs.makeWrapper ];
+        postBuild = "wrapProgram $out/bin/signal-desktop --add-flags --use-tray-icon";
+        inherit (pkgs.signal-desktop) meta;
+      };
     in {
       nixpkgs.config.allowUnfree = true;
 
