@@ -177,6 +177,16 @@ Singleton {
         }
     }
 
+    IpcHandler {
+        target: "notifications"
+        function doNotDisturb(enabled: bool): void { root.doNotDisturb = enabled }
+        function dismissAll(): void { root.dismissAll() }
+        function state(): string {
+            return JSON.stringify({ doNotDisturb: root.doNotDisturb, notifications: root.notifications.map(n => ({
+                app: n.appName, summary: n.summary, body: n.body })) })
+        }
+    }
+
     FileView {
         path: Quickshell.statePath("notifications.json")
         blockLoading: true

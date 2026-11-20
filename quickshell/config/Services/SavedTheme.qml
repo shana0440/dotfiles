@@ -18,6 +18,16 @@ Scope {
         }
     }
 
+    IpcHandler {
+        target: "theme"
+        function set(name: string): string {
+            if (name !== "dark" && name !== "transparent") return "theme is dark or transparent"
+            Theme.Colors.theme = name
+            return name
+        }
+        function state(): string { return Theme.Colors.theme }
+    }
+
     Connections {
         target: Theme.Colors
         function onThemeChanged() { settings.theme = Theme.Colors.theme }

@@ -104,6 +104,10 @@ Singleton {
         function toggle(): void { root.toggle() }
         function reset(): void { root.reset() }
         function skip(): void { root.skip() }
+        function state(): string {
+            return JSON.stringify({ phase: root.phase, running: root.running,
+                remainingSeconds: Math.round(root.remaining / 1000), completed: root.completed })
+        }
     }
 
     FileView {

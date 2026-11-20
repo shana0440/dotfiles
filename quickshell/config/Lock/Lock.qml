@@ -64,7 +64,7 @@ Scope {
     IpcHandler {
         target: "lock"
         function lock(): bool { return root.lock() }
-        function locked(): bool { return sessionLock.locked }
+        function state(): bool { return sessionLock.locked }
     }
 
     PamContext {
