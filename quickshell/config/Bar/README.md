@@ -2,7 +2,8 @@
 
 Tap `Super` to open the dashboard. `Page Down` / `Page Up` switch tabs,
 `Tab` / `Shift+Tab` move between the buttons of the current tab, and `Enter` or
-`Space` presses one.
+`Space` presses one. A notification that arrives while it is open pops up
+when it closes.
 
 - **Home:** calendar and the weather from [wttr.in](https://wttr.in), located
   by your public IP. The weather pill left of the bar's clock shows details on
