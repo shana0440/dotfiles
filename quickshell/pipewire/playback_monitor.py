@@ -58,10 +58,14 @@ class PlaybackState:
             if "state" in info:
                 node["state"] = info["state"]
             props = info.get("props")
-            if isinstance(props, dict) and "media.class" in props:
-                node["media.class"] = props["media.class"]
+            if isinstance(props, dict):
+                for key in ("media.class", "media.role"):
+                    if key in props:
+                        node[key] = props[key]
         return any(
-            node.get("media.class") == OUTPUT_STREAM and node.get("state") == "running"
+            node.get("media.class") == OUTPUT_STREAM
+            and node.get("media.role") != "Notification"
+            and node.get("state") == "running"
             for node in self.nodes.values()
         )
 
