@@ -33,11 +33,16 @@ Item {
     signal settingsRequested
 
     property var attachment: null
+    property TextEdit selectedMessage: null
     property string pasteError: ""
     readonly property bool readyToSend: !clipboard.running && !Services.Mei.resetting
         && (attachment !== null || composer.text.trim() !== "")
 
     function focusPage() { composer.forceActiveFocus() }
+    function selectMessage(message) {
+        if (selectedMessage && selectedMessage !== message) selectedMessage.deselect()
+        selectedMessage = message
+    }
     function submit() {
         if (!readyToSend) return
         Services.Mei.send(composer.text, attachment)
@@ -157,6 +162,7 @@ Item {
         clip: true
         model: Services.Mei.messages
         boundsBehavior: Flickable.StopAtBounds
+        interactive: false
         onMovementEnded: followBottom = atYEnd
 
         NumberAnimation {
@@ -358,18 +364,23 @@ Item {
                             implicitHeight: bodyText.height * markdownLayoutScale
                             width: Math.min(implicitWidth, bubbleRow.maxTextWidth)
 
-                            Text {
+                            TextEdit {
                                 id: bodyText
                                 width: body.width / body.markdownLayoutScale
+                                readOnly: true
+                                selectByMouse: true
+                                activeFocusOnPress: false
+                                selectionColor: Qt.alpha(chat.accent, 0.45)
+                                selectedTextColor: chat.ink
+                                onSelectedTextChanged: if (selectedText) chat.selectMessage(bodyText)
                                 scale: body.markdownLayoutScale
                                 transformOrigin: Item.TopLeft
                                 text: bubbleRow.outgoing ? bubbleRow.content.caption : ChatMarkdown.format(
                                     bubbleRow.content.caption, Theme.Fonts.mono, font.pixelSize,
                                     chat.inlineCodeFill, chat.ink, chat.link)
-                                textFormat: bubbleRow.outgoing ? Text.PlainText : Text.MarkdownText
-                                wrapMode: Text.Wrap
+                                textFormat: bubbleRow.outgoing ? TextEdit.PlainText : TextEdit.MarkdownText
+                                wrapMode: TextEdit.Wrap
                                 color: chat.ink
-                                lineHeight: 1.08
                                 font {
                                     family: Theme.Fonts.family
                                     weight: Font.Normal
@@ -628,6 +639,11 @@ Item {
                     onCursorRectangleChanged: composerScroll.contentY = Math.max(0,
                         Math.min(cursorRectangle.y, contentHeight - composerScroll.height))
                     Keys.onPressed: event => {
+                        if (event.matches(StandardKey.Copy) && !composer.selectedText && chat.selectedMessage) {
+                            event.accepted = true
+                            chat.selectedMessage.copy()
+                            return
+                        }
                         if (!event.matches(StandardKey.Paste)) return
                         event.accepted = true
                         if (clipboard.running) return
