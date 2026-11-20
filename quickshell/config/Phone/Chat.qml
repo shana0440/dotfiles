@@ -2,6 +2,7 @@ import QtQuick
 import QtQuick.Shapes
 import Quickshell
 import Quickshell.Io
+import "ChatMarkdown.js" as ChatMarkdown
 import "../Theme" as Theme
 import "../Components" as Components
 import "../Services" as Services
@@ -19,6 +20,7 @@ Item {
     readonly property color barFill: "#161618"
     readonly property color hairline: "#38383a"
     readonly property color incomingFill: "#182533"
+    readonly property color inlineCodeFill: "#35495e"
     readonly property color incomingStamp: "#6c7e8e"
     readonly property color outgoingFill: "#2b5278"
     readonly property color outgoingStamp: "#7da8d3"
@@ -338,22 +340,36 @@ Item {
                             }
                         }
 
-                        Text {
+                        Item {
                             id: body
+                            readonly property real markdownLayoutScale: bubbleRow.outgoing ? 1 : 0.5
+                            readonly property int lineCount: bodyText.lineCount
                             visible: !bubbleRow.typing && bubbleRow.hasCaption
                             x: 12 * chat.pt
                             y: bubbleRow.captionTop + 7 * chat.pt
+                            implicitWidth: bodyText.implicitWidth * markdownLayoutScale
+                            implicitHeight: bodyText.height * markdownLayoutScale
                             width: Math.min(implicitWidth, bubbleRow.maxTextWidth)
-                            text: bubbleRow.outgoing ? bubbleRow.content.caption : bubbleRow.content.caption.replace(
-                                /\[([^\]]+)\]\(([^)\s]+)\)|(https?:\/\/[^\s<>()\]]+)/g,
-                                (match, label, target, bare) => '<a href="' + (target || bare) + '"><span style="color: '
-                                    + chat.link + '">' + (label || bare) + '</span></a>')
-                            textFormat: bubbleRow.outgoing ? Text.PlainText : Text.MarkdownText
-                            wrapMode: Text.Wrap
-                            color: chat.ink
-                            lineHeight: 1.08
-                            font { family: Theme.Fonts.family; weight: Font.Normal; pixelSize: 16 * chat.pt }
-                            onLinkActivated: link => Qt.openUrlExternally(link)
+
+                            Text {
+                                id: bodyText
+                                width: body.width / body.markdownLayoutScale
+                                scale: body.markdownLayoutScale
+                                transformOrigin: Item.TopLeft
+                                text: bubbleRow.outgoing ? bubbleRow.content.caption : ChatMarkdown.format(
+                                    bubbleRow.content.caption, Theme.Fonts.mono, font.pixelSize,
+                                    chat.inlineCodeFill, chat.ink, chat.link)
+                                textFormat: bubbleRow.outgoing ? Text.PlainText : Text.MarkdownText
+                                wrapMode: Text.Wrap
+                                color: chat.ink
+                                lineHeight: 1.08
+                                font {
+                                    family: Theme.Fonts.family
+                                    weight: Font.Normal
+                                    pixelSize: 16 * chat.pt / body.markdownLayoutScale
+                                }
+                                onLinkActivated: link => Qt.openUrlExternally(link)
+                            }
                         }
 
                         LinkPreview {
