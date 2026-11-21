@@ -1,5 +1,6 @@
 import QtQuick
 import QtQuick.Shapes
+import "../Theme" as Theme
 
 Item {
     id: root
@@ -27,6 +28,18 @@ Item {
         Stroke {
             PathPolyline { path: root.kind === "pen" ? root.operation.points : [] }
         }
+    }
+
+    Text {
+        visible: root.kind === "text"
+        x: root.operation?.at?.x ?? 0
+        y: root.operation?.at?.y ?? 0
+        text: root.operation?.text ?? ""
+        textFormat: Text.PlainText
+        color: root.strokeColor
+        font.family: Theme.Fonts.family
+        font.weight: Theme.Fonts.weight
+        font.pixelSize: root.operation?.size ?? 12
     }
 
     Shape {

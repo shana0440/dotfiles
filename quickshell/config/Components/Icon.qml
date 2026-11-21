@@ -44,6 +44,7 @@ Item {
         pen: "pen-line",
         rectangle: "square",
         ellipse: "circle",
+        text: "type",
         stop: "square",
         notifications: "bell",
         notificationsOff: "bell-off",

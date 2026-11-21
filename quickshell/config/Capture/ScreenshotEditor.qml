@@ -18,11 +18,13 @@ Scope {
     property int strokeWidth: 4
     property var operations: []
     property var draft: null
+    property var typing: null
     property string message: ""
     readonly property var tools: [
         { name: "rect", icon: "rectangle", label: "Rectangle" },
         { name: "ellipse", icon: "ellipse", label: "Ellipse" },
-        { name: "pen", icon: "pen", label: "Pen" }
+        { name: "pen", icon: "pen", label: "Pen" },
+        { name: "text", icon: "text", label: "Text" }
     ]
     readonly property var colors: [Theme.Colors.error, Theme.Colors.warning, Theme.Colors.success, Theme.Colors.info, "#ffffff", "#000000"]
     readonly property var widths: [2, 4, 8]
@@ -31,6 +33,7 @@ Scope {
         chosenScreen = Quickshell.screens.find(screen => screen.name === Hyprland.focusedMonitor?.name) ?? Quickshell.screens[0]
         operations = []
         draft = null
+        typing = null
         message = ""
         path = file
     }
@@ -39,6 +42,22 @@ Scope {
         path = ""
         operations = []
         draft = null
+        typing = null
+    }
+
+    onToolChanged: finishText()
+
+    function finishText() {
+        if (typing && textInput.text.trim().length > 0)
+            commit(Object.assign({}, typing, { text: textInput.text }))
+        typing = null
+    }
+
+    function back() {
+        if (typing)
+            typing = null
+        else
+            close()
     }
 
     function commit(operation) {
@@ -46,6 +65,13 @@ Scope {
     }
 
     function begin(point) {
+        finishText()
+        if (tool === "text") {
+            typing = { kind: "text", at: point, color: String(color), size: (12 + strokeWidth * 3) / viewport.fit }
+            textInput.text = ""
+            textInput.forceActiveFocus()
+            return
+        }
         const style = { kind: tool, color: String(color), stroke: strokeWidth / viewport.fit }
         draft = Object.assign(style, tool === "pen"
             ? { points: [point, Qt.point(point.x + 0.01, point.y)] }
@@ -66,6 +92,7 @@ Scope {
     function save() {
         if (!editing || image.status !== Image.Ready)
             return
+        finishText()
         const file = path
         page.grabToImage(result => {
             if (!result.saveToFile(file)) {
@@ -79,7 +106,7 @@ Scope {
 
     function state() {
         return {
-            editing, path, tool, color: String(color), width: strokeWidth,
+            editing, path, tool, color: String(color), width: strokeWidth, typing: typing !== null,
             operations: operations.map(operation => operation.kind), message
         }
     }
@@ -154,10 +181,27 @@ Scope {
 
                 MouseArea {
                     anchors.fill: parent
-                    cursorShape: Qt.CrossCursor
+                    cursorShape: root.tool === "text" ? Qt.IBeamCursor : Qt.CrossCursor
                     onPressed: mouse => root.begin(Qt.point(mouse.x, mouse.y))
                     onPositionChanged: mouse => root.extend(Qt.point(mouse.x, mouse.y))
                     onReleased: root.finish()
+                }
+
+                TextInput {
+                    id: textInput
+                    visible: root.typing !== null
+                    x: root.typing?.at.x ?? 0
+                    y: root.typing?.at.y ?? 0
+                    color: root.typing?.color ?? "transparent"
+                    font.family: Theme.Fonts.family
+                    font.weight: Theme.Fonts.weight
+                    font.pixelSize: root.typing?.size ?? 12
+                    cursorDelegate: Rectangle {
+                        width: 2 / viewport.fit
+                        color: textInput.color
+                    }
+                    Keys.onReturnPressed: root.finishText()
+                    Keys.onEnterPressed: root.finishText()
                 }
             }
 
@@ -305,7 +349,7 @@ Scope {
             }
         }
 
-        Shortcut { sequence: "Escape"; context: Qt.ApplicationShortcut; enabled: root.editing; onActivated: root.close() }
+        Shortcut { sequence: "Escape"; context: Qt.ApplicationShortcut; enabled: root.editing; onActivated: root.back() }
         Shortcut { sequence: "Ctrl+S"; context: Qt.ApplicationShortcut; enabled: root.editing; onActivated: root.save() }
     }
 
