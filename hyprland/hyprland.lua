@@ -93,24 +93,22 @@ if hl.plugin.hyprbars then
                 bar_button_padding         = 8,
                 bar_precedence_over_border = true,
                 bar_buttons_alignment      = "right",
-                icon_on_hover              = true,
-                inactive_button_color      = "rgba(5a5a5aff)",
+                idle_button_color          = "rgba(5d5d5dff)",
                 on_double_click            = toggleMaximized,
             },
         },
     })
 
-    local symbolColor = "rgba(00000099)"
     hl.plugin.hyprbars.add_button({
-        bg_color = "rgb(ff5f57)", fg_color = symbolColor, size = 13, icon = "×",
+        bg_color = "rgb(ff5f57)", fg_color = "rgba(00000000)", size = 13, icon = "",
         action   = [[hyprctl dispatch 'hl.dsp.window.close()']],
     })
     hl.plugin.hyprbars.add_button({
-        bg_color = "rgb(28c840)", fg_color = symbolColor, size = 13, icon = "+",
+        bg_color = "rgb(28c840)", fg_color = "rgba(00000000)", size = 13, icon = "",
         action   = toggleMaximized,
     })
     hl.plugin.hyprbars.add_button({
-        bg_color = "rgb(febc2e)", fg_color = symbolColor, size = 13, icon = "−",
+        bg_color = "rgb(febc2e)", fg_color = "rgba(00000000)", size = 13, icon = "",
         action   = [[hyprctl dispatch 'hl.dsp.window.move({ workspace = "special:minimized", follow = false })']],
     })
 end
