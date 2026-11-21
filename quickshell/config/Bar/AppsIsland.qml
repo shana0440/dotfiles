@@ -2,10 +2,11 @@ import QtQuick
 import Quickshell
 import Quickshell.Io
 import Quickshell.Wayland
+import "../Theme" as Theme
 import "../Components" as Components
 import "../Services" as Services
 
-Components.Island {
+Components.MergeableCircle {
     id: root
 
     property real availableWidth: 0
@@ -20,60 +21,59 @@ Components.Island {
         function onApplicationsChanged() { root.entriesRevision++ }
     }
 
-    visible: windows.count > 0 && availableWidth >= buttonSize + padding * 2
-    alignment: Qt.AlignRight
-    targetRadius: islandHeight / 2
-    activeView: windowsView
+    available: windows.count > 0 && availableWidth >= buttonSize + padding * 2
+    width: widthSpring.value
+    height: islandHeight
 
-    views: [
-        Item {
-            id: windowsView
-            width: root.padding * 2 + windowStrip.width
-            height: root.islandHeight
+    Components.Spring {
+        id: widthSpring
+        to: root.padding * 2 + windowStrip.width
+        stiffness: Theme.Motion.morphStiffness
+        damping: Theme.Motion.morphDamping
+        Component.onCompleted: snap()
+    }
 
-            AppStrip {
-                id: windowStrip
-                x: root.padding
-                y: 4
-                width: Math.max(0, Math.min(contentWidth, root.availableWidth - root.padding * 2))
-                height: parent.height - 8
-                step: root.buttonSize + root.buttonSpacing
+    AppStrip {
+        id: windowStrip
+        x: root.padding
+        y: 4
+        width: Math.max(0, Math.min(contentWidth, root.availableWidth - root.padding * 2))
+        height: parent.height - 8
+        step: root.buttonSize + root.buttonSpacing
 
-                Repeater {
-                    id: windows
-                    model: ToplevelManager.toplevels
+        Repeater {
+            id: windows
+            model: ToplevelManager.toplevels
 
-                    AppButton {
-                        id: windowButton
-                        required property var modelData
-                        readonly property var entry: {
-                            root.entriesRevision
-                            return DesktopEntries.heuristicLookup(modelData.appId)
-                        }
+            AppButton {
+                id: windowButton
+                required property var modelData
+                readonly property var entry: {
+                    root.entriesRevision
+                    return DesktopEntries.heuristicLookup(modelData.appId)
+                }
 
-                        label: modelData.title || entry?.name || modelData.appId || "Application"
-                        iconSource: Quickshell.iconPath(entry?.icon || "application-x-executable", true)
-                        active: modelData.activated
-                        badged: Services.LauncherBadges.hasUnread(modelData.appId, entry?.id || "")
-                        onPressed: mouseButton => {
-                            if (mouseButton === Qt.LeftButton)
-                                modelData.activate()
-                        }
+                label: modelData.title || entry?.name || modelData.appId || "Application"
+                iconSource: Quickshell.iconPath(entry?.icon || "application-x-executable", true)
+                active: modelData.activated
+                badged: Services.LauncherBadges.hasUnread(modelData.appId, entry?.id || "")
+                onPressed: mouseButton => {
+                    if (mouseButton === Qt.LeftButton)
+                        modelData.activate()
+                }
 
-                        function revealIfActive() {
-                            if (modelData.activated)
-                                windowStrip.reveal(windowButton)
-                        }
-                        Component.onCompleted: Qt.callLater(revealIfActive)
-                        Connections {
-                            target: windowButton.modelData
-                            function onActivatedChanged() { windowButton.revealIfActive() }
-                        }
-                    }
+                function revealIfActive() {
+                    if (modelData.activated)
+                        windowStrip.reveal(windowButton)
+                }
+                Component.onCompleted: Qt.callLater(revealIfActive)
+                Connections {
+                    target: windowButton.modelData
+                    function onActivatedChanged() { windowButton.revealIfActive() }
                 }
             }
         }
-    ]
+    }
 
     IpcHandler {
         target: "apps"

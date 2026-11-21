@@ -168,7 +168,7 @@ PanelWindow {
     WlrLayershell.keyboardFocus: Services.Capture.ownsInput ? WlrKeyboardFocus.None
         : menuNeedsKeyboardFocus ? WlrKeyboardFocus.Exclusive
         : statusIsland.menuOpen || soundOpen ? WlrKeyboardFocus.OnDemand : WlrKeyboardFocus.None
-    readonly property bool showsAboveApps: overlayOpen || centerIsland.notificationVisible || Services.Capture.recording
+    readonly property bool showsAboveApps: overlayOpen || statusIsland.height > compactIslandHeight + 1 || centerIsland.notificationVisible || Services.Capture.recording
     WlrLayershell.layer: showsAboveApps ? WlrLayer.Overlay : WlrLayer.Bottom
 
     PanelWindow {
@@ -305,15 +305,24 @@ PanelWindow {
         }
 
         Components.IslandGoo {
-            id: appsGoo
-            target: appsIsland
+            id: statusGoo
+            target: statusIsland
+            leadingOuter: appsIsland
             shaderSource: centerGoo
         }
 
-        Components.IslandGoo {
-            id: statusGoo
-            target: statusIsland
-            shaderSource: centerGoo
+        BarComponents.AppsIsland {
+            id: appsIsland
+            bare: statusGoo.ready
+            anchors.right: statusIsland.left
+            anchors.rightMargin: offset
+            gap: root.islandSpacing
+            merged: statusIsland.soundOpen
+            islandHeight: root.compactIslandHeight
+            availableWidth: Math.max(0, statusIsland.x - root.islandSpacing * 2
+                - Math.max(centerIsland.x + centerIsland.width,
+                    recordingStopIsland.visible ? recordingStopIsland.x + recordingStopIsland.width : 0,
+                    inputIsland.visible ? inputIsland.x + inputIsland.width : 0))
         }
 
         BarComponents.StatusIsland {
@@ -322,18 +331,6 @@ PanelWindow {
             anchors.right: parent.right
             islandHeight: root.compactIslandHeight
             availableWidth: Math.max(0, parent.width - root.islandSpacing
-                - Math.max(centerIsland.x + centerIsland.width,
-                    recordingStopIsland.visible ? recordingStopIsland.x + recordingStopIsland.width : 0,
-                    inputIsland.visible ? inputIsland.x + inputIsland.width : 0))
-        }
-
-        BarComponents.AppsIsland {
-            id: appsIsland
-            bare: appsGoo.ready
-            anchors.right: statusIsland.left
-            anchors.rightMargin: root.islandSpacing
-            islandHeight: root.compactIslandHeight
-            availableWidth: Math.max(0, statusIsland.x - root.islandSpacing * 2
                 - Math.max(centerIsland.x + centerIsland.width,
                     recordingStopIsland.visible ? recordingStopIsland.x + recordingStopIsland.width : 0,
                     inputIsland.visible ? inputIsland.x + inputIsland.width : 0))
