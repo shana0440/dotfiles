@@ -10,7 +10,8 @@ description: Control the user's Linux desktop (Hyprland and the Quickshell deskt
 - Features: `~/dotfiles/README.md` and the documents it links to.
 - Shell commands: run `quickshell ipc show`. Use these targets:
   `dashboard`, `overview`, `wallpaper`, `theme`, `notifications`, `pomodoro`,
-  `capture`, `screenshotEditor`, `lock`, `apps` (open windows), `status`
+  `capture`, `screenshotEditor`, `lock`, `apps` (open windows), `dock` (open
+  apps; `activate <appId>` focuses or cycles one), `status`
   (background tray apps, sound view), `sound` (output, input and app volume,
   audio devices). Each has a `state` function that reads it. Leave the rest to the
   shell itself.

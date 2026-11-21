@@ -117,6 +117,8 @@ All bindings are in `hyprland/hyprland.lua`. The main ones:
 - Tap `Super`: dashboard ([details](quickshell/config/Bar/README.md)).
 - Layers button in the status island at the right end of the bar: background apps
   ([details](quickshell/config/Bar/README.md#status-island)).
+- Dock at the bottom of the screen: one icon per open app, with a dot per
+  window. Click to focus the app, again to cycle its windows.
 
 ### Input methods
 
