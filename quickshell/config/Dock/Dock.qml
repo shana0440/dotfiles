@@ -1,6 +1,7 @@
 import QtQuick
 import Quickshell
 import Quickshell.Io
+import Quickshell.Hyprland
 import Quickshell.Wayland
 import "../Components" as Components
 import "../Theme" as Theme
@@ -14,16 +15,27 @@ PanelWindow {
     readonly property int spacing: 4
     property int entriesRevision: 0
 
+    function workspaceRank(toplevel) {
+        const id = toplevel.workspace?.id ?? 0
+        return id > 0 ? id : Number.MAX_SAFE_INTEGER + id
+    }
+
     readonly property var apps: {
+        const toplevels = Hyprland.toplevels.values
+            .filter(toplevel => toplevel.wayland)
+            .map((toplevel, opened) => ({ toplevel, opened, rank: workspaceRank(toplevel) }))
+            .sort((a, b) => a.rank - b.rank || a.opened - b.opened)
         const groups = []
-        for (const window of ToplevelManager.toplevels.values) {
+        for (const { toplevel } of toplevels) {
+            const window = toplevel.wayland
             const key = window.appId || window.title
             let group = groups.find(app => app.key === key)
             if (!group) {
-                group = { key: key, windows: [] }
+                group = { key: key, windows: [], workspaces: [] }
                 groups.push(group)
             }
             group.windows.push(window)
+            group.workspaces.push(toplevel.workspace?.name ?? "")
         }
         return groups
     }
@@ -109,7 +121,9 @@ PanelWindow {
                 apps: root.apps.map(app => ({
                     appId: app.key,
                     active: app.windows.some(window => window.activated),
-                    windows: app.windows.map(window => ({ title: window.title, active: window.activated }))
+                    windows: app.windows.map((window, index) => ({
+                        title: window.title, workspace: app.workspaces[index], active: window.activated
+                    }))
                 }))
             })
         }
