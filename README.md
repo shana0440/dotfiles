@@ -104,6 +104,8 @@ All bindings are in `hyprland/hyprland.lua`. The main ones:
   `Super+M`: log out.
 - `Super+C/V/X/A/Z/F/S/O/L/T/W/R` send `Ctrl+` the same key (macOS-style).
 - `Alt+F`: toggle fullscreen. `Ctrl+Up`: workspace overview.
+- Title bar buttons: yellow minimizes, green maximizes, red closes.
+  `Super+Alt+M` shows minimized windows; `Alt+Shift+1`…`0` brings one back.
 - `Alt+1`…`Alt+0`: workspaces 1–10; add `Shift` to move the focused window.
 - `Ctrl+Left` / `Ctrl+Right`: previous / next workspace (overrides apps'
   word navigation).

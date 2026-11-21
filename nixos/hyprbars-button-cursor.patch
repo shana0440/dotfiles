@@ -1,0 +1,89 @@
+diff --git a/barDeco.cpp b/barDeco.cpp
+index 8ddf6d5..5295aad 100644
+--- a/barDeco.cpp
++++ b/barDeco.cpp
+@@ -25,6 +25,7 @@
+ #include <hyprland/src/layout/LayoutManager.hpp>
+ #include <hyprland/src/render/OpenGL.hpp>
+ #include <hyprland/src/state/MonitorState.hpp>
++#include <hyprland/src/pointer/cursor/CursorShapeOverrideController.hpp>
+ 
+ #include "globals.hpp"
+ #include "BarPassElement.hpp"
+@@ -33,6 +34,8 @@
+ 
+ using namespace Render::GL;
+ 
++static CHyprBar* g_pButtonCursorOwner = nullptr;
++
+ static CHyprColor configColor(Config::INTEGER color) {
+     return CHyprColor{sc<uint64_t>(color)};
+ }
+@@ -58,6 +61,10 @@ CHyprBar::CHyprBar(PHLWINDOW pWindow) : IHyprWindowDecoration(pWindow) {
+ }
+ 
+ CHyprBar::~CHyprBar() {
++    if (g_pButtonCursorOwner == this) {
++        g_pButtonCursorOwner = nullptr;
++        Pointer::Cursor::overrideController->unsetOverride(Pointer::Cursor::CURSOR_OVERRIDE_UNKNOWN);
++    }
+     std::erase(g_pGlobalState->bars, m_self);
+ }
+ 
+@@ -162,6 +169,8 @@ void CHyprBar::onMouseMove(Vector2D coords) {
+     if (g_pGlobalState->config.iconOnHover->value() || g_pGlobalState->config.idleButtonColor->value() > 0)
+         damageOnButtonHover();
+ 
++    updateButtonCursor();
++
+     // buttons_on_hover: the buttons only exist while the cursor is over the bar,
+     // so the whole bar has to be redrawn as the cursor crosses its edge.
+     if (g_pGlobalState->config.buttonsOnHover->value()) {
+@@ -753,6 +762,34 @@ void CHyprBar::updateRules() {
+         m_bTitleColorChanged = true;
+ }
+ 
++bool CHyprBar::cursorOverButton() {
++    const auto BARPADDING       = g_pGlobalState->config.barPadding->value();
++    const auto BARBUTTONPADDING = g_pGlobalState->config.barButtonPadding->value();
++    const auto HEIGHT           = g_pGlobalState->config.barHeight->value();
++    const bool BUTTONSRIGHT     = g_pGlobalState->config.barButtonsAlignment->value() != "left";
++    const auto COORDS           = cursorRelativeToBar();
++    const auto BARBUF           = Vector2D{assignedBoxGlobal().w, sc<double>(HEIGHT)};
++
++    float      offset = BARPADDING;
++    for (auto& b : g_pGlobalState->buttons) {
++        Vector2D currentPos = Vector2D{(BUTTONSRIGHT ? BARBUF.x - BARBUTTONPADDING - b.size - offset : offset), (BARBUF.y - b.size) / 2.0}.floor();
++        if (VECINRECT(COORDS, currentPos.x, currentPos.y, currentPos.x + b.size + BARBUTTONPADDING, currentPos.y + b.size))
++            return true;
++        offset += BARBUTTONPADDING + b.size;
++    }
++    return false;
++}
++
++void CHyprBar::updateButtonCursor() {
++    if (cursorOverButton() && inputIsValid()) {
++        g_pButtonCursorOwner = this;
++        Pointer::Cursor::overrideController->setOverride("pointer", Pointer::Cursor::CURSOR_OVERRIDE_UNKNOWN);
++    } else if (g_pButtonCursorOwner == this) {
++        g_pButtonCursorOwner = nullptr;
++        Pointer::Cursor::overrideController->unsetOverride(Pointer::Cursor::CURSOR_OVERRIDE_UNKNOWN);
++    }
++}
++
+ void CHyprBar::damageOnButtonHover() {
+     const auto BARPADDING       = g_pGlobalState->config.barPadding->value();
+     const auto BARBUTTONPADDING = g_pGlobalState->config.barButtonPadding->value();
+diff --git a/barDeco.hpp b/barDeco.hpp
+index 5b6a35e..a16f3a5 100644
+--- a/barDeco.hpp
++++ b/barDeco.hpp
+@@ -85,6 +85,8 @@ class CHyprBar : public IHyprWindowDecoration {
+     void renderBarButtons(Render::CRenderContext& ctx, CBox* barBox, const float scale, const float a);
+     void renderBarButtonsText(Render::CRenderContext& ctx, CBox* barBox, const float scale, const float a);
+     void damageOnButtonHover();
++    bool cursorOverButton();
++    void updateButtonCursor();
+ 
+     bool inputIsValid();
+     void onMouseButton(Event::SCallbackInfo& info, IPointer::SButtonEvent e);

@@ -77,6 +77,42 @@ hl.config({
     },
 })
 
+hl.plugin.load("/etc/hyprland/plugins/hyprbars.so")
+if hl.plugin.hyprbars then
+    local toggleMaximized = [[hyprctl dispatch 'hl.dsp.window.fullscreen({ mode = "maximized", action = "toggle" })']]
+    hl.config({
+        plugin = {
+            hyprbars = {
+                bar_height                 = 30,
+                bar_color                  = "rgba(1f1f1ff2)",
+                ["col.text"]                = "rgba(e6e6e6ff)",
+                bar_text_size              = 10,
+                bar_text_font              = "Sans",
+                bar_blur                   = true,
+                bar_padding                = 12,
+                bar_button_padding         = 8,
+                bar_precedence_over_border = true,
+                bar_buttons_alignment      = "right",
+                idle_button_color          = "rgba(5d5d5dff)",
+                on_double_click            = toggleMaximized,
+            },
+        },
+    })
+
+    hl.plugin.hyprbars.add_button({
+        bg_color = "rgb(ff5f57)", fg_color = "rgba(00000000)", size = 13, icon = "",
+        action   = [[hyprctl dispatch 'hl.dsp.window.close()']],
+    })
+    hl.plugin.hyprbars.add_button({
+        bg_color = "rgb(28c840)", fg_color = "rgba(00000000)", size = 13, icon = "",
+        action   = toggleMaximized,
+    })
+    hl.plugin.hyprbars.add_button({
+        bg_color = "rgb(febc2e)", fg_color = "rgba(00000000)", size = 13, icon = "",
+        action   = [[hyprctl dispatch 'hl.dsp.window.move({ workspace = "special:minimized", follow = false })']],
+    })
+end
+
 hl.curve("easeOutQuint",   { type = "bezier", points = { {0.23, 1},    {0.32, 1}    } })
 hl.curve("easeInOutCubic", { type = "bezier", points = { {0.65, 0.05}, {0.36, 1}    } })
 hl.curve("linear",         { type = "bezier", points = { {0, 0},       {1, 1}       } })
@@ -313,6 +349,7 @@ hl.bind(mainMod .. " + CTRL + SPACE", hl.dsp.exec_cmd("hypr-toggle-kana"))
 
 hl.bind(mainMod .. " + ALT + S",         hl.dsp.workspace.toggle_special("magic"))
 hl.bind(mainMod .. " + ALT + SHIFT + S", hl.dsp.window.move({ workspace = "special:magic" }))
+hl.bind(mainMod .. " + ALT + M",         hl.dsp.workspace.toggle_special("minimized"))
 
 hl.bind(mainMod .. " + mouse_down", hl.dsp.focus({ workspace = "e+1" }))
 hl.bind(mainMod .. " + mouse_up",   hl.dsp.focus({ workspace = "e-1" }))

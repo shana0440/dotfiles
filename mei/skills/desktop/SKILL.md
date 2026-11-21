@@ -22,6 +22,7 @@ description: Control the user's Linux desktop (Hyprland and the Quickshell deskt
 | See windows, workspaces, monitors | `hyprctl -j clients`, `hyprctl -j workspaces`, `hyprctl -j monitors` |
 | Switch workspace | `hyprctl dispatch 'hl.dsp.focus({ workspace = 2 })'` |
 | Focus, move or close a window | `hyprctl dispatch 'hl.dsp.focus({ window = "class:kitty" })'`, `hyprctl dispatch 'hl.dsp.window.move({ workspace = 3, window = "class:kitty" })'`, `hyprctl dispatch 'hl.dsp.window.close({ window = "class:kitty" })'` |
+| Minimize or restore a window | `hyprctl dispatch 'hl.dsp.window.move({ workspace = "special:minimized", follow = false, window = "class:kitty" })'`; restore by moving it to a numbered workspace |
 | Open an app | `hyprctl dispatch 'hl.dsp.exec_cmd("kitty")'` |
 | Set the wallpaper | `wallpaper-set <image>` (images live in `~/Pictures/Wallpapers`) |
 | Take a screenshot or record | `screen-capture-screenshot full`, `screen-capture-record full <monitor>`, `screen-capture-record stop` |
