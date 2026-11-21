@@ -30,5 +30,20 @@ esac
 
 hints=(--hint string:desktop-entry:screen-capture)
 [[ -z "$image_path" ]] || hints+=(--hint "string:image-path:$image_path")
-timeout 3s notify-send --app-name "Screen Capture" --icon "$icon" \
-    "${hints[@]}" -- "$title" "$file_path" || true
+
+if [[ "$kind" == recording ]]; then
+    timeout 3s notify-send --app-name "Screen Capture" --icon "$icon" \
+        "${hints[@]}" -- "$title" "$file_path" || true
+    exit 0
+fi
+
+forget_quickshell_crash_relaunch_environment() {
+    unset "${!__QUICKSHELL_CRASH_@}"
+}
+
+action=$(timeout 1h notify-send --app-name "Screen Capture" --icon "$icon" --wait --action edit=Edit \
+    "${hints[@]}" -- "$title" "$file_path") || true
+if [[ "$action" == edit ]]; then
+    forget_quickshell_crash_relaunch_environment
+    quickshell ipc call screenshotEditor open "$file_path"
+fi
