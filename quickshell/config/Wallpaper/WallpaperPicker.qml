@@ -318,12 +318,16 @@ Scope {
                                     anchors.fill: parent
                                     active: card.visible && card.modelData.video && root.opened
                                         && hand.deal === 1 && !dealCards.running
-                                    sourceComponent: Video {
-                                        source: "file://" + card.modelData.path.split("/").map(encodeURIComponent).join("/")
+                                    asynchronous: true
+                                    sourceComponent: VideoOutput {
+                                        id: preview
                                         fillMode: VideoOutput.PreserveAspectCrop
-                                        loops: MediaPlayer.Infinite
-                                        muted: true
-                                        autoPlay: true
+                                        MediaPlayer {
+                                            source: "file://" + card.modelData.path.split("/").map(encodeURIComponent).join("/")
+                                            videoOutput: preview
+                                            loops: MediaPlayer.Infinite
+                                            autoPlay: true
+                                        }
                                     }
                                 }
                                 Rectangle {
