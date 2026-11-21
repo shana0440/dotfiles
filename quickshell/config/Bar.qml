@@ -189,7 +189,6 @@ PanelWindow {
 
     mask: Region {
         item: root.overlayOpen ? root.contentItem : workspaceIsland
-        Region { item: appsIsland.visible ? appsIsland : null }
         Region { item: statusIsland }
         Region { item: centerIsland }
         Region { item: recordingStopIsland.visible ? recordingStopIsland : null }
@@ -307,23 +306,7 @@ PanelWindow {
         Components.IslandGoo {
             id: statusGoo
             target: statusIsland
-            leadingOuter: appsIsland
             shaderSource: centerGoo
-        }
-
-        BarComponents.AppsIsland {
-            id: appsIsland
-            bare: statusGoo.ready
-            anchors.right: statusIsland.left
-            anchors.rightMargin: offset
-            gap: root.islandSpacing
-            merged: statusIsland.satellitesMerged
-            clearness: statusIsland.clearness
-            islandHeight: root.compactIslandHeight
-            availableWidth: Math.max(0, statusIsland.x - root.islandSpacing * 2
-                - Math.max(centerIsland.x + centerIsland.width,
-                    recordingStopIsland.visible ? recordingStopIsland.x + recordingStopIsland.width : 0,
-                    inputIsland.visible ? inputIsland.x + inputIsland.width : 0))
         }
 
         BarComponents.StatusIsland {
