@@ -333,17 +333,19 @@ Scope {
                                 }
                                 Loader {
                                     anchors.fill: parent
-                                    active: card.visible && card.modelData.video && root.opened
-                                        && hand.deal === 1 && !dealCards.running
+                                    active: card.modelData.video && card.distance < hand.reach + 1
                                     asynchronous: true
                                     sourceComponent: VideoOutput {
                                         id: preview
+                                        readonly property bool playingCard: root.opened && !root.preparing && card.visible
+                                        onPlayingCardChanged: playingCard ? player.play() : player.pause()
                                         fillMode: VideoOutput.PreserveAspectCrop
                                         MediaPlayer {
+                                            id: player
                                             source: "file://" + card.modelData.path.split("/").map(encodeURIComponent).join("/")
                                             videoOutput: preview
                                             loops: MediaPlayer.Infinite
-                                            autoPlay: true
+                                            Component.onCompleted: if (preview.playingCard) play(); else pause()
                                         }
                                     }
                                 }
