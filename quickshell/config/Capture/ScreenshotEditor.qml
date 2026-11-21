@@ -20,6 +20,8 @@ Scope {
     property var draft: null
     property string message: ""
     readonly property var tools: [
+        { name: "rect", icon: "rectangle", label: "Rectangle" },
+        { name: "ellipse", icon: "ellipse", label: "Ellipse" },
         { name: "pen", icon: "pen", label: "Pen" }
     ]
     readonly property var colors: [Theme.Colors.error, Theme.Colors.warning, Theme.Colors.success, Theme.Colors.info, "#ffffff", "#000000"]
@@ -44,16 +46,19 @@ Scope {
     }
 
     function begin(point) {
-        draft = { kind: "pen", color: String(color), width: strokeWidth / viewport.fit, points: [point, Qt.point(point.x + 0.01, point.y)] }
+        const style = { kind: tool, color: String(color), stroke: strokeWidth / viewport.fit }
+        draft = Object.assign(style, tool === "pen"
+            ? { points: [point, Qt.point(point.x + 0.01, point.y)] }
+            : { from: point, to: point })
     }
 
     function extend(point) {
         if (draft)
-            draft = Object.assign({}, draft, { points: draft.points.concat([point]) })
+            draft = Object.assign({}, draft, draft.kind === "pen" ? { points: draft.points.concat([point]) } : { to: point })
     }
 
     function finish() {
-        if (draft)
+        if (draft && (draft.kind === "pen" || (draft.from.x !== draft.to.x && draft.from.y !== draft.to.y)))
             commit(draft)
         draft = null
     }

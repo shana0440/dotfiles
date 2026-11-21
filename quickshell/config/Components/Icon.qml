@@ -42,6 +42,8 @@ Item {
         record: "video",
         recordRegion: "square-dashed",
         pen: "pen-line",
+        rectangle: "square",
+        ellipse: "circle",
         stop: "square",
         notifications: "bell",
         notificationsOff: "bell-off",
