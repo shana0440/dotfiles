@@ -417,6 +417,13 @@ hl.layer_rule({
 })
 
 hl.layer_rule({
+    name    = "video-wallpaper-leaves-without-fading-over-the-next",
+    match   = { namespace = "^mpvpaper$" },
+
+    no_anim = true,
+})
+
+hl.layer_rule({
     name    = "capture-preview-priority",
     match   = { namespace = "^quickshell-capture-region$" },
     order   = -100,

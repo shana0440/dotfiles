@@ -24,7 +24,7 @@ let
   '';
   setWallpaper = pkgs.writeShellApplication {
     name = "wallpaper-set";
-    runtimeInputs = [ pkgs.awww pkgs.quickshell colonies ];
+    runtimeInputs = [ pkgs.awww pkgs.quickshell pkgs.ffmpeg-headless pkgs.mpvpaper colonies ];
     text = ''
       exec ${python}/bin/python3 ${./library.py} set "$@"
     '';
