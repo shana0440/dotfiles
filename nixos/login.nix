@@ -5,7 +5,7 @@ let
   quickshell = ../quickshell/config;
   copyWallpaper = pkgs.writeShellApplication {
     name = "login-wallpaper-copy";
-    runtimeInputs = [ pkgs.imagemagick pkgs.coreutils ];
+    runtimeInputs = [ pkgs.imagemagick pkgs.ffmpeg-headless pkgs.coreutils ];
     text = ''
       current="''${XDG_STATE_HOME:-$HOME/.local/state}/wallpaper/current"
       [ -s "$current" ] || exit 0
@@ -13,6 +13,14 @@ let
       [ -f "$image" ] || { echo "login-wallpaper: $image is gone" >&2; exit 0; }
       temp="$(mktemp -p "$(dirname ${wallpaper})" .wallpaper.XXXXXX)"
       trap 'rm -f "$temp"' EXIT
+      case "''${image,,}" in
+        *.mp4 | *.webm | *.mkv | *.mov)
+          frame="$(mktemp -p "$(dirname ${wallpaper})" .wallpaper-frame.XXXXXX.png)"
+          trap 'rm -f "$temp" "$frame"' EXIT
+          ffmpeg -v error -y -i "$image" -frames:v 1 "$frame"
+          image="$frame"
+          ;;
+      esac
       magick "''${image}[0]" -auto-orient -resize "2560x1440^" -strip -quality 90 "jpg:$temp"
       chmod 644 "$temp"
       mv -f "$temp" ${wallpaper}
