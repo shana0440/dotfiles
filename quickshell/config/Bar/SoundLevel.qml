@@ -9,6 +9,7 @@ Item {
     property var node: null
     property string icon: ""
     property string mutedIcon: ""
+    property string iconSource: ""
     property string label: ""
     property string what: ""
     property bool expandable: false
@@ -27,12 +28,23 @@ Item {
         anchors.verticalCenter: slider.verticalCenter
         width: 32
         height: 32
-        iconSize: 16
+        iconSize: root.iconSource ? 0 : 16
         enabled: root.audio !== null
         icon: root.muted ? root.mutedIcon : root.icon
         iconColor: root.muted ? Theme.Colors.muted : Theme.Colors.foreground
         tooltip: root.muted ? "Unmute " + root.what : "Mute " + root.what
         onClicked: Services.Sound.toggleMute(root.node)
+
+        Image {
+            anchors.centerIn: parent
+            width: 18
+            height: 18
+            visible: root.iconSource !== ""
+            source: root.iconSource
+            sourceSize.width: width * 2
+            sourceSize.height: height * 2
+            opacity: root.muted ? 0.35 : 1
+        }
     }
 
     Text {

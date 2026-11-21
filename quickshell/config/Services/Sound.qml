@@ -12,9 +12,36 @@ Singleton {
     readonly property var audio: sink?.audio ?? null
     readonly property real volume: audio?.volume ?? 0
     readonly property bool muted: audio?.muted ?? false
+    readonly property var streams: Pipewire.nodes.values.filter(node => node.audio && node.isStream && node.isSink)
 
     function devices(input) {
         return Pipewire.nodes.values.filter(node => node.audio && node.isSink !== input && !node.isStream)
+    }
+
+    function appEntry(node) {
+        const properties = node?.properties ?? {}
+        const binary = (properties["application.process.binary"] ?? "").replace(/^\./, "").replace(/-wrapped$/, "")
+        return [properties["application.id"], properties["application.name"], binary]
+            .filter(name => name)
+            .map(name => DesktopEntries.heuristicLookup(name))
+            .find(entry => entry) ?? null
+    }
+
+    function appName(node) {
+        const properties = node?.properties ?? {}
+        return appEntry(node)?.name || properties["application.name"] || properties["application.process.binary"]
+            || node?.name || ""
+    }
+
+    function appIcon(node) {
+        const named = node?.properties?.["application.icon-name"]
+        return Quickshell.iconPath(named || appEntry(node)?.icon || "", true)
+    }
+
+    function findStream(app) {
+        const wanted = app.toLowerCase()
+        return streams.find(node => String(node.id) === app || appName(node).toLowerCase() === wanted
+            || (node.properties?.["application.name"] ?? "").toLowerCase() === wanted)
     }
 
     function label(node) {
@@ -56,7 +83,7 @@ Singleton {
     }
 
     PwObjectTracker {
-        objects: [root.sink, root.source].filter(node => node)
+        objects: [root.sink, root.source].filter(node => node).concat(root.streams)
     }
 
     IpcHandler {
@@ -67,10 +94,23 @@ Singleton {
         function toggleInputMute(): void { root.toggleMute(root.source) }
         function setOutputDevice(name: string): bool { return root.selectNamed(false, name) }
         function setInputDevice(name: string): bool { return root.selectNamed(true, name) }
+        function setAppVolume(app: string, percent: int): bool {
+            const node = root.findStream(app)
+            root.setVolume(node, percent / 100)
+            return node !== undefined
+        }
+        function toggleAppMute(app: string): bool {
+            const node = root.findStream(app)
+            root.toggleMute(node)
+            return node !== undefined
+        }
         function state(): string {
             return JSON.stringify({
                 output: root.describe(root.sink),
                 input: root.describe(root.source),
+                apps: root.streams.map(node => Object.assign(root.describe(node), {
+                    id: node.id, name: root.appName(node), media: node.properties["media.name"] ?? ""
+                })),
                 outputDevices: root.devices(false).map(node => ({ name: node.name, label: root.label(node) })),
                 inputDevices: root.devices(true).map(node => ({ name: node.name, label: root.label(node) }))
             })

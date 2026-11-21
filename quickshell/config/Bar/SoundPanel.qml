@@ -170,6 +170,40 @@ PopupWindow {
                 visible: root.picking === "input"
                 input: true
             }
+
+            Text {
+                topPadding: 8
+                bottomPadding: 4
+                text: "Apps"
+                color: Theme.Colors.muted
+                font.family: Theme.Fonts.family
+                font.weight: Theme.Fonts.weight
+                font.pixelSize: 12
+            }
+            Text {
+                visible: Services.Sound.streams.length === 0
+                height: 30
+                verticalAlignment: Text.AlignVCenter
+                text: "No apps are playing sound"
+                color: Theme.Colors.muted
+                font.family: Theme.Fonts.family
+                font.weight: Theme.Fonts.weight
+                font.pixelSize: 12
+            }
+            Repeater {
+                model: Services.Sound.streams
+
+                SoundLevel {
+                    required property var modelData
+                    readonly property string media: modelData.properties["media.name"] ?? ""
+                    node: modelData
+                    icon: "audio"
+                    mutedIcon: "audio"
+                    iconSource: Services.Sound.appIcon(modelData)
+                    what: Services.Sound.appName(modelData)
+                    label: media && media.toLowerCase() !== what.toLowerCase() ? what + " · " + media : what
+                }
+            }
         }
     }
 }
