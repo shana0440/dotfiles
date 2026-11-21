@@ -15,7 +15,7 @@ let
     pluginName = "hyprbars";
     version = "0.57.2";
     src = "${hyprlandPluginsSource}/hyprbars";
-    patches = [ ./hyprbars-idle-button-color.patch ];
+    patches = [ ./hyprbars-idle-button-color.patch ./hyprbars-button-cursor.patch ];
     hyprland = hyprlandPackage;
     inherit (hyprlandPackage) nativeBuildInputs;
     meta.description = "Hyprland window title bars";
