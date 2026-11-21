@@ -10,6 +10,7 @@ Components.Island {
     property bool expanded: false
     property string expandedView: "home"
     property bool volumeVisible: false
+    property bool volumeShownElsewhere: false
     property int availableHeight: 560
     readonly property bool notificationVisible: Services.Notifications.previewVisible
     readonly property bool showingRecording: activeView === recordingView
@@ -80,7 +81,7 @@ Components.Island {
     }
 
     function showVolume() {
-        if (expanded && expandedView === "settings")
+        if (volumeShownElsewhere || (expanded && expandedView === "settings"))
             return
         expanded = false
         volumeVisible = true

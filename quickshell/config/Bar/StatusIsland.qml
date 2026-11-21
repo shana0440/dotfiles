@@ -21,7 +21,13 @@ Components.Island {
     readonly property bool showingBackground: backgroundShown && backgroundApps.length > 0
     readonly property real buttonsWidth: buttonSize + (backgroundApps.length > 0 ? buttonSpacing + buttonSize : 0)
     readonly property real compactWidth: padding * 2 + buttonsWidth
-    readonly property bool menuOpen: trayMenu.visible
+    readonly property bool menuOpen: trayMenu.visible || soundPanel.visible
+    readonly property bool soundOpen: soundPanel.visible
+
+    function openMenu(item) {
+        soundPanel.close()
+        trayMenu.open(item)
+    }
 
     function backgroundIcon(item) {
         const themed = item.icon.match(/^image:\/\/icon\/([^?]+)$/)?.[1]
@@ -31,10 +37,19 @@ Components.Island {
         return Quickshell.iconPath(DesktopEntries.heuristicLookup(item.id)?.icon || "application-x-executable", true)
     }
 
+    function toggleSound() {
+        if (soundPanel.visible) {
+            soundPanel.close()
+        } else {
+            trayMenu.close()
+            soundPanel.open()
+        }
+    }
+
     function pressBackgroundApp(item, mouseButton) {
         if (mouseButton === Qt.RightButton || (mouseButton === Qt.LeftButton && item.onlyMenu)) {
             if (item.hasMenu)
-                trayMenu.open(item)
+                root.openMenu(item)
         } else if (mouseButton === Qt.MiddleButton) {
             item.secondaryActivate()
         } else {
@@ -46,7 +61,7 @@ Components.Island {
         target: Hyprland
         function onRawEvent(event) {
             if (event.name === "custom" && event.data === "pointerPressed" && root.showingBackground
-                    && !islandHover.hovered && !trayMenu.hovered)
+                    && !islandHover.hovered && !trayMenu.hovered && !soundPanel.hovered)
                 root.backgroundShown = false
         }
     }
@@ -118,6 +133,8 @@ Components.Island {
                 : Services.Sound.volume < 0.34 ? "speakerLow"
                 : Services.Sound.volume < 0.67 ? "speakerMedium" : "speaker"
             tooltip: Services.Sound.muted ? "Muted" : "Volume " + Math.round(Services.Sound.volume * 100) + "%"
+            selected: soundPanel.visible
+            onClicked: root.toggleSound()
 
             WheelHandler {
                 acceptedDevices: PointerDevice.Mouse | PointerDevice.TouchPad
@@ -146,6 +163,11 @@ Components.Island {
         island: root
     }
 
+    SoundPanel {
+        id: soundPanel
+        island: root
+    }
+
     IpcHandler {
         target: "status"
         function showBackground(): void { root.backgroundShown = true }
@@ -161,12 +183,15 @@ Components.Island {
             if (!item?.hasMenu)
                 return false
             root.backgroundShown = true
-            trayMenu.open(item)
+            root.openMenu(item)
             return true
         }
         function closeMenu(): void { trayMenu.close() }
+        function showSound(): void { if (!soundPanel.visible) root.toggleSound() }
+        function hideSound(): void { soundPanel.close() }
         function state(): string {
             return JSON.stringify({
+                sound: soundPanel.visible,
                 background: {
                     shown: root.showingBackground,
                     menu: trayMenu.visible ? trayMenu.trayItem?.id ?? null : null,

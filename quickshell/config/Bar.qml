@@ -342,6 +342,7 @@ PanelWindow {
             bare: centerGoo.ready
             clearness: Theme.Colors.centerClearness
             anchors.horizontalCenter: parent.horizontalCenter
+            volumeShownElsewhere: statusIsland.soundOpen
             availableHeight: Math.min(560, Math.max(144, root.height - root.islandMargin * 2))
         }
 

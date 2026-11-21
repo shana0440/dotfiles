@@ -50,6 +50,9 @@ The island at the right end of the bar holds the speaker and, when apps run in
 the background with a tray icon, a layers button. The island left of it lists
 open windows.
 
+Scroll on the speaker to change the volume. Click it to open the sound panel:
+the output and input volume, with `v` to pick each device.
+
 Click the layers button to expand the island with the background apps. Click
 it again, or click anywhere outside the island, to collapse it.
 Click a background app to open it, middle-click for its secondary action, and
