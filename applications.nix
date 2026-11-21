@@ -1,6 +1,44 @@
 {
-  nixos = { pkgs, ... }: {
+  nixos = { lib, ... }: {
     nixpkgs.config.allowUnfree = true;
+
+    environment.etc."xdg/mimeapps.list".text = lib.generators.toINI { } {
+      "Default Applications" = lib.genAttrs (map (subtype: "video/${subtype}") [
+        "3gpp"
+        "3gpp2"
+        "annodex"
+        "dv"
+        "isivideo"
+        "mj2"
+        "mp2t"
+        "mp4"
+        "mpeg"
+        "ogg"
+        "quicktime"
+        "vnd.avi"
+        "vnd.mpegurl"
+        "vnd.radgamettools.bink"
+        "vnd.radgamettools.smacker"
+        "vnd.rn-realvideo"
+        "vnd.vivo"
+        "vnd.youtube.yt"
+        "wavelet"
+        "webm"
+        "x-anim"
+        "x-flic"
+        "x-flv"
+        "x-javafx"
+        "x-matroska"
+        "x-matroska-3d"
+        "x-mjpeg"
+        "x-mng"
+        "x-ms-wmv"
+        "x-nsv"
+        "x-ogm+ogg"
+        "x-sgi-movie"
+        "x-theora+ogg"
+      ]) (_: "brave-browser.desktop;");
+    };
 
     programs.steam.enable = true;
 
