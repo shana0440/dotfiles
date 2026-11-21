@@ -3,7 +3,7 @@
 let
   captureNotification = pkgs.writeShellApplication {
     name = "screen-capture-notify";
-    runtimeInputs = with pkgs; [ coreutils ffmpeg libnotify ];
+    runtimeInputs = with pkgs; [ coreutils ffmpeg libnotify quickshell ];
     text = builtins.readFile ./scripts/notify.sh;
   };
   snapshot = pkgs.writeShellApplication {

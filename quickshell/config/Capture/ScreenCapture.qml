@@ -171,6 +171,8 @@ Scope {
         }
     }
 
+    ScreenshotEditor {}
+
     CaptureOverlay {
         onConfirmed: root.capture()
         onCancelled: root.dismiss()
