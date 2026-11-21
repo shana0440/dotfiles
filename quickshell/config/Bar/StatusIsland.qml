@@ -7,7 +7,7 @@ import "../Theme" as Theme
 import "../Components" as Components
 import "../Services" as Services
 
-Components.Island {
+Components.ExpandableIsland {
     id: root
 
     property real availableWidth: 0
@@ -21,7 +21,6 @@ Components.Island {
     readonly property bool showingBackground: backgroundShown && backgroundApps.length > 0
     readonly property real buttonsWidth: buttonSize + (backgroundApps.length > 0 ? buttonSpacing + buttonSize : 0)
     readonly property real compactWidth: padding * 2 + buttonsWidth
-    property bool soundOpen: false
     readonly property bool menuOpen: trayMenu.visible
 
     function openMenu(item) {
@@ -39,7 +38,7 @@ Components.Island {
     function openSound() {
         trayMenu.close()
         backgroundShown = false
-        soundOpen = true
+        expanded = true
     }
 
     function pressBackgroundApp(item, mouseButton) {
@@ -70,8 +69,8 @@ Components.Island {
     }
 
     alignment: Qt.AlignRight
-    targetRadius: soundOpen ? 16 : islandHeight / 2
-    activeView: soundOpen ? soundView : showingBackground ? backgroundView : compactView
+    targetRadius: expanded ? 16 : islandHeight / 2
+    activeView: expanded ? soundView : showingBackground ? backgroundView : compactView
 
     views: [
         Item {
@@ -111,13 +110,13 @@ Components.Island {
         },
         SoundView {
             id: soundView
-            active: root.soundOpen
+            active: root.expanded
         }
     ]
 
     Row {
         z: 1
-        opacity: root.soundOpen ? 0 : 1
+        opacity: root.expanded ? 0 : 1
         visible: opacity > 0
         Behavior on opacity { NumberAnimation { duration: 120 } }
         anchors.right: parent.right
@@ -185,10 +184,10 @@ Components.Island {
         }
         function closeMenu(): void { trayMenu.close() }
         function showSound(): void { root.openSound() }
-        function hideSound(): void { root.soundOpen = false }
+        function hideSound(): void { root.expanded = false }
         function state(): string {
             return JSON.stringify({
-                sound: root.soundOpen,
+                sound: root.expanded,
                 background: {
                     shown: root.showingBackground,
                     menu: trayMenu.visible ? trayMenu.trayItem?.id ?? null : null,

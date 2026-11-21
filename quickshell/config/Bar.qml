@@ -16,7 +16,7 @@ PanelWindow {
     readonly property int islandSpacing: 8
     readonly property int reservedTopHeight: islandMargin + compactIslandHeight
     readonly property bool menuOpen: centerIsland.expanded
-    readonly property bool soundOpen: statusIsland.soundOpen
+    readonly property bool soundOpen: statusIsland.expanded
     readonly property bool overlayOpen: menuOpen || soundOpen
 
     onSoundOpenChanged: if (soundOpen && centerIsland.expanded) centerIsland.close()
@@ -31,11 +31,11 @@ PanelWindow {
     Binding {
         target: Theme.Colors
         property: "panelHeld"
-        value: centerIsland.held
+        value: centerIsland.held || statusIsland.held
     }
 
     function closeMenus() {
-        statusIsland.soundOpen = false
+        statusIsland.expanded = false
         centerIsland.close()
     }
 
@@ -146,7 +146,7 @@ PanelWindow {
 
     onMenuOpenChanged: {
         if (menuOpen)
-            statusIsland.soundOpen = false
+            statusIsland.expanded = false
         grabKeyboard()
     }
     function grabKeyboard() {
@@ -168,7 +168,7 @@ PanelWindow {
     WlrLayershell.keyboardFocus: Services.Capture.ownsInput ? WlrKeyboardFocus.None
         : menuNeedsKeyboardFocus ? WlrKeyboardFocus.Exclusive
         : statusIsland.menuOpen || soundOpen ? WlrKeyboardFocus.OnDemand : WlrKeyboardFocus.None
-    readonly property bool showsAboveApps: centerIsland.raised || soundOpen || statusIsland.height > compactIslandHeight + 1 || centerIsland.notificationVisible || Services.Capture.recording
+    readonly property bool showsAboveApps: centerIsland.raised || statusIsland.raised || centerIsland.notificationVisible || Services.Capture.recording
     WlrLayershell.layer: showsAboveApps ? WlrLayer.Overlay : WlrLayer.Bottom
 
     PanelWindow {
@@ -287,7 +287,7 @@ PanelWindow {
                 if (centerIsland.expanded && !onCenterGroup)
                     centerIsland.close()
                 if (root.soundOpen && !containsBarPoint(statusIsland, position))
-                    statusIsland.soundOpen = false
+                    statusIsland.expanded = false
             }
         }
 
@@ -317,7 +317,8 @@ PanelWindow {
             anchors.right: statusIsland.left
             anchors.rightMargin: offset
             gap: root.islandSpacing
-            merged: statusIsland.soundOpen
+            merged: statusIsland.satellitesMerged
+            clearness: statusIsland.clearness
             islandHeight: root.compactIslandHeight
             availableWidth: Math.max(0, statusIsland.x - root.islandSpacing * 2
                 - Math.max(centerIsland.x + centerIsland.width,
@@ -349,7 +350,7 @@ PanelWindow {
             id: centerIsland
             bare: centerGoo.ready
             anchors.horizontalCenter: parent.horizontalCenter
-            volumeShownElsewhere: statusIsland.soundOpen
+            volumeShownElsewhere: statusIsland.expanded
             availableHeight: Math.min(560, Math.max(144, root.height - root.islandMargin * 2))
         }
 
