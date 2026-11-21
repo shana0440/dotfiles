@@ -90,15 +90,13 @@ Scope {
         done[t.token] = { phase: phase, error: error }
         for (const key of Object.keys(done)) if (Number(key) < generation - 32) delete done[key]
         finalResultByToken = done
-        transitions = transitions.filter(x => x !== t)
         swapQueue = swapQueue.filter(x => x !== t)
         const newest = phase === "done" && t.order > orderOfLastFinished
-        if (newest) {
-            orderOfLastFinished = t.order
-            if (t.video) { keepPlaying(t); return }
-            keepPlaying(null)
-        }
-        discard(t)
+        if (newest) orderOfLastFinished = t.order
+        if (newest && t.video) keepPlaying(t)
+        transitions = transitions.filter(x => x !== t)
+        if (newest && !t.video) keepPlaying(null)
+        if (showingVideo !== t) discard(t)
     }
     function discard(t) {
         for (const layer of t.layers) layer.destroy()
