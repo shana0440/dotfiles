@@ -23,7 +23,8 @@ Scope {
     property int finishedOrder: 0
     property int selected: -1
     property var chosenScreen: Quickshell.screens[0] ?? null
-    readonly property bool busy: preparing || query.running || library.running
+    property bool refreshAfterDeal: false
+    readonly property bool busy: preparing
     readonly property string targetPath: setters.length ? setters[setters.length - 1].path : currentPath
 
     function show() {
@@ -35,8 +36,8 @@ Scope {
         collectCards.stop()
         dealCards.stop()
         hand.deal = 0
+        refreshAfterDeal = false
         query.start()
-        if (!colonyWarm.running) colonyWarm.running = true
     }
     function finishOpening() {
         if (!opened || !preparing || query.running || library.running) return
@@ -119,7 +120,14 @@ Scope {
                 } catch (_) {}
             }
         }
-        onExited: library.start()
+        onExited: {
+            const item = root.items.find(i => i.still === root.currentPath)
+            if (item) root.currentPath = item.path
+            if (!library.running && root.items.some(i => i.path === root.targetPath)) {
+                root.refreshAfterDeal = true
+                Qt.callLater(root.finishOpening)
+            } else library.start()
+        }
         onFailedToStart: {
             root.message = "Could not run awww to find the current wallpaper"
             library.start()
@@ -135,8 +143,10 @@ Scope {
                     const unchanged = result.items.length === root.items.length
                         && result.items.every((item, index) => item.thumbnail === root.items[index].thumbnail)
                     if (!unchanged) {
-                        root.selected = -1
+                        const path = root.items[root.selected]?.path
                         root.items = result.items
+                        const index = root.items.findIndex(i => i.path === path)
+                        root.selected = root.items.length ? Math.max(0, index) : -1
                     }
                     root.currentPath = result.items.find(item => item.still === root.currentPath)?.path ?? root.currentPath
                     root.directory = result.directory
@@ -226,7 +236,14 @@ Scope {
                 anchors { left: parent.left; right: parent.right; top: parent.top; bottom: bar.top; bottomMargin: 24 }
                 property real deal: 0
                 readonly property int dealDuration: 300
-                NumberAnimation { id: dealCards; target: hand; property: "deal"; to: 1; duration: hand.dealDuration }
+                NumberAnimation {
+                    id: dealCards
+                    target: hand; property: "deal"; to: 1; duration: hand.dealDuration
+                    onFinished: {
+                        if (root.refreshAfterDeal) library.start()
+                        if (!colonyWarm.running) colonyWarm.running = true
+                    }
+                }
                 NumberAnimation { id: collectCards; target: hand; property: "deal"; to: 0; duration: hand.dealDuration }
                 readonly property real deckY: height + 100 - cardHeight * 0.48 * Math.min(1, deal * 5)
                 readonly property real cardHeight: Math.max(1, Math.min(height * 0.5, 440))
