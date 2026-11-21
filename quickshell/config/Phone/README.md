@@ -15,5 +15,6 @@ offline when the daemon is not running.
 - **Settings:** tap mei's photo to change her photo, her name (saved with
   `mei config set character.name`), her character file (language and tone;
   `CHARACTER.md` unless `[character] file` points elsewhere), her schedules,
-  and the chat background. Reset there to permanently delete her memory and
+  and the chat background. **Background tasks** there lists the tasks mei is
+  running or will run later (`mei background list`); tap a task's × to stop it. Reset there to permanently delete her memory and
   chat history, after a confirmation.

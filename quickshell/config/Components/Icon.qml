@@ -66,6 +66,7 @@ Item {
         remove: "trash",
         character: "user-pen",
         schedules: "calendar-clock",
+        tasks: "hourglass",
         background: "image",
         backgroundApps: "layers",
         name: "id-card",

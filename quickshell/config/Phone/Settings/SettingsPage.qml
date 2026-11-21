@@ -8,6 +8,7 @@ Page {
 
     property bool cleared: false
     signal openSchedules
+    signal openTasks
     signal openCharacter
     signal openName
     signal openBackground
@@ -15,6 +16,14 @@ Page {
     title: "Settings"
     backLabel: "Chat"
     onActiveChanged: if (active) Services.Mei.loadSchedules()
+
+    Timer {
+        running: settings.active
+        interval: 3000
+        repeat: true
+        triggeredOnStart: true
+        onTriggered: Services.Mei.loadTasks()
+    }
 
     Column {
         width: parent.width
@@ -76,6 +85,20 @@ Page {
         width: 1
         height: 12 * settings.pt
     }
+
+    Group {
+        pt: settings.pt
+        NavRow {
+            pt: settings.pt
+            icon: "tasks"
+            tile: Look.tasksTile
+            label: "Background tasks"
+            detail: Services.Mei.tasks.length
+            onClicked: settings.openTasks()
+        }
+    }
+
+    Caption { pt: settings.pt; note: true; text: "Work she is doing now or will do later." }
 
     Group {
         pt: settings.pt

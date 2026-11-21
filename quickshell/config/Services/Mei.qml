@@ -20,6 +20,10 @@ Singleton {
     property var schedules: []
     property string scheduleError: ""
     property string changingSchedule: ""
+    property var tasks: []
+    property int taskTimeoutMinutes: 0
+    property string taskError: ""
+    property int cancellingTask: 0
     property bool resetting: false
     readonly property ListModel messages: ListModel {}
     property int waiting: 0
@@ -144,6 +148,22 @@ Singleton {
         ask({ type: "schedule", change: { action: action, name: name } }, reply => {
             loadSchedules(reply.error)
         })
+    }
+
+    function loadTasks(cancelError) {
+        ask({ type: "tasks" }, reply => {
+            const fresh = reply.tasks ?? []
+            if (JSON.stringify(fresh) !== JSON.stringify(tasks)) tasks = fresh
+            taskTimeoutMinutes = reply.timeoutMinutes ?? 0
+            cancellingTask = 0
+            taskError = reply.error ?? cancelError ?? ""
+        })
+    }
+
+    function cancelTask(id) {
+        if (cancellingTask) return
+        cancellingTask = id
+        ask({ type: "cancel", eventId: id }, reply => loadTasks(reply.error))
     }
 
     function resetMemory(finished) {
