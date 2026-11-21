@@ -41,6 +41,7 @@ Item {
         region: "square-dashed",
         record: "video",
         recordRegion: "square-dashed",
+        pen: "pen-line",
         stop: "square",
         notifications: "bell",
         notificationsOff: "bell-off",
