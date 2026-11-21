@@ -19,8 +19,16 @@ Scope {
     property var operations: []
     property var draft: null
     property var typing: null
+    readonly property rect crop: {
+        for (let index = operations.length - 1; index >= 0; index--) {
+            if (operations[index].kind === "crop")
+                return operations[index].rect
+        }
+        return Qt.rect(0, 0, image.implicitWidth, image.implicitHeight)
+    }
     property string message: ""
     readonly property var tools: [
+        { name: "crop", icon: "crop", label: "Crop" },
         { name: "rect", icon: "rectangle", label: "Rectangle" },
         { name: "ellipse", icon: "ellipse", label: "Ellipse" },
         { name: "pen", icon: "pen", label: "Pen" },
@@ -84,9 +92,20 @@ Scope {
     }
 
     function finish() {
-        if (draft && (draft.kind === "pen" || (draft.from.x !== draft.to.x && draft.from.y !== draft.to.y)))
+        if (draft?.kind === "crop")
+            cropTo(draftAnnotation.box)
+        else if (draft && (draft.kind === "pen" || (draft.from.x !== draft.to.x && draft.from.y !== draft.to.y)))
             commit(draft)
         draft = null
+    }
+
+    function cropTo(box) {
+        const left = Math.round(Math.max(box.x, crop.x))
+        const top = Math.round(Math.max(box.y, crop.y))
+        const right = Math.round(Math.min(box.x + box.width, crop.x + crop.width))
+        const bottom = Math.round(Math.min(box.y + box.height, crop.y + crop.height))
+        if (right - left >= 4 && bottom - top >= 4)
+            commit({ kind: "crop", rect: Qt.rect(left, top, right - left, bottom - top) })
     }
 
     function save() {
@@ -107,6 +126,7 @@ Scope {
     function state() {
         return {
             editing, path, tool, color: String(color), width: strokeWidth, typing: typing !== null,
+            crop: { x: crop.x, y: crop.y, width: crop.width, height: crop.height },
             operations: operations.map(operation => operation.kind), message
         }
     }
@@ -149,49 +169,79 @@ Scope {
 
             Item {
                 id: page
-                width: image.implicitWidth
-                height: image.implicitHeight
+                width: root.crop.width
+                height: root.crop.height
                 x: (viewport.width - width * scale) / 2
                 y: (viewport.height - height * scale) / 2
                 scale: viewport.fit
                 transformOrigin: Item.TopLeft
                 clip: true
 
-                Image {
-                    id: image
-                    source: root.editing ? "file://" + root.path.split("/").map(encodeURIComponent).join("/") : ""
-                    cache: false
-                    smooth: true
-                    mipmap: true
-                }
+                Item {
+                    id: canvas
+                    x: -root.crop.x
+                    y: -root.crop.y
+                    width: image.implicitWidth
+                    height: image.implicitHeight
 
-                Repeater {
-                    model: root.operations
-                    Annotation {
-                        required property var modelData
-                        anchors.fill: parent
-                        operation: modelData
+                    Image {
+                        id: image
+                        source: root.editing ? "file://" + root.path.split("/").map(encodeURIComponent).join("/") : ""
+                        cache: false
+                        smooth: true
+                        mipmap: true
                     }
-                }
 
-                Annotation {
-                    anchors.fill: parent
-                    operation: root.draft
+                    Repeater {
+                        model: root.operations
+                        Annotation {
+                            required property var modelData
+                            anchors.fill: parent
+                            operation: modelData
+                        }
+                    }
+
+                    Annotation {
+                        id: draftAnnotation
+                        anchors.fill: parent
+                        operation: root.draft
+                    }
+
+                    Item {
+                        anchors.fill: parent
+                        visible: root.draft?.kind === "crop"
+                        readonly property rect box: draftAnnotation.box
+                        readonly property color dim: Qt.alpha(Theme.Colors.background, 0.6)
+
+                        Rectangle { x: 0; y: 0; width: parent.width; height: parent.box.y; color: parent.dim }
+                        Rectangle { x: 0; y: parent.box.y + parent.box.height; width: parent.width; height: parent.height - y; color: parent.dim }
+                        Rectangle { x: 0; y: parent.box.y; width: parent.box.x; height: parent.box.height; color: parent.dim }
+                        Rectangle { x: parent.box.x + parent.box.width; y: parent.box.y; width: parent.width - x; height: parent.box.height; color: parent.dim }
+                        Rectangle {
+                            x: parent.box.x
+                            y: parent.box.y
+                            width: parent.box.width
+                            height: parent.box.height
+                            color: Theme.Colors.transparent
+                            border.width: 1 / viewport.fit
+                            border.color: Theme.Colors.foreground
+                        }
+                    }
                 }
 
                 MouseArea {
                     anchors.fill: parent
                     cursorShape: root.tool === "text" ? Qt.IBeamCursor : Qt.CrossCursor
-                    onPressed: mouse => root.begin(Qt.point(mouse.x, mouse.y))
-                    onPositionChanged: mouse => root.extend(Qt.point(mouse.x, mouse.y))
+                    onPressed: mouse => root.begin(Qt.point(mouse.x + root.crop.x, mouse.y + root.crop.y))
+                    onPositionChanged: mouse => root.extend(Qt.point(mouse.x + root.crop.x, mouse.y + root.crop.y))
                     onReleased: root.finish()
                 }
 
                 TextInput {
                     id: textInput
                     visible: root.typing !== null
-                    x: root.typing?.at.x ?? 0
-                    y: root.typing?.at.y ?? 0
+                    x: (root.typing?.at.x ?? 0) - root.crop.x
+                    y: (root.typing?.at.y ?? 0) - root.crop.y
                     color: root.typing?.color ?? "transparent"
                     font.family: Theme.Fonts.family
                     font.weight: Theme.Fonts.weight
