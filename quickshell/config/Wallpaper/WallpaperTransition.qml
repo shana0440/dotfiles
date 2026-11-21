@@ -78,7 +78,7 @@ Scope {
         const t = swapQueue[0]
         swapQueue = swapQueue.slice(1)
         const newerImageAlreadySet = t.order < orderAwwwAlreadyShows
-        if (newerImageAlreadySet) { t.phase = "swapped"; return }
+        if (newerImageAlreadySet) { t.settle.restart(); return }
         swap.current = t
         swap.command = ["awww", "img", t.image, "--transition-type", "none"]
         swap.running = true
@@ -125,12 +125,6 @@ Scope {
     function state() {
         return JSON.stringify({ video: showingVideo?.video ?? "", changing: transitions.map(t => t.video || t.image) })
     }
-    function release(token) {
-        const t = find(token)
-        if (!t || t.phase !== "swapped") return "not swapped"
-        t.settle.restart()
-        return "ok"
-    }
     function fail(t, reason) { if (t.phase !== "swapping") finish(t, "error", reason) }
     function abort(token) { const t = find(token); if (t) fail(t, "Transition cancelled") }
     function status(token) {
@@ -157,7 +151,6 @@ Scope {
         function prepare(data: string): string { return root.prepare(data) }
         function go(token: string): string { return root.go(token) }
         function abort(token: string): void { root.abort(token) }
-        function release(token: string): string { return root.release(token) }
         function status(token: string): string { return root.status(token) }
         function show(video: string): string { return root.show(video) }
         function state(): string { return root.state() }
@@ -171,7 +164,7 @@ Scope {
             if (t && root.transitions.includes(t)) {
                 if (code === 0) {
                     root.orderAwwwAlreadyShows = Math.max(root.orderAwwwAlreadyShows, t.order)
-                    t.phase = "swapped"
+                    t.settle.restart()
                 } else root.finish(t, "error", "awww could not update the wallpaper")
             }
             root.nextSwap()

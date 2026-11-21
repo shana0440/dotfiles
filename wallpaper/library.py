@@ -153,9 +153,6 @@ def colony_transition(source, image):
         print("transition-ready", flush=True)
         if transition_ipc("go", token) != "ok":
             raise RuntimeError("Colony transition did not start")
-        wait_transition(token, {"swapped"}, 8)
-        if transition_ipc("release", token) != "ok":
-            raise RuntimeError("Colony transition was not held over the screen")
         wait_transition(token, {"done"}, 8)
         complete = True
         subprocess.Popen(["wallpaper-colonies", "renew", colony_map], stdin=subprocess.DEVNULL,
