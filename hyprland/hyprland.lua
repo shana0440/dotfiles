@@ -85,9 +85,9 @@ if hl.plugin.hyprbars then
             hyprbars = {
                 bar_height                 = 30,
                 bar_color                  = "rgba(1f1f1ff2)",
-                ["col.text"]                = "rgba(e6e6e6ff)",
-                bar_text_size              = 10,
-                bar_text_font              = "Sans",
+                ["col.text"]                = "rgba(ffffffd9)",
+                bar_text_size              = 13,
+                bar_text_font              = "Inter",
                 bar_text_align             = "left",
                 bar_blur                   = true,
                 bar_padding                = 12,
