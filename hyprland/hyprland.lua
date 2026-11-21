@@ -313,6 +313,7 @@ hl.bind(mainMod .. " + CTRL + SPACE", hl.dsp.exec_cmd("hypr-toggle-kana"))
 
 hl.bind(mainMod .. " + ALT + S",         hl.dsp.workspace.toggle_special("magic"))
 hl.bind(mainMod .. " + ALT + SHIFT + S", hl.dsp.window.move({ workspace = "special:magic" }))
+hl.bind(mainMod .. " + ALT + M",         hl.dsp.workspace.toggle_special("minimized"))
 
 hl.bind(mainMod .. " + mouse_down", hl.dsp.focus({ workspace = "e+1" }))
 hl.bind(mainMod .. " + mouse_up",   hl.dsp.focus({ workspace = "e-1" }))
