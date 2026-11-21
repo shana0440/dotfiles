@@ -15,7 +15,14 @@ Scope {
     property bool opened: false
     property bool preparing: false
     property var items: []
-    readonly property var warmPreviews: items.filter(item => item.video).slice(0, 2).map(item => item.path)
+    property int previewBudget: 2
+    readonly property var warmPreviews: items.filter(item => item.video).slice(0, previewBudget).map(item => item.path)
+    Timer {
+        interval: 350
+        repeat: true
+        running: !root.opened && root.previewBudget < Math.min(6, root.items.filter(item => item.video).length)
+        onTriggered: root.previewBudget++
+    }
     property string directory: ""
     property string message: ""
     property string currentPath: ""
@@ -341,13 +348,14 @@ Scope {
                                         id: preview
                                         readonly property bool playingCard: root.opened && !root.preparing && card.visible
                                         property bool primed: false
+                                        function pauseIfHidden() { if (!playingCard) player.pause() }
                                         onPlayingCardChanged: if (playingCard) player.play(); else if (primed) player.pause()
                                         Connections {
                                             target: preview.videoSink
                                             enabled: !preview.primed
                                             function onVideoFrameChanged() {
                                                 preview.primed = true
-                                                if (!preview.playingCard) player.pause()
+                                                Qt.callLater(preview.pauseIfHidden)
                                             }
                                         }
                                         fillMode: VideoOutput.PreserveAspectCrop
