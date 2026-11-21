@@ -23,8 +23,11 @@ PanelWindow {
     readonly property var apps: {
         const toplevels = Hyprland.toplevels.values
             .filter(toplevel => toplevel.wayland)
-            .map((toplevel, opened) => ({ toplevel, opened, rank: workspaceRank(toplevel) }))
-            .sort((a, b) => a.rank - b.rank || a.opened - b.opened)
+            .map((toplevel, opened) => {
+                const [x, y] = toplevel.lastIpcObject?.at ?? [0, 0]
+                return { toplevel, opened, x, y, rank: workspaceRank(toplevel) }
+            })
+            .sort((a, b) => a.rank - b.rank || a.x - b.x || a.y - b.y || a.opened - b.opened)
         const groups = []
         for (const { toplevel } of toplevels) {
             const window = toplevel.wayland
@@ -38,6 +41,17 @@ PanelWindow {
             group.workspaces.push(toplevel.workspace?.name ?? "")
         }
         return groups
+    }
+
+    Connections {
+        target: Hyprland
+        function onRawEvent(event) { windowLayoutRefresh.restart() }
+    }
+
+    Timer {
+        id: windowLayoutRefresh
+        interval: 100
+        onTriggered: Hyprland.refreshToplevels()
     }
 
     Connections {
