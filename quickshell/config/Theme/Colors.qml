@@ -16,9 +16,9 @@ QtObject {
         NumberAnimation { duration: 400; easing.type: Easing.InOutCubic }
     }
 
-    property bool centerHeld: false
-    property real centerClearness: transparentTheme && !centerHeld ? 1 : 0
-    Behavior on centerClearness {
+    property bool panelHeld: false
+    property real panelClearness: transparentTheme && !panelHeld ? 1 : 0
+    Behavior on panelClearness {
         NumberAnimation { duration: 400; easing.type: Easing.InOutCubic }
     }
 
@@ -40,9 +40,9 @@ QtObject {
     readonly property color ring: "#1affffff"
     readonly property color edge: "#3dffffff"
     readonly property color highlight: "#1affffff"
-    readonly property color surface: themed(solidSurface, tint, centerClearness)
-    readonly property color surfaceHover: themed(solidSurfaceHover, strongTint, centerClearness)
-    readonly property color track: themed(solidTrack, strongTint, centerClearness)
+    readonly property color surface: themed(solidSurface, tint, panelClearness)
+    readonly property color surfaceHover: themed(solidSurfaceHover, strongTint, panelClearness)
+    readonly property color track: themed(solidTrack, strongTint, panelClearness)
     readonly property color solidSurface: "#1c1c1a"
     readonly property color solidSurfaceHover: "#262624"
     readonly property color solidTrack: "#2c2c2a"

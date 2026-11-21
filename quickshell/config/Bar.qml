@@ -16,6 +16,10 @@ PanelWindow {
     readonly property int islandSpacing: 8
     readonly property int reservedTopHeight: islandMargin + compactIslandHeight
     readonly property bool menuOpen: centerIsland.expanded
+    readonly property bool soundOpen: statusIsland.expanded
+    readonly property bool overlayOpen: menuOpen || soundOpen
+
+    onSoundOpenChanged: if (soundOpen && centerIsland.expanded) centerIsland.close()
     readonly property bool menuNeedsKeyboardFocus: centerIsland.keyboardFocusRequired
 
     Binding {
@@ -26,11 +30,12 @@ PanelWindow {
 
     Binding {
         target: Theme.Colors
-        property: "centerHeld"
-        value: root.menuOpen || centerIsland.notificationVisible
+        property: "panelHeld"
+        value: centerIsland.held || statusIsland.held
     }
 
     function closeMenus() {
+        statusIsland.expanded = false
         centerIsland.close()
     }
 
@@ -139,7 +144,11 @@ PanelWindow {
         }
     }
 
-    onMenuOpenChanged: grabKeyboard()
+    onMenuOpenChanged: {
+        if (menuOpen)
+            statusIsland.expanded = false
+        grabKeyboard()
+    }
     function grabKeyboard() {
         Qt.callLater(() => {
             if (root.menuOpen && root.menuNeedsKeyboardFocus)
@@ -158,8 +167,8 @@ PanelWindow {
     color: Theme.Colors.transparent
     WlrLayershell.keyboardFocus: Services.Capture.ownsInput ? WlrKeyboardFocus.None
         : menuNeedsKeyboardFocus ? WlrKeyboardFocus.Exclusive
-        : appsIsland.menuOpen ? WlrKeyboardFocus.OnDemand : WlrKeyboardFocus.None
-    readonly property bool showsAboveApps: menuOpen || centerIsland.notificationVisible || Services.Capture.recording
+        : statusIsland.menuOpen || soundOpen ? WlrKeyboardFocus.OnDemand : WlrKeyboardFocus.None
+    readonly property bool showsAboveApps: centerIsland.raised || statusIsland.raised || centerIsland.notificationVisible || Services.Capture.recording
     WlrLayershell.layer: showsAboveApps ? WlrLayer.Overlay : WlrLayer.Bottom
 
     PanelWindow {
@@ -179,8 +188,9 @@ PanelWindow {
     }
 
     mask: Region {
-        item: root.menuOpen ? root.contentItem : workspaceIsland
+        item: root.overlayOpen ? root.contentItem : workspaceIsland
         Region { item: appsIsland.visible ? appsIsland : null }
+        Region { item: statusIsland }
         Region { item: centerIsland }
         Region { item: recordingStopIsland.visible ? recordingStopIsland : null }
         Region { item: mediaIsland.visible ? mediaIsland : null }
@@ -196,7 +206,7 @@ PanelWindow {
         PanelWindow {
             required property var modelData
             screen: modelData
-            visible: root.menuOpen
+            visible: root.overlayOpen
             color: Theme.Colors.transparent
             exclusionMode: ExclusionMode.Ignore
             WlrLayershell.layer: WlrLayer.Overlay
@@ -220,7 +230,7 @@ PanelWindow {
     MouseArea {
         id: outsideClickArea
         anchors.fill: parent
-        enabled: root.menuOpen
+        enabled: root.overlayOpen
         acceptedButtons: Qt.AllButtons
         onPressed: root.closeMenus()
     }
@@ -260,7 +270,7 @@ PanelWindow {
         }
 
         TapHandler {
-            enabled: root.menuOpen
+            enabled: root.overlayOpen
             acceptedButtons: Qt.AllButtons
             gesturePolicy: TapHandler.DragThreshold
             function containsBarPoint(item, position) {
@@ -276,6 +286,8 @@ PanelWindow {
                     || containsBarPoint(inputIsland, position)
                 if (centerIsland.expanded && !onCenterGroup)
                     centerIsland.close()
+                if (root.soundOpen && !containsBarPoint(statusIsland, position))
+                    statusIsland.expanded = false
             }
         }
 
@@ -293,14 +305,30 @@ PanelWindow {
         }
 
         Components.IslandGoo {
-            id: appsGoo
-            target: appsIsland
+            id: statusGoo
+            target: statusIsland
+            leadingOuter: appsIsland
             shaderSource: centerGoo
         }
 
         BarComponents.AppsIsland {
             id: appsIsland
-            bare: appsGoo.ready
+            bare: statusGoo.ready
+            anchors.right: statusIsland.left
+            anchors.rightMargin: offset
+            gap: root.islandSpacing
+            merged: statusIsland.satellitesMerged
+            clearness: statusIsland.clearness
+            islandHeight: root.compactIslandHeight
+            availableWidth: Math.max(0, statusIsland.x - root.islandSpacing * 2
+                - Math.max(centerIsland.x + centerIsland.width,
+                    recordingStopIsland.visible ? recordingStopIsland.x + recordingStopIsland.width : 0,
+                    inputIsland.visible ? inputIsland.x + inputIsland.width : 0))
+        }
+
+        BarComponents.StatusIsland {
+            id: statusIsland
+            bare: statusGoo.ready
             anchors.right: parent.right
             islandHeight: root.compactIslandHeight
             availableWidth: Math.max(0, parent.width - root.islandSpacing
@@ -321,8 +349,8 @@ PanelWindow {
         BarComponents.CenterIsland {
             id: centerIsland
             bare: centerGoo.ready
-            clearness: Theme.Colors.centerClearness
             anchors.horizontalCenter: parent.horizontalCenter
+            volumeShownElsewhere: statusIsland.expanded
             availableHeight: Math.min(560, Math.max(144, root.height - root.islandMargin * 2))
         }
 
@@ -350,48 +378,48 @@ PanelWindow {
         BarComponents.MediaIsland {
             id: mediaIsland
             bare: centerGoo.ready
-            clearness: Theme.Colors.centerClearness
+            clearness: centerIsland.clearness
             anchors.right: centerIsland.left
             anchors.rightMargin: offset
             gap: root.islandSpacing
             outer: weatherIsland
             direction: -1
-            merged: centerIsland.sideIslandsMerged
+            merged: centerIsland.satellitesMerged
             onClicked: centerIsland.open("media")
         }
 
         BarComponents.WeatherIsland {
             id: weatherIsland
             bare: centerGoo.ready
-            clearness: Theme.Colors.centerClearness
+            clearness: centerIsland.clearness
             anchors.right: mediaIsland.left
             anchors.rightMargin: offset
             gap: root.islandSpacing
-            merged: centerIsland.sideIslandsMerged
+            merged: centerIsland.satellitesMerged
             onClicked: centerIsland.open("home")
         }
 
         BarComponents.NotificationIsland {
             id: notificationIsland
             bare: centerGoo.ready
-            clearness: Theme.Colors.centerClearness
+            clearness: centerIsland.clearness
             anchors.left: centerIsland.right
             anchors.leftMargin: offset
             gap: root.islandSpacing
             outer: inputIsland
             direction: 1
-            merged: centerIsland.sideIslandsMerged
+            merged: centerIsland.satellitesMerged
             onClicked: centerIsland.open("notifications")
         }
 
         BarComponents.InputIsland {
             id: inputIsland
             bare: centerGoo.ready
-            clearness: Theme.Colors.centerClearness
+            clearness: centerIsland.clearness
             anchors.left: notificationIsland.right
             anchors.leftMargin: offset
             gap: root.islandSpacing
-            merged: centerIsland.sideIslandsMerged
+            merged: centerIsland.satellitesMerged
             onClicked: centerIsland.openInputMethods()
         }
     }

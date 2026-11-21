@@ -1,6 +1,5 @@
 import QtQuick
 import Quickshell.Bluetooth
-import Quickshell.Services.Pipewire
 import "../Theme" as Theme
 import "../Components" as Components
 import "../Services" as Services
@@ -14,16 +13,12 @@ Item {
     property string shownPage: ""
     signal closeRequested()
 
-    readonly property var sink: Pipewire.defaultAudioSink
-    readonly property var source: Pipewire.defaultAudioSource
-    readonly property bool pickingInput: shownPage === "input"
     readonly property var connectedBluetooth: Services.Bluetooth.connectedDevices
 
     implicitWidth: 480
     implicitHeight: page === "bluetooth" ? bluetoothView.implicitHeight
         : page === "inputMethod" ? inputMethodPage.implicitHeight
         : page === "wifi" ? wifiView.implicitHeight
-        : page ? devicePage.implicitHeight
         : home.implicitHeight + 40
     clip: true
 
@@ -36,21 +31,6 @@ Item {
 
     function navigateForward() {
         page = shownPage
-    }
-
-    function devices(input) {
-        return Pipewire.nodes.values.filter(node => node.audio && node.isSink !== input && !node.isStream)
-    }
-
-    function labelOf(node) {
-        return node ? node.description || node.nickname || node.name : ""
-    }
-
-    function select(input, node) {
-        if (input)
-            Pipewire.preferredDefaultAudioSource = node
-        else
-            Pipewire.preferredDefaultAudioSink = node
     }
 
     function bluetoothStatus() {
@@ -76,141 +56,12 @@ Item {
         active: root.active
     }
 
-    PwObjectTracker {
-        objects: [root.sink, root.source].filter(node => node)
-    }
-
     Components.Spring {
         id: pageSpring
         to: root.page ? 1 : 0
         stiffness: Theme.Motion.stackStiffness
         damping: Theme.Motion.stackDamping
         precision: 0.002
-    }
-
-    component Level: Item {
-        id: level
-        property var node: null
-        property string icon: ""
-        property string mutedIcon: ""
-        property string what: ""
-        readonly property var audio: node?.audio ?? null
-        readonly property bool muted: audio?.muted ?? false
-        readonly property real volume: audio?.volume ?? 0
-        signal opened()
-
-        function setVolume(value) {
-            if (!audio)
-                return
-            audio.volume = Math.max(0, Math.min(1, value))
-            audio.muted = false
-        }
-
-        width: parent.width
-        height: 54
-
-        Components.IconButton {
-            id: mute
-            x: -6
-            anchors.verticalCenter: slider.verticalCenter
-            width: 32
-            height: 32
-            iconSize: 16
-            enabled: level.audio !== null
-            icon: level.muted ? level.mutedIcon : level.icon
-            iconColor: level.muted ? Theme.Colors.muted : Theme.Colors.foreground
-            tooltip: level.muted ? "Unmute " + level.what : "Mute " + level.what
-            onClicked: level.audio.muted = !level.audio.muted
-        }
-
-        Text {
-            anchors.left: slider.left
-            anchors.right: percent.right
-            y: 32
-            text: root.labelOf(level.node) || "No " + level.what + " device"
-            textFormat: Text.PlainText
-            elide: Text.ElideRight
-            color: Theme.Colors.muted
-            font.family: Theme.Fonts.family
-            font.weight: Theme.Fonts.weight
-            font.pixelSize: 11
-        }
-
-        Item {
-            id: slider
-            anchors.left: mute.right
-            anchors.leftMargin: 6
-            anchors.right: percent.left
-            anchors.rightMargin: 12
-            y: 4
-            height: 24
-            enabled: level.audio !== null
-
-            Rectangle {
-                id: track
-                anchors.verticalCenter: parent.verticalCenter
-                width: parent.width
-                height: 6
-                radius: 3
-                color: Theme.Colors.track
-
-                Rectangle {
-                    width: track.width * Math.max(0, Math.min(1, level.volume))
-                    height: parent.height
-                    radius: parent.radius
-                    color: Theme.Colors.foreground
-                    opacity: level.muted ? 0.35 : 1
-                }
-            }
-            Rectangle {
-                x: track.width * Math.max(0, Math.min(1, level.volume)) - width / 2
-                anchors.verticalCenter: parent.verticalCenter
-                width: drag.pressed ? 16 : 14
-                height: width
-                radius: width / 2
-                color: Theme.Colors.foreground
-                visible: slider.enabled && !level.muted
-            }
-            MouseArea {
-                id: drag
-                anchors.fill: parent
-                cursorShape: Qt.PointingHandCursor
-                onPressed: mouse => level.setVolume(mouse.x / width)
-                onPositionChanged: mouse => {
-                    if (pressed)
-                        level.setVolume(mouse.x / width)
-                }
-                onWheel: wheel => level.setVolume(level.volume + (wheel.angleDelta.y > 0 ? 0.05 : -0.05))
-            }
-        }
-
-        Text {
-            id: percent
-            anchors.right: open.left
-            anchors.rightMargin: 4
-            anchors.verticalCenter: slider.verticalCenter
-            width: 40
-            horizontalAlignment: Text.AlignRight
-            text: level.audio ? (level.muted ? "Muted" : Math.round(level.volume * 100) + "%") : "—"
-            color: level.muted ? Theme.Colors.muted : Theme.Colors.foreground
-            font.family: level.muted ? Theme.Fonts.family : Theme.Fonts.mono
-            font.weight: level.muted ? Theme.Fonts.weight : Font.Normal
-            font.pixelSize: level.muted ? 12 : 13
-        }
-
-        Components.IconButton {
-            id: open
-            anchors.right: parent.right
-            anchors.rightMargin: -6
-            anchors.verticalCenter: slider.verticalCenter
-            width: 32
-            height: 32
-            iconSize: 16
-            icon: "forward"
-            iconColor: Theme.Colors.muted
-            tooltip: "Choose " + level.what
-            onClicked: level.opened()
-        }
     }
 
     component Tile: Rectangle {
@@ -347,35 +198,6 @@ Item {
             font.bold: true
         }
 
-        Rectangle {
-            width: parent.width
-            height: levels.implicitHeight + 16
-            radius: 12
-            color: Theme.Colors.surface
-
-            Column {
-                id: levels
-                x: 16
-                y: 8
-                width: parent.width - 32
-
-                Level {
-                    node: root.sink
-                    icon: "speaker"
-                    mutedIcon: "speakerMuted"
-                    what: "output"
-                    onOpened: root.page = "output"
-                }
-                Level {
-                    node: root.source
-                    icon: "microphone"
-                    mutedIcon: "microphoneMuted"
-                    what: "input"
-                    onOpened: root.page = "input"
-                }
-            }
-        }
-
         Grid {
             id: tiles
             readonly property real tileWidth: (width - columnSpacing) / 2
@@ -506,107 +328,6 @@ Item {
                 cursorShape: Qt.PointingHandCursor
                 onClicked: root.page = "inputMethod"
             }
-        }
-    }
-
-    NestedPage {
-        id: devicePage
-        x: 24 * (1 - pageSpring.value)
-        width: root.width
-        maximumHeight: root.maximumHeight
-        opacity: pageSpring.value
-        visible: opacity > 0 && (root.shownPage === "output" || root.shownPage === "input")
-        enabled: root.page === "output" || root.page === "input"
-        title: root.pickingInput ? "Input" : "Output"
-        subtitle: root.labelOf(root.pickingInput ? root.source : root.sink) || "Nothing selected"
-        onBackRequested: root.page = ""
-
-        Flickable {
-            id: deviceScroll
-            x: -8
-            width: parent.width + 16
-            height: Math.min(contentHeight, devicePage.bodyMaximumHeight)
-            contentWidth: width
-            contentHeight: deviceList.implicitHeight
-            boundsBehavior: Flickable.StopAtBounds
-            clip: true
-            interactive: false
-
-            Components.KineticScroll {
-                view: deviceScroll
-            }
-
-        Column {
-            id: deviceList
-            readonly property var current: root.pickingInput ? root.source : root.sink
-            readonly property var choices: root.devices(root.pickingInput)
-            width: parent.width
-            spacing: 2
-
-            Text {
-                visible: deviceList.choices.length === 0
-                leftPadding: 12
-                text: !Pipewire.ready ? "Connecting to PipeWire" : root.pickingInput ? "No microphones" : "No output devices"
-                color: Theme.Colors.muted
-                font.family: Theme.Fonts.family
-                font.weight: Theme.Fonts.weight
-                font.pixelSize: 12
-            }
-
-            Repeater {
-                model: deviceList.choices
-
-                Rectangle {
-                    id: choice
-                    required property var modelData
-                    readonly property bool selected: deviceList.current === modelData
-                    readonly property string label: root.labelOf(modelData)
-
-                    width: parent.width
-                    height: 36
-                    radius: 8
-                    color: rowMouse.containsMouse || activeFocus ? Theme.Colors.highlight : Theme.Colors.transparent
-                    activeFocusOnTab: true
-                    Accessible.role: Accessible.RadioButton
-                    Accessible.name: label
-                    Accessible.checked: selected
-                    Keys.onReturnPressed: root.select(root.pickingInput, modelData)
-                    Keys.onSpacePressed: root.select(root.pickingInput, modelData)
-
-                    Components.Icon {
-                        x: 10
-                        anchors.verticalCenter: parent.verticalCenter
-                        width: 16
-                        height: 16
-                        visible: choice.selected
-                        action: "check"
-                    }
-                    Text {
-                        x: 36
-                        anchors.verticalCenter: parent.verticalCenter
-                        width: parent.width - x - 10
-                        text: choice.label
-                        textFormat: Text.PlainText
-                        elide: Text.ElideRight
-                        color: choice.selected ? Theme.Colors.foreground : Theme.Colors.muted
-                        font.family: Theme.Fonts.family
-                        font.weight: Theme.Fonts.weight
-                        font.pixelSize: 13
-                    }
-                    MouseArea {
-                        id: rowMouse
-                        anchors.fill: parent
-                        hoverEnabled: true
-                        cursorShape: Qt.PointingHandCursor
-                        onClicked: root.select(root.pickingInput, choice.modelData)
-                    }
-                    Components.Tooltip {
-                        text: choice.label
-                        shown: rowMouse.containsMouse && choice.label.length > 40
-                    }
-                }
-            }
-        }
         }
     }
 
