@@ -132,8 +132,12 @@ Scope {
             onStreamFinished: {
                 try {
                     const result = JSON.parse(text)
-                    root.selected = -1
-                    root.items = result.items
+                    const unchanged = result.items.length === root.items.length
+                        && result.items.every((item, index) => item.thumbnail === root.items[index].thumbnail)
+                    if (!unchanged) {
+                        root.selected = -1
+                        root.items = result.items
+                    }
                     root.currentPath = result.items.find(item => item.still === root.currentPath)?.path ?? root.currentPath
                     root.directory = result.directory
                     if (result.errors.length) root.message = result.errors.length + " image(s) could not be loaded"
