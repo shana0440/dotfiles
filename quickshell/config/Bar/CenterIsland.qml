@@ -4,17 +4,17 @@ import "../Theme" as Theme
 import "../Components" as Components
 import "../Services" as Services
 
-Components.Island {
+Components.ExpandableIsland {
     id: root
 
-    property bool expanded: false
     property string expandedView: "home"
     property bool volumeVisible: false
     property bool volumeShownElsewhere: false
     property int availableHeight: 560
     readonly property bool notificationVisible: Services.Notifications.previewVisible
     readonly property bool showingRecording: activeView === recordingView
-    readonly property bool sideIslandsMerged: expanded || notificationVisible || volumeVisible || Services.Capture.recording
+    held: expanded || notificationVisible
+    satellitesMerged: expanded || notificationVisible || volumeVisible || Services.Capture.recording
     readonly property bool keyboardFocusRequired: expanded && !dashboard.inputMethodsOpen
 
     activeView: {
