@@ -75,7 +75,7 @@ Scope {
         const t = swapQueue[0]
         swapQueue = swapQueue.slice(1)
         const newerImageAlreadySet = t.order < orderAwwwAlreadyShows
-        if (newerImageAlreadySet) { t.settle.restart(); return }
+        if (newerImageAlreadySet) { t.phase = "swapped"; return }
         swap.current = t
         swap.command = ["awww", "img", t.image, "--transition-type", "none"]
         swap.running = true
@@ -91,6 +91,12 @@ Scope {
         swapQueue = swapQueue.filter(x => x !== t)
         for (const layer of t.layers) layer.destroy()
         t.destroy(destroyAfterLayersStopBindingMs)
+    }
+    function release(token) {
+        const t = find(token)
+        if (!t || t.phase !== "swapped") return "not swapped"
+        t.settle.restart()
+        return "ok"
     }
     function fail(t, reason) { if (t.phase !== "swapping") finish(t, "error", reason) }
     function abort(token) { const t = find(token); if (t) fail(t, "Transition cancelled") }
@@ -110,6 +116,7 @@ Scope {
         function prepare(data: string): string { return root.prepare(data) }
         function go(token: string): string { return root.go(token) }
         function abort(token: string): void { root.abort(token) }
+        function release(token: string): string { return root.release(token) }
         function status(token: string): string { return root.status(token) }
     }
     Process {
@@ -121,7 +128,7 @@ Scope {
             if (t && root.transitions.includes(t)) {
                 if (code === 0) {
                     root.orderAwwwAlreadyShows = Math.max(root.orderAwwwAlreadyShows, t.order)
-                    t.settle.restart()
+                    t.phase = "swapped"
                 } else root.finish(t, "error", "awww could not update the wallpaper")
             }
             root.nextSwap()

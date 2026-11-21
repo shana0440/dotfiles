@@ -81,7 +81,7 @@ def wait_transition(token, expected, seconds):
     deadline = time.monotonic() + seconds
     while time.monotonic() < deadline:
         state = json.loads(transition_ipc("status", token))
-        if state["phase"] == expected:
+        if state["phase"] in expected:
             return
         if state["phase"] in {"error", "superseded", "idle"}:
             raise RuntimeError(state.get("error") or "Transition stopped")
@@ -118,11 +118,14 @@ def colony_transition(image):
         if not token.isdigit():
             token = None
             return False
-        wait_transition(token, "ready", 3)
+        wait_transition(token, {"ready"}, 3)
         print("transition-ready", flush=True)
         if transition_ipc("go", token) != "ok":
             raise RuntimeError("Colony transition did not start")
-        wait_transition(token, "done", 8)
+        wait_transition(token, {"swapped"}, 8)
+        if transition_ipc("release", token) != "ok":
+            raise RuntimeError("Colony transition was not held over the screen")
+        wait_transition(token, {"done"}, 8)
         complete = True
         subprocess.Popen(["wallpaper-colonies", "renew", colony_map], stdin=subprocess.DEVNULL,
                          stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, start_new_session=True)
