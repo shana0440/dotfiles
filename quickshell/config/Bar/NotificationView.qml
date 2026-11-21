@@ -62,6 +62,11 @@ Item {
         spacing: 8
         boundsBehavior: Flickable.StopAtBounds
         model: root.entries
+        interactive: false
+
+        Components.KineticScroll {
+            view: cards
+        }
 
         delegate: NotificationCard {
             required property var modelData

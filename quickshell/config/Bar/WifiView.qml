@@ -198,6 +198,11 @@ NestedPage {
             boundsBehavior: Flickable.StopAtBounds
             model: wifi.networks
             enabled: !wifi.busy
+            interactive: false
+
+            Components.KineticScroll {
+                view: networkList
+            }
 
             delegate: Rectangle {
                 id: row

@@ -322,12 +322,18 @@ NestedPage {
     ]
 
     Flickable {
+        id: body
         width: parent.width
         height: Math.min(contentHeight, root.bodyMaximumHeight)
         contentWidth: width
         contentHeight: content.implicitHeight
         boundsBehavior: Flickable.StopAtBounds
         clip: true
+        interactive: false
+
+        Components.KineticScroll {
+            view: body
+        }
 
         Column {
             id: content

@@ -522,6 +522,7 @@ Item {
         onBackRequested: root.page = ""
 
         Flickable {
+            id: deviceScroll
             x: -8
             width: parent.width + 16
             height: Math.min(contentHeight, devicePage.bodyMaximumHeight)
@@ -529,6 +530,11 @@ Item {
             contentHeight: deviceList.implicitHeight
             boundsBehavior: Flickable.StopAtBounds
             clip: true
+            interactive: false
+
+            Components.KineticScroll {
+                view: deviceScroll
+            }
 
         Column {
             id: deviceList

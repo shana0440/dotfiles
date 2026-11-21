@@ -110,13 +110,18 @@ PopupWindow {
         }
 
         Flickable {
+            id: menuScroll
             x: 6
             y: 6
             width: parent.width - 12
             height: parent.height - 12
             contentHeight: list.height
             boundsBehavior: Flickable.StopAtBounds
-            interactive: contentHeight > height
+            interactive: false
+
+            Components.KineticScroll {
+                view: menuScroll
+            }
 
             Column {
                 id: list
