@@ -15,6 +15,7 @@ Scope {
     property bool opened: false
     property bool preparing: false
     property var items: []
+    readonly property var warmPreviews: items.filter(item => item.video).slice(0, 2).map(item => item.path)
     property string directory: ""
     property string message: ""
     property string currentPath: ""
@@ -333,19 +334,29 @@ Scope {
                                 }
                                 Loader {
                                     anchors.fill: parent
-                                    active: card.modelData.video && card.distance < hand.reach + 1
+                                    active: card.modelData.video && (card.distance < hand.reach + 1
+                                        || root.warmPreviews.includes(card.modelData.path))
                                     asynchronous: true
                                     sourceComponent: VideoOutput {
                                         id: preview
                                         readonly property bool playingCard: root.opened && !root.preparing && card.visible
-                                        onPlayingCardChanged: playingCard ? player.play() : player.pause()
+                                        property bool primed: false
+                                        onPlayingCardChanged: if (playingCard) player.play(); else if (primed) player.pause()
+                                        Connections {
+                                            target: preview.videoSink
+                                            enabled: !preview.primed
+                                            function onVideoFrameChanged() {
+                                                preview.primed = true
+                                                if (!preview.playingCard) player.pause()
+                                            }
+                                        }
                                         fillMode: VideoOutput.PreserveAspectCrop
                                         MediaPlayer {
                                             id: player
                                             source: "file://" + card.modelData.path.split("/").map(encodeURIComponent).join("/")
                                             videoOutput: preview
                                             loops: MediaPlayer.Infinite
-                                            Component.onCompleted: if (preview.playingCard) play(); else pause()
+                                            autoPlay: true
                                         }
                                     }
                                 }
