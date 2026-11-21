@@ -43,6 +43,8 @@ Item {
         recordRegion: "square-dashed",
         pen: "pen-line",
         crop: "crop",
+        undo: "undo-2",
+        redo: "redo-2",
         rectangle: "square",
         ellipse: "circle",
         text: "type",

@@ -17,6 +17,7 @@ Scope {
     property color color: Theme.Colors.error
     property int strokeWidth: 4
     property var operations: []
+    property var undone: []
     property var draft: null
     property var typing: null
     readonly property rect crop: {
@@ -40,6 +41,7 @@ Scope {
     function edit(file) {
         chosenScreen = Quickshell.screens.find(screen => screen.name === Hyprland.focusedMonitor?.name) ?? Quickshell.screens[0]
         operations = []
+        undone = []
         draft = null
         typing = null
         message = ""
@@ -49,6 +51,7 @@ Scope {
     function close() {
         path = ""
         operations = []
+        undone = []
         draft = null
         typing = null
     }
@@ -70,6 +73,23 @@ Scope {
 
     function commit(operation) {
         operations = operations.concat([operation])
+        undone = []
+    }
+
+    function undo() {
+        typing = null
+        if (operations.length === 0)
+            return
+        undone = undone.concat([operations[operations.length - 1]])
+        operations = operations.slice(0, -1)
+    }
+
+    function redo() {
+        typing = null
+        if (undone.length === 0)
+            return
+        operations = operations.concat([undone[undone.length - 1]])
+        undone = undone.slice(0, -1)
     }
 
     function begin(point) {
@@ -127,7 +147,7 @@ Scope {
         return {
             editing, path, tool, color: String(color), width: strokeWidth, typing: typing !== null,
             crop: { x: crop.x, y: crop.y, width: crop.width, height: crop.height },
-            operations: operations.map(operation => operation.kind), message
+            operations: operations.map(operation => operation.kind), undone: undone.length, message
         }
     }
 
@@ -138,6 +158,8 @@ Scope {
         function open(path: string): void { root.edit(path) }
         function close(): void { root.close() }
         function save(): void { root.save() }
+        function undo(): void { root.undo() }
+        function redo(): void { root.redo() }
         function tool(name: string): void { if (root.tools.some(tool => tool.name === name)) root.tool = name }
         function color(value: string): void { root.color = value }
         function width(value: int): void { root.strokeWidth = value }
@@ -294,6 +316,26 @@ Scope {
 
                 Separator {}
 
+                Components.IconButton {
+                    implicitWidth: 40
+                    implicitHeight: 40
+                    icon: "undo"
+                    tooltip: "Undo · Ctrl+Z"
+                    enabled: root.operations.length > 0
+                    onClicked: root.undo()
+                }
+
+                Components.IconButton {
+                    implicitWidth: 40
+                    implicitHeight: 40
+                    icon: "redo"
+                    tooltip: "Redo · Ctrl+Shift+Z"
+                    enabled: root.undone.length > 0
+                    onClicked: root.redo()
+                }
+
+                Separator {}
+
                 Repeater {
                     model: root.colors
                     Rectangle {
@@ -401,6 +443,8 @@ Scope {
 
         Shortcut { sequence: "Escape"; context: Qt.ApplicationShortcut; enabled: root.editing; onActivated: root.back() }
         Shortcut { sequence: "Ctrl+S"; context: Qt.ApplicationShortcut; enabled: root.editing; onActivated: root.save() }
+        Shortcut { sequence: "Ctrl+Z"; context: Qt.ApplicationShortcut; enabled: root.editing; onActivated: root.undo() }
+        Shortcut { sequences: ["Ctrl+Shift+Z", "Ctrl+Y"]; context: Qt.ApplicationShortcut; enabled: root.editing; onActivated: root.redo() }
     }
 
     component Separator: Rectangle {
