@@ -11,7 +11,8 @@ description: Control the user's Linux desktop (Hyprland and the Quickshell deskt
 - Shell commands: run `quickshell ipc show`. Use these targets:
   `dashboard`, `overview`, `wallpaper`, `theme`, `notifications`, `pomodoro`,
   `capture`, `screenshotEditor`, `lock`, `apps` (open windows), `status`
-  (background tray apps). Each has a `state` function that reads it. Leave the rest to the
+  (background tray apps, sound panel), `sound` (output, input and app volume,
+  audio devices). Each has a `state` function that reads it. Leave the rest to the
   shell itself.
 
 ## Act
@@ -29,7 +30,7 @@ description: Control the user's Linux desktop (Hyprland and the Quickshell deskt
 | Show the user something | `notify-send '<title>' '<body>'` |
 | Turn notification sounds on or off | `quickshell ipc call notifications sound true` or `quickshell ipc call notifications sound false` |
 | Use the clipboard | `wl-copy`, `wl-paste` |
-| Volume | `wpctl get-volume @DEFAULT_AUDIO_SINK@`, `wpctl set-volume @DEFAULT_AUDIO_SINK@ 40%` |
+| Volume | `quickshell ipc call sound state`, `quickshell ipc call sound setVolume 40`, `quickshell ipc call sound setAppVolume spotify 60` |
 | Wi-Fi, Bluetooth | `nmcli`, `bluetoothctl` |
 | Agent usage limits | `agent-usage` |
 | Apps started in the tray at login | `app-autostart list`; start one again with `app-autostart start <name>` |
