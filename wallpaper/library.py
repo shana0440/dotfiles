@@ -3,7 +3,6 @@ import hashlib
 import json
 import os
 from pathlib import Path
-import signal
 import subprocess
 import sys
 import tempfile
@@ -126,7 +125,7 @@ def colonies(*arguments):
                           capture_output=True, text=True, timeout=10).stdout.strip()
 
 
-def colony_transition(source, image, covered):
+def colony_transition(source, image):
     token = None
     complete = False
     try:
@@ -139,7 +138,7 @@ def colony_transition(source, image, covered):
         cached_thumbnail = thumbnail_path(source, thumbnail_cache())
         color_source = cached_thumbnail if cached_thumbnail.is_file() else image
         request = {"image": str(image), "map": colony_map, "ember": colonies("accent", str(color_source)),
-                   "outputs": outputs}
+                   "video": str(source) if is_video(source) else "", "outputs": outputs}
         token = transition_ipc("prepare", json.dumps(request))
         already_heading_there = token == "same"
         if already_heading_there:
@@ -155,7 +154,6 @@ def colony_transition(source, image, covered):
         if transition_ipc("go", token) != "ok":
             raise RuntimeError("Colony transition did not start")
         wait_transition(token, {"swapped"}, 8)
-        covered()
         if transition_ipc("release", token) != "ok":
             raise RuntimeError("Colony transition was not held over the screen")
         wait_transition(token, {"done"}, 8)
@@ -174,84 +172,15 @@ def colony_transition(source, image, covered):
                 pass
 
 
-def video_pid_file():
-    return Path(os.environ.get("XDG_RUNTIME_DIR", "/tmp")) / "wallpaper-video.pid"
-
-
-def playing_video():
-    try:
-        pid, video = video_pid_file().read_text().splitlines()[:2]
-        os.kill(int(pid), 0)
-        return int(pid), Path(video)
-    except (OSError, ValueError):
-        return None, None
-
-
-def stop_video():
-    pid, _ = playing_video()
-    video_pid_file().unlink(missing_ok=True)
-    if pid is None:
-        return
-    os.kill(pid, signal.SIGTERM)
-    deadline = time.monotonic() + 1
-    while time.monotonic() < deadline:
-        try:
-            os.kill(pid, 0)
-        except OSError:
-            return
-        time.sleep(0.01)
-    os.kill(pid, signal.SIGKILL)
-
-
-def play_video(video):
-    process = subprocess.Popen(["mpvpaper", "--auto-pause",
-                                "--mpv-options", "no-audio loop hwdec=auto panscan=1.0", "ALL", str(video)],
-                               stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,
-                               stderr=subprocess.DEVNULL, start_new_session=True)
-    video_pid_file().write_text(f"{process.pid}\n{video}\n")
-
-
 def set_wallpaper(source):
-    if playing_video()[1] == source:
-        return
     image = still(source)
-    if not colony_transition(source, image, stop_video):
-        stop_video()
+    if not colony_transition(source, image):
         subprocess.run(["awww", "img", str(image), "--transition-type", "fade",
                         "--transition-duration", "0.35"], check=True, timeout=5)
-    if is_video(source):
-        play_video(source)
-
-
-def awww_shows_a_wallpaper():
-    try:
-        result = subprocess.run(["awww", "query", "--json"], check=True,
-                                capture_output=True, text=True, timeout=2)
-        return any(o.get("displaying", {}).get("image") for o in json.loads(result.stdout).get("", []))
-    except (OSError, ValueError, subprocess.SubprocessError):
-        return False
-
-
-def restore_video():
-    if not current_file().is_file():
-        return
-    source = Path(current_file().read_text().splitlines()[0])
-    if not is_video(source) or not source.is_file() or playing_video()[1] == source:
-        return
-    deadline = time.monotonic() + 10
-    while not awww_shows_a_wallpaper() and time.monotonic() < deadline:
-        time.sleep(0.1)
-    stop_video()
-    play_video(source)
-
-
-def video_command(arguments):
-    if arguments == ["restore"]:
-        restore_video()
-    elif arguments == ["state"]:
-        print(json.dumps({"playing": str(playing_video()[1] or "")}))
-    else:
-        raise ValueError("Usage: wallpaper-video restore|state")
+        try:
+            transition_ipc("show", str(source) if is_video(source) else "")
+        except (OSError, subprocess.SubprocessError):
+            pass
 
 
 def current_file():
@@ -270,9 +199,6 @@ def record_current(image):
 
 
 def main():
-    if len(sys.argv) > 1 and sys.argv[1] == "video":
-        video_command(sys.argv[2:])
-        return
     if len(sys.argv) > 1 and sys.argv[1] == "set":
         if len(sys.argv) != 3:
             raise ValueError("Usage: wallpaper-set IMAGE_OR_VIDEO")

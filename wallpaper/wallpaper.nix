@@ -24,16 +24,9 @@ let
   '';
   setWallpaper = pkgs.writeShellApplication {
     name = "wallpaper-set";
-    runtimeInputs = [ pkgs.awww pkgs.quickshell pkgs.ffmpeg-headless pkgs.mpvpaper colonies ];
+    runtimeInputs = [ pkgs.awww pkgs.quickshell pkgs.ffmpeg-headless colonies ];
     text = ''
       exec ${python}/bin/python3 ${./library.py} set "$@"
-    '';
-  };
-  videoWallpaper = pkgs.writeShellApplication {
-    name = "wallpaper-video";
-    runtimeInputs = [ pkgs.awww pkgs.mpvpaper ];
-    text = ''
-      exec ${python}/bin/python3 ${./library.py} video "$@"
     '';
   };
 in
@@ -41,5 +34,5 @@ in
   services.awww.enable = true;
   home.activation.publishColoniesShader = publishShaderPathForLiveReload
     "${config.xdg.configHome}/wallpaper/colonies-shader" shader;
-  home.packages = [ library colonies setWallpaper videoWallpaper ];
+  home.packages = [ library colonies setWallpaper ];
 }

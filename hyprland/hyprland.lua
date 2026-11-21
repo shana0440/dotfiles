@@ -25,8 +25,7 @@ hl.on("hyprland.start", function ()
     hl.exec_cmd("quickshell")
     hl.exec_cmd("app-autostart")
     hl.exec_cmd("systemctl --user import-environment WAYLAND_DISPLAY DISPLAY XDG_CURRENT_DESKTOP"
-        .. " && systemctl --user restart " .. servicesWithoutGraphicalSessionTarget
-        .. " && wallpaper-video restore")
+        .. " && systemctl --user restart " .. servicesWithoutGraphicalSessionTarget)
 end)
 
 hl.env("XCURSOR_THEME", "Notwaita-Black")
@@ -418,10 +417,9 @@ hl.layer_rule({
 })
 
 hl.layer_rule({
-    name    = "video-wallpaper-leaves-without-fading-over-the-next",
-    match   = { namespace = "^mpvpaper$" },
-
-    no_anim = true,
+    name    = "video-wallpaper-above-awww",
+    match   = { namespace = "^quickshell-wallpaper-transition$" },
+    order   = -1,
 })
 
 hl.layer_rule({
