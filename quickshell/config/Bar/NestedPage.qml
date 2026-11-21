@@ -8,6 +8,7 @@ Item {
     property string title: ""
     property string subtitle: ""
     property bool backPointed: false
+    property string backLabel: "Back to settings"
     property int maximumHeight: 560
     readonly property int bodyMaximumHeight: maximumHeight - body.y - 20
     default property alias content: body.data
@@ -32,7 +33,7 @@ Item {
             height: 32
             iconSize: 18
             icon: "back"
-            tooltip: "Back to settings"
+            tooltip: root.backLabel
             selected: root.backPointed
             onClicked: root.backRequested()
         }

@@ -12,12 +12,11 @@ Item {
     property string iconSource: ""
     property string label: ""
     property string what: ""
-    property bool expandable: false
-    property bool expanded: false
+    property bool openable: false
     readonly property var audio: node?.audio ?? null
     readonly property bool muted: audio?.muted ?? false
     readonly property real volume: audio?.volume ?? 0
-    signal expandToggled()
+    signal opened()
 
     width: parent ? parent.width : 0
     height: 50
@@ -113,8 +112,8 @@ Item {
 
     Text {
         id: percent
-        anchors.right: expand.visible ? expand.left : parent.right
-        anchors.rightMargin: expand.visible ? 2 : 0
+        anchors.right: open.visible ? open.left : parent.right
+        anchors.rightMargin: open.visible ? 2 : 0
         anchors.verticalCenter: slider.verticalCenter
         width: 40
         horizontalAlignment: Text.AlignRight
@@ -126,18 +125,17 @@ Item {
     }
 
     Components.IconButton {
-        id: expand
-        visible: root.expandable
+        id: open
+        visible: root.openable
         anchors.right: parent.right
         anchors.rightMargin: -6
         anchors.verticalCenter: slider.verticalCenter
         width: 32
         height: 32
         iconSize: 16
-        icon: "down"
+        icon: "forward"
         iconColor: Theme.Colors.muted
-        selected: root.expanded
-        tooltip: root.expanded ? "Hide " + root.what + " devices" : "Choose " + root.what + " device"
-        onClicked: root.expandToggled()
+        tooltip: "Choose " + root.what + " device"
+        onClicked: root.opened()
     }
 }

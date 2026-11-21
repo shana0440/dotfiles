@@ -8,88 +8,55 @@ Item {
     id: root
 
     property bool active: false
-    property string picking: ""
+    property int maximumHeight: 560
+    property string page: ""
+    property string shownPage: ""
+    readonly property bool pickingInput: shownPage === "input"
 
-    onActiveChanged: picking = ""
+    onPageChanged: if (page) shownPage = page
+    onActiveChanged: page = ""
 
-    function togglePicker(what) {
-        picking = picking === what ? "" : what
+    function navigateBack() {
+        page = ""
+    }
+
+    function navigateForward() {
+        page = shownPage
     }
 
     width: 360
-    height: content.implicitHeight + 40
+    height: page ? devicePage.implicitHeight : home.implicitHeight + 40
+    clip: true
 
-    component DevicePicker: Column {
-        id: picker
-        property bool input: false
-        readonly property var current: input ? Services.Sound.source : Services.Sound.sink
-        readonly property var choices: Services.Sound.devices(input)
-        width: parent.width
-        spacing: 2
+    Components.Spring {
+        id: pageSpring
+        to: root.page ? 1 : 0
+        stiffness: Theme.Motion.stackStiffness
+        damping: Theme.Motion.stackDamping
+        precision: 0.002
+    }
 
-        Text {
-            visible: picker.choices.length === 0
-            leftPadding: 10
-            height: 30
-            verticalAlignment: Text.AlignVCenter
-            text: !Pipewire.ready ? "Connecting to PipeWire" : picker.input ? "No microphones" : "No output devices"
-            color: Theme.Colors.muted
-            font.family: Theme.Fonts.family
-            font.weight: Theme.Fonts.weight
-            font.pixelSize: 12
-        }
-
-        Repeater {
-            model: picker.choices
-
-            Rectangle {
-                id: choice
-                required property var modelData
-                readonly property bool selected: picker.current === modelData
-                readonly property string label: Services.Sound.label(modelData)
-
-                width: picker.width
-                height: 32
-                radius: 8
-                color: rowMouse.containsMouse ? Theme.Colors.highlight : Theme.Colors.transparent
-
-                Components.Icon {
-                    x: 8
-                    anchors.verticalCenter: parent.verticalCenter
-                    width: 14
-                    height: 14
-                    visible: choice.selected
-                    action: "check"
-                }
-                Text {
-                    x: 30
-                    anchors.verticalCenter: parent.verticalCenter
-                    width: parent.width - x - 8
-                    text: choice.label
-                    textFormat: Text.PlainText
-                    elide: Text.ElideRight
-                    color: choice.selected ? Theme.Colors.foreground : Theme.Colors.muted
-                    font.family: Theme.Fonts.family
-                    font.weight: Theme.Fonts.weight
-                    font.pixelSize: 12
-                }
-                MouseArea {
-                    id: rowMouse
-                    anchors.fill: parent
-                    hoverEnabled: true
-                    cursorShape: Qt.PointingHandCursor
-                    onClicked: Services.Sound.select(picker.input, choice.modelData)
-                }
-            }
+    MouseArea {
+        z: 1
+        anchors.fill: parent
+        acceptedButtons: Qt.BackButton | Qt.ForwardButton
+        onPressed: mouse => {
+            if (mouse.button === Qt.BackButton)
+                root.navigateBack()
+            else
+                root.navigateForward()
         }
     }
 
     Column {
-        id: content
-        x: 20
+        id: home
+        x: 20 - 24 * pageSpring.value
         y: 20
         width: parent.width - 40
         spacing: 4
+        opacity: 1 - pageSpring.value
+        visible: opacity > 0
+        enabled: !root.page
 
         Text {
             bottomPadding: 6
@@ -106,12 +73,8 @@ Item {
             mutedIcon: "speakerMuted"
             what: "output"
             label: Services.Sound.label(node) || "No output device"
-            expandable: true
-            expanded: root.picking === "output"
-            onExpandToggled: root.togglePicker("output")
-        }
-        DevicePicker {
-            visible: root.picking === "output"
+            openable: true
+            onOpened: root.page = "output"
         }
         SoundLevel {
             node: Services.Sound.source
@@ -119,13 +82,8 @@ Item {
             mutedIcon: "microphoneMuted"
             what: "input"
             label: Services.Sound.label(node) || "No input device"
-            expandable: true
-            expanded: root.picking === "input"
-            onExpandToggled: root.togglePicker("input")
-        }
-        DevicePicker {
-            visible: root.picking === "input"
-            input: true
+            openable: true
+            onOpened: root.page = "input"
         }
 
         Text {
@@ -159,6 +117,108 @@ Item {
                 iconSource: Services.Sound.appIcon(modelData)
                 what: Services.Sound.appName(modelData)
                 label: media && media.toLowerCase() !== what.toLowerCase() ? what + " · " + media : what
+            }
+        }
+    }
+
+    NestedPage {
+        id: devicePage
+        x: 24 * (1 - pageSpring.value)
+        width: root.width
+        maximumHeight: root.maximumHeight
+        opacity: pageSpring.value
+        visible: opacity > 0
+        enabled: root.page !== ""
+        title: root.pickingInput ? "Input" : "Output"
+        subtitle: Services.Sound.label(root.pickingInput ? Services.Sound.source : Services.Sound.sink) || "Nothing selected"
+        backLabel: "Back to sound"
+        onBackRequested: root.page = ""
+
+        Flickable {
+            id: deviceScroll
+            x: -8
+            width: parent.width + 16
+            height: Math.min(contentHeight, devicePage.bodyMaximumHeight)
+            contentWidth: width
+            contentHeight: deviceList.implicitHeight
+            boundsBehavior: Flickable.StopAtBounds
+            clip: true
+            interactive: false
+
+            Components.KineticScroll {
+                view: deviceScroll
+            }
+
+            Column {
+                id: deviceList
+                readonly property var current: root.pickingInput ? Services.Sound.source : Services.Sound.sink
+                readonly property var choices: Services.Sound.devices(root.pickingInput)
+                width: parent.width
+                spacing: 2
+
+                Text {
+                    visible: deviceList.choices.length === 0
+                    leftPadding: 12
+                    text: !Pipewire.ready ? "Connecting to PipeWire" : root.pickingInput ? "No microphones" : "No output devices"
+                    color: Theme.Colors.muted
+                    font.family: Theme.Fonts.family
+                    font.weight: Theme.Fonts.weight
+                    font.pixelSize: 12
+                }
+
+                Repeater {
+                    model: deviceList.choices
+
+                    Rectangle {
+                        id: choice
+                        required property var modelData
+                        readonly property bool selected: deviceList.current === modelData
+                        readonly property string label: Services.Sound.label(modelData)
+
+                        width: parent.width
+                        height: 36
+                        radius: 8
+                        color: rowMouse.containsMouse || activeFocus ? Theme.Colors.highlight : Theme.Colors.transparent
+                        activeFocusOnTab: true
+                        Accessible.role: Accessible.RadioButton
+                        Accessible.name: label
+                        Accessible.checked: selected
+                        Keys.onReturnPressed: Services.Sound.select(root.pickingInput, modelData)
+                        Keys.onSpacePressed: Services.Sound.select(root.pickingInput, modelData)
+
+                        Components.Icon {
+                            x: 10
+                            anchors.verticalCenter: parent.verticalCenter
+                            width: 16
+                            height: 16
+                            visible: choice.selected
+                            action: "check"
+                        }
+                        Text {
+                            x: 36
+                            anchors.verticalCenter: parent.verticalCenter
+                            width: parent.width - x - 10
+                            text: choice.label
+                            textFormat: Text.PlainText
+                            elide: Text.ElideRight
+                            color: choice.selected ? Theme.Colors.foreground : Theme.Colors.muted
+                            font.family: Theme.Fonts.family
+                            font.weight: Theme.Fonts.weight
+                            font.pixelSize: 13
+                        }
+                        MouseArea {
+                            id: rowMouse
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: Services.Sound.select(root.pickingInput, choice.modelData)
+                        }
+                        Components.Tooltip {
+                            text: choice.label
+                            shown: rowMouse.containsMouse && choice.label.length > 40
+                        }
+                    }
+                }
             }
         }
     }

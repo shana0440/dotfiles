@@ -51,7 +51,7 @@ the background with a tray icon, a layers button. The island left of it lists
 open windows.
 
 Scroll on the speaker to change the volume. Click it to expand the island into
-the sound view: the output and input volume, with `v` to pick each device, and
+the sound view: the output and input volume, with `>` to pick each device, and
 the volume of each app playing sound. Click an app's icon to mute it. `Esc` or
 a click outside closes it.
 
