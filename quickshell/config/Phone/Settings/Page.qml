@@ -1,4 +1,5 @@
 import QtQuick
+import "../../Components" as Components
 
 Item {
     id: page
@@ -44,12 +45,9 @@ Item {
         clip: true
         Keys.onEscapePressed: page.requestBack()
 
-        WheelHandler {
-            acceptedDevices: PointerDevice.Mouse | PointerDevice.TouchPad
-            onWheel: event => {
-                const step = event.pixelDelta.y || event.angleDelta.y / 120 * 60 * page.pt
-                body.contentY = Math.max(0, Math.min(body.contentHeight - body.height, body.contentY - step))
-            }
+        Components.KineticScroll {
+            view: body
+            notch: 100 * page.pt
         }
 
         MouseArea {
