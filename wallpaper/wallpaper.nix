@@ -5,7 +5,7 @@ let
   python = pkgs.python3.withPackages (ps: [ ps.numpy ps.pillow ]);
   library = pkgs.writeShellApplication {
     name = "wallpaper-library";
-    runtimeInputs = [ pkgs.imagemagick ];
+    runtimeInputs = [ pkgs.imagemagick pkgs.ffmpeg-headless ];
     text = ''
       export WALLPAPER_DIR="''${WALLPAPER_DIR:-${config.home.homeDirectory}/Pictures/Wallpapers}"
       exec ${python}/bin/python3 ${./library.py} "$@"

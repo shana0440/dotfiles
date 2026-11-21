@@ -59,20 +59,21 @@ def thumbnail(source, cache):
         os.close(fd)
         try:
             subprocess.run([
-                "magick", f"{source}[0]", "-auto-orient", "-thumbnail", "900x500>",
+                "magick", f"{still(source)}[0]", "-auto-orient", "-thumbnail", "900x500>",
                 "-strip", "-quality", "85", temp,
             ], check=True, capture_output=True, timeout=30)
             os.replace(temp, target)
         finally:
             Path(temp).unlink(missing_ok=True)
-    return {"name": source.name, "path": str(source), "thumbnail": target.as_uri()}
+    return {"name": source.name, "path": str(source), "still": str(still(source)),
+            "video": is_video(source), "thumbnail": target.as_uri()}
 
 
 def catalog(directory, cache):
     if not directory.exists():
         return {"items": [], "directory": str(directory), "errors": []}
     sources = sorted((p for p in directory.iterdir()
-                      if p.is_file() and p.suffix.lower() in IMAGE_EXTENSIONS),
+                      if p.is_file() and p.suffix.lower() in EXTENSIONS),
                      key=lambda p: p.name.casefold())
     cache.mkdir(parents=True, exist_ok=True)
     items, errors = [], []

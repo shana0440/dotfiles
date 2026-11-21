@@ -133,6 +133,7 @@ Scope {
                     const result = JSON.parse(text)
                     root.selected = -1
                     root.items = result.items
+                    root.currentPath = result.items.find(item => item.still === root.currentPath)?.path ?? root.currentPath
                     root.directory = result.directory
                     if (result.errors.length) root.message = result.errors.length + " image(s) could not be loaded"
                 } catch (_) { root.message = "Could not read the wallpaper library" }
@@ -307,6 +308,18 @@ Scope {
                                     fillMode: Image.PreserveAspectCrop
                                     asynchronous: true
                                     sourceSize.height: 600
+                                }
+                                Rectangle {
+                                    anchors { left: parent.left; bottom: parent.bottom; margins: 10 }
+                                    visible: card.modelData.video
+                                    width: 30; height: 30; radius: 15
+                                    color: Qt.alpha(Theme.Colors.background, 0.75)
+                                    Components.Icon {
+                                        anchors.centerIn: parent
+                                        width: 14; height: 14
+                                        action: "play"
+                                        iconColor: Theme.Colors.foreground
+                                    }
                                 }
                             }
                             Rectangle {
