@@ -290,6 +290,7 @@ Scope {
                             hiddenBottom: display.hiddenBottom
                             onBack: display.pop()
                             onOpenSchedules: display.push("schedules")
+                            onOpenTasks: display.push("tasks")
                             onOpenBackground: display.push("background")
                             onOpenName: {
                                 namePage.load()
@@ -332,6 +333,17 @@ Scope {
                             id: characterPage
                             anchors.fill: parent
                             active: root.raised && display.current === "character"
+                            hiddenBottom: display.hiddenBottom
+                            onBack: display.pop()
+                        }
+                    }
+
+                    Slot {
+                        name: "tasks"
+                        stack: display.stack
+                        Settings.TasksPage {
+                            anchors.fill: parent
+                            active: root.raised && display.current === "tasks"
                             hiddenBottom: display.hiddenBottom
                             onBack: display.pop()
                         }
