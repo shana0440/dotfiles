@@ -88,6 +88,7 @@ if hl.plugin.hyprbars then
                 ["col.text"]                = "rgba(e6e6e6ff)",
                 bar_text_size              = 10,
                 bar_text_font              = "Sans",
+                bar_text_align             = "left",
                 bar_blur                   = true,
                 bar_padding                = 12,
                 bar_button_padding         = 8,
