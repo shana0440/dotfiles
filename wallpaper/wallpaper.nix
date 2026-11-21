@@ -29,10 +29,17 @@ let
       exec ${python}/bin/python3 ${./library.py} set "$@"
     '';
   };
+  videoWallpaper = pkgs.writeShellApplication {
+    name = "wallpaper-video";
+    runtimeInputs = [ pkgs.awww pkgs.mpvpaper ];
+    text = ''
+      exec ${python}/bin/python3 ${./library.py} video "$@"
+    '';
+  };
 in
 {
   services.awww.enable = true;
   home.activation.publishColoniesShader = publishShaderPathForLiveReload
     "${config.xdg.configHome}/wallpaper/colonies-shader" shader;
-  home.packages = [ library colonies setWallpaper ];
+  home.packages = [ library colonies setWallpaper videoWallpaper ];
 }

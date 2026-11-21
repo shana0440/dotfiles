@@ -25,7 +25,8 @@ hl.on("hyprland.start", function ()
     hl.exec_cmd("quickshell")
     hl.exec_cmd("app-autostart")
     hl.exec_cmd("systemctl --user import-environment WAYLAND_DISPLAY DISPLAY XDG_CURRENT_DESKTOP"
-        .. " && systemctl --user restart " .. servicesWithoutGraphicalSessionTarget)
+        .. " && systemctl --user restart " .. servicesWithoutGraphicalSessionTarget
+        .. " && wallpaper-video restore")
 end)
 
 hl.env("XCURSOR_THEME", "Notwaita-Black")

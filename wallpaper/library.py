@@ -222,19 +222,56 @@ def set_wallpaper(source):
         play_video(source)
 
 
+def awww_shows_a_wallpaper():
+    try:
+        result = subprocess.run(["awww", "query", "--json"], check=True,
+                                capture_output=True, text=True, timeout=2)
+        return any(o.get("displaying", {}).get("image") for o in json.loads(result.stdout).get("", []))
+    except (OSError, ValueError, subprocess.SubprocessError):
+        return False
+
+
+def restore_video():
+    if not current_file().is_file():
+        return
+    source = Path(current_file().read_text().splitlines()[0])
+    if not is_video(source) or not source.is_file() or playing_video()[1] == source:
+        return
+    deadline = time.monotonic() + 10
+    while not awww_shows_a_wallpaper() and time.monotonic() < deadline:
+        time.sleep(0.1)
+    stop_video()
+    play_video(source)
+
+
+def video_command(arguments):
+    if arguments == ["restore"]:
+        restore_video()
+    elif arguments == ["state"]:
+        print(json.dumps({"playing": str(playing_video()[1] or "")}))
+    else:
+        raise ValueError("Usage: wallpaper-video restore|state")
+
+
+def current_file():
+    return Path(os.environ.get("XDG_STATE_HOME", str(Path.home() / ".local/state"))) / "wallpaper/current"
+
+
 def record_current(image):
-    state = Path(os.environ.get("XDG_STATE_HOME", str(Path.home() / ".local/state"))) / "wallpaper"
-    state.mkdir(parents=True, exist_ok=True)
-    fd, temp = tempfile.mkstemp(dir=state)
+    current_file().parent.mkdir(parents=True, exist_ok=True)
+    fd, temp = tempfile.mkstemp(dir=current_file().parent)
     try:
         with os.fdopen(fd, "w") as file:
             file.write(f"{image}\n")
-        os.replace(temp, state / "current")
+        os.replace(temp, current_file())
     finally:
         Path(temp).unlink(missing_ok=True)
 
 
 def main():
+    if len(sys.argv) > 1 and sys.argv[1] == "video":
+        video_command(sys.argv[2:])
+        return
     if len(sys.argv) > 1 and sys.argv[1] == "set":
         if len(sys.argv) != 3:
             raise ValueError("Usage: wallpaper-set IMAGE_OR_VIDEO")
