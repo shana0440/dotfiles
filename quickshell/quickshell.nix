@@ -46,6 +46,18 @@ let
       exec ${pkgs.python3}/bin/python3 -u ${./pipewire/playback_monitor.py}
     '';
   };
+  quickshellWithVideo = pkgs.symlinkJoin {
+    name = "quickshell-with-video-${pkgs.quickshell.version}";
+    paths = [ pkgs.quickshell ];
+    nativeBuildInputs = [ pkgs.makeWrapper ];
+    postBuild = ''
+      for program in quickshell qs; do
+        wrapProgram $out/bin/$program \
+          --prefix QML_IMPORT_PATH : ${pkgs.qt6.qtmultimedia}/${pkgs.qt6.qtbase.qtQmlPrefix} \
+          --prefix QT_PLUGIN_PATH : ${pkgs.qt6.qtmultimedia}/${pkgs.qt6.qtbase.qtPluginPrefix}
+      done
+    '';
+  };
   islandShader = pkgs.runCommand "island-goo.frag.qsb" {
     nativeBuildInputs = [ pkgs.qt6.qtshadertools ];
   } ''
@@ -53,7 +65,7 @@ let
   '';
 in
 {
-  home.packages = [ pkgs.quickshell pkgs.pipewire playbackMonitor systemStatus launcherBadgeMonitor bluetoothAgent imagePicker linkPreview ]
+  home.packages = [ quickshellWithVideo pkgs.pipewire playbackMonitor systemStatus launcherBadgeMonitor bluetoothAgent imagePicker linkPreview ]
     ++ lib.optionals pkgs.stdenv.isLinux [
       pkgs.cava
       pkgs.libnotify
