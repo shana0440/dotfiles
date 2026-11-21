@@ -25,7 +25,7 @@ description: Control the user's Linux desktop (Hyprland and the Quickshell deskt
 | Focus, move or close a window | `hyprctl dispatch 'hl.dsp.focus({ window = "class:kitty" })'`, `hyprctl dispatch 'hl.dsp.window.move({ workspace = 3, window = "class:kitty" })'`, `hyprctl dispatch 'hl.dsp.window.close({ window = "class:kitty" })'` |
 | Minimize or restore a window | `hyprctl dispatch 'hl.dsp.window.move({ workspace = "special:minimized", follow = false, window = "class:kitty" })'`; restore by moving it to a numbered workspace |
 | Open an app | `hyprctl dispatch 'hl.dsp.exec_cmd("kitty")'` |
-| Set the wallpaper | `wallpaper-set <image-or-video>` (files live in `~/Pictures/Wallpapers`); `wallpaper-video state` shows the playing video |
+| Set the wallpaper | `wallpaper-set <image-or-video>` (files live in `~/Pictures/Wallpapers`); `quickshell ipc call wallpaperTransition state` shows the playing video |
 | Take a screenshot or record | `screen-capture-screenshot full`, `screen-capture-record full <monitor>`, `screen-capture-record stop` |
 | Show the user something | `notify-send '<title>' '<body>'` |
 | Turn notification sounds on or off | `quickshell ipc call notifications sound true` or `quickshell ipc call notifications sound false` |
