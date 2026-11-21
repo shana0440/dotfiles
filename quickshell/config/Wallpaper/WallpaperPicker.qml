@@ -1,4 +1,5 @@
 import QtQuick
+import QtMultimedia
 import QtQuick.Effects
 import Quickshell
 import Quickshell.Io
@@ -308,6 +309,17 @@ Scope {
                                     fillMode: Image.PreserveAspectCrop
                                     asynchronous: true
                                     sourceSize.height: 600
+                                }
+                                Loader {
+                                    anchors.fill: parent
+                                    active: card.visible && card.modelData.video
+                                    sourceComponent: Video {
+                                        source: "file://" + card.modelData.path.split("/").map(encodeURIComponent).join("/")
+                                        fillMode: VideoOutput.PreserveAspectCrop
+                                        loops: MediaPlayer.Infinite
+                                        muted: true
+                                        autoPlay: true
+                                    }
                                 }
                                 Rectangle {
                                     anchors { left: parent.left; bottom: parent.bottom; margins: 10 }
