@@ -47,8 +47,7 @@ Each tab matches its name and these keywords (`tabList` in `Dashboard.qml`):
 ## Status island
 
 The island at the right end of the bar holds the speaker and, when apps run in
-the background with a tray icon, a layers button. The island left of it lists
-open windows.
+the background with a tray icon, a layers button.
 
 Scroll on the speaker to change the volume. Click it to expand the island into
 the sound view: the output and input volume, with `>` to pick each device, and

@@ -171,6 +171,8 @@ hl.config({
     },
 })
 
+hl.config({ cursor = { no_warps = true } })
+
 hl.gesture({
     fingers = 3,
     direction = "horizontal",
