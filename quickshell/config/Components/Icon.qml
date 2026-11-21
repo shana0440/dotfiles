@@ -65,6 +65,8 @@ Item {
         timer: "timer",
         reset: "rotate-ccw",
         speaker: "volume-2",
+        speakerMedium: "volume-1",
+        speakerLow: "volume",
         speakerMuted: "volume-x",
         microphoneMuted: "mic-off",
         check: "check",

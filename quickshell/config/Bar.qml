@@ -181,6 +181,7 @@ PanelWindow {
     mask: Region {
         item: root.menuOpen ? root.contentItem : workspaceIsland
         Region { item: appsIsland.visible ? appsIsland : null }
+        Region { item: statusIsland }
         Region { item: centerIsland }
         Region { item: recordingStopIsland.visible ? recordingStopIsland : null }
         Region { item: mediaIsland.visible ? mediaIsland : null }
@@ -298,12 +299,26 @@ PanelWindow {
             shaderSource: centerGoo
         }
 
+        Components.IslandGoo {
+            id: statusGoo
+            target: statusIsland
+            shaderSource: centerGoo
+        }
+
+        BarComponents.StatusIsland {
+            id: statusIsland
+            bare: statusGoo.ready
+            anchors.right: parent.right
+            islandHeight: root.compactIslandHeight
+        }
+
         BarComponents.AppsIsland {
             id: appsIsland
             bare: appsGoo.ready
-            anchors.right: parent.right
+            anchors.right: statusIsland.left
+            anchors.rightMargin: root.islandSpacing
             islandHeight: root.compactIslandHeight
-            availableWidth: Math.max(0, parent.width - root.islandSpacing
+            availableWidth: Math.max(0, statusIsland.x - root.islandSpacing * 2
                 - Math.max(centerIsland.x + centerIsland.width,
                     recordingStopIsland.visible ? recordingStopIsland.x + recordingStopIsland.width : 0,
                     inputIsland.visible ? inputIsland.x + inputIsland.width : 0))
