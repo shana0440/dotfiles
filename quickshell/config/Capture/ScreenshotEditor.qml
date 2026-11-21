@@ -139,6 +139,7 @@ Scope {
                 return
             }
             clipboard.exec(["sh", "-c", 'wl-copy --type image/png < "$1"', "sh", file])
+            Quickshell.execDetached(["screen-capture-notify", "screenshot", file])
             root.close()
         }, Qt.size(page.width, page.height))
     }
