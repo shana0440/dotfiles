@@ -11,7 +11,7 @@ description: Control the user's Linux desktop (Hyprland and the Quickshell deskt
 - Shell commands: run `quickshell ipc show`. Use these targets:
   `dashboard`, `overview`, `wallpaper`, `theme`, `notifications`, `pomodoro`,
   `capture`, `screenshotEditor`, `lock`, `apps` (open windows), `status`
-  (background tray apps, sound panel), `sound` (output, input and app volume,
+  (background tray apps, sound view), `sound` (output, input and app volume,
   audio devices). Each has a `state` function that reads it. Leave the rest to the
   shell itself.
 

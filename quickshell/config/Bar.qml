@@ -16,6 +16,10 @@ PanelWindow {
     readonly property int islandSpacing: 8
     readonly property int reservedTopHeight: islandMargin + compactIslandHeight
     readonly property bool menuOpen: centerIsland.expanded
+    readonly property bool soundOpen: statusIsland.soundOpen
+    readonly property bool overlayOpen: menuOpen || soundOpen
+
+    onSoundOpenChanged: if (soundOpen && centerIsland.expanded) centerIsland.close()
     readonly property bool menuNeedsKeyboardFocus: centerIsland.keyboardFocusRequired
 
     Binding {
@@ -31,6 +35,7 @@ PanelWindow {
     }
 
     function closeMenus() {
+        statusIsland.soundOpen = false
         centerIsland.close()
     }
 
@@ -139,7 +144,11 @@ PanelWindow {
         }
     }
 
-    onMenuOpenChanged: grabKeyboard()
+    onMenuOpenChanged: {
+        if (menuOpen)
+            statusIsland.soundOpen = false
+        grabKeyboard()
+    }
     function grabKeyboard() {
         Qt.callLater(() => {
             if (root.menuOpen && root.menuNeedsKeyboardFocus)
@@ -158,8 +167,8 @@ PanelWindow {
     color: Theme.Colors.transparent
     WlrLayershell.keyboardFocus: Services.Capture.ownsInput ? WlrKeyboardFocus.None
         : menuNeedsKeyboardFocus ? WlrKeyboardFocus.Exclusive
-        : statusIsland.menuOpen ? WlrKeyboardFocus.OnDemand : WlrKeyboardFocus.None
-    readonly property bool showsAboveApps: menuOpen || centerIsland.notificationVisible || Services.Capture.recording
+        : statusIsland.menuOpen || soundOpen ? WlrKeyboardFocus.OnDemand : WlrKeyboardFocus.None
+    readonly property bool showsAboveApps: overlayOpen || centerIsland.notificationVisible || Services.Capture.recording
     WlrLayershell.layer: showsAboveApps ? WlrLayer.Overlay : WlrLayer.Bottom
 
     PanelWindow {
@@ -179,7 +188,7 @@ PanelWindow {
     }
 
     mask: Region {
-        item: root.menuOpen ? root.contentItem : workspaceIsland
+        item: root.overlayOpen ? root.contentItem : workspaceIsland
         Region { item: appsIsland.visible ? appsIsland : null }
         Region { item: statusIsland }
         Region { item: centerIsland }
@@ -197,7 +206,7 @@ PanelWindow {
         PanelWindow {
             required property var modelData
             screen: modelData
-            visible: root.menuOpen
+            visible: root.overlayOpen
             color: Theme.Colors.transparent
             exclusionMode: ExclusionMode.Ignore
             WlrLayershell.layer: WlrLayer.Overlay
@@ -221,7 +230,7 @@ PanelWindow {
     MouseArea {
         id: outsideClickArea
         anchors.fill: parent
-        enabled: root.menuOpen
+        enabled: root.overlayOpen
         acceptedButtons: Qt.AllButtons
         onPressed: root.closeMenus()
     }
@@ -261,7 +270,7 @@ PanelWindow {
         }
 
         TapHandler {
-            enabled: root.menuOpen
+            enabled: root.overlayOpen
             acceptedButtons: Qt.AllButtons
             gesturePolicy: TapHandler.DragThreshold
             function containsBarPoint(item, position) {
@@ -277,6 +286,8 @@ PanelWindow {
                     || containsBarPoint(inputIsland, position)
                 if (centerIsland.expanded && !onCenterGroup)
                     centerIsland.close()
+                if (root.soundOpen && !containsBarPoint(statusIsland, position))
+                    statusIsland.soundOpen = false
             }
         }
 
