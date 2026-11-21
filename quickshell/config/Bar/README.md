@@ -44,12 +44,14 @@ Each tab matches its name and these keywords (`tabList` in `Dashboard.qml`):
 | Pomodoro | timer, focus, break |
 | Power | shutdown, power off, restart, reboot, lock, log out, logout |
 
-## Background apps
+## Status island
 
-The island at the right of the bar lists open windows. When apps run in the
-background with a tray icon, a layers button appears at its end: click it to
-switch the island to those apps. Click it again, or click anywhere outside
-the island, to return to the windows.
+The island at the right end of the bar holds the speaker and, when apps run in
+the background with a tray icon, a layers button. The island left of it lists
+open windows.
+
+Click the layers button to expand the island with the background apps. Click
+it again, or click anywhere outside the island, to collapse it.
 Click a background app to open it, middle-click for its secondary action, and
 right-click for its menu. In the menu, `Left` leaves a submenu and `Esc`
 closes it.
