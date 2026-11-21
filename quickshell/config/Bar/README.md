@@ -8,10 +8,10 @@ when it closes.
 - **Home:** calendar and the weather from [wttr.in](https://wttr.in), located
   by your public IP. The weather pill left of the bar's clock shows details on
   hover and opens this tab on click; it hides while offline.
-- **Settings:** output and input volume, Wi-Fi, Bluetooth, the
-  dark/transparent theme, Do Not Disturb, and the input method. Click a tile to
-  toggle it, or its `>` to pick an audio device, join a Wi-Fi network, manage
-  Bluetooth devices, or switch input method. Do Not Disturb keeps notifications
+- **Settings:** Wi-Fi, Bluetooth, the dark/transparent theme, Do Not Disturb,
+  and the input method. Click a tile to toggle it, or its `>` to join a Wi-Fi
+  network, manage Bluetooth devices, or switch input method. Volume lives in
+  the [status island](#status-island). Do Not Disturb keeps notifications
   in the list without popping them up, except urgent ones.
 - **Network:** connection status.
 - **Usage:** Claude and Codex subscription limits, also available as
@@ -38,7 +38,7 @@ Each tab matches its name and these keywords (`tabList` in `Dashboard.qml`):
 | Now playing | media, music, song, track, player |
 | Notifications | alerts, messages |
 | Network | ethernet, internet, connections, ip, speed |
-| Settings | volume, sound, speaker, headphones, microphone, mic, output, input, wifi, wi-fi, wlan, ssid, bluetooth, bt, pair, devices, theme, dark, transparent, do not disturb, dnd, quiet, input method, keyboard, language, ime |
+| Settings | wifi, wi-fi, wlan, ssid, bluetooth, bt, pair, devices, theme, dark, transparent, do not disturb, dnd, quiet, input method, keyboard, language, ime |
 | System | cpu, gpu, memory, ram, vram, storage, disk |
 | Usage | claude, codex, agent, limit, quota |
 | Pomodoro | timer, focus, break |

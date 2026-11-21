@@ -81,7 +81,7 @@ Components.Island {
     }
 
     function showVolume() {
-        if (volumeShownElsewhere || (expanded && expandedView === "settings"))
+        if (volumeShownElsewhere)
             return
         expanded = false
         volumeVisible = true
