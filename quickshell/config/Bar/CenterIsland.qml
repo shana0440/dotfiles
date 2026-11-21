@@ -14,7 +14,7 @@ Components.Island {
     property int availableHeight: 560
     readonly property bool notificationVisible: Services.Notifications.previewVisible
     readonly property bool showingRecording: activeView === recordingView
-    readonly property bool sideIslandsMerged: expanded || notificationVisible || Services.Capture.recording
+    readonly property bool sideIslandsMerged: expanded || notificationVisible || volumeVisible || Services.Capture.recording
     readonly property bool keyboardFocusRequired: expanded && !dashboard.inputMethodsOpen
 
     activeView: {
