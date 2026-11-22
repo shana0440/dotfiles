@@ -74,6 +74,7 @@
         ])
       ] ++ lib.optionals (pkgs.stdenv.hostPlatform.system == "x86_64-linux") [
         inputs.self.packages.x86_64-linux.eagle
+        inputs.self.packages.x86_64-linux.eagle-media-preview
         (import ./nexon/package.nix { inherit pkgs; })
       ];
       supported = pkg: lib.meta.availableOn pkgs.stdenv.hostPlatform pkg;

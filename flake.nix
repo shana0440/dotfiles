@@ -83,6 +83,10 @@
           enableAiSearch = false;
         };
 
+        x86_64-linux.eagle-media-preview = nixpkgs.legacyPackages.x86_64-linux.callPackage ./eagle/media-preview.nix {
+          inherit (inputs.self.packages.x86_64-linux) eagle;
+        };
+
         x86_64-linux.nexon-launcher = import ./nexon/package.nix {
           pkgs = import nixpkgs {
             system = "x86_64-linux";
