@@ -35,6 +35,7 @@ Scope {
     }
 
     readonly property bool raised: opened && !Services.Mei.choosingAvatar && !Services.ChatBackground.choosing
+    property bool onScreen: false
 
     onOpenedChanged: if (opened) Services.Mei.refresh()
 
@@ -50,6 +51,7 @@ Scope {
     }
     onRaisedChanged: {
         if (raised) {
+            onScreen = true
             exitAnim.stop()
             stage.lift = Math.min(stage.lift, stage.hiddenLift)
             enterAnim.restart()
@@ -102,6 +104,7 @@ Scope {
 
     ParallelAnimation {
         id: exitAnim
+        onFinished: if (!root.raised) root.onScreen = false
         SequentialAnimation {
             NumberAnimation { target: stage; property: "lift"; to: stage.exitPeak; duration: 130; easing.type: Easing.OutQuad }
             NumberAnimation { target: stage; property: "lift"; to: stage.hiddenLift; duration: 340; easing.type: Easing.InCubic }
@@ -173,9 +176,13 @@ Scope {
         id: slot
         required property string name
         required property var stack
-        default property Item page
+        property bool keepLoaded: false
+        default property alias content: loader.sourceComponent
+        readonly property Item page: loader.item
+        property real scrollY: 0
         readonly property int depth: stack.indexOf(name)
         readonly property int topDepth: stack.length - 1
+        readonly property bool inView: depth >= 0 ? depth >= topDepth - 1 : position < 1
         property real position: depth < 0 ? 1 : depth === topDepth ? 0 : -0.3
         Behavior on position { NumberAnimation { duration: 380; easing.type: Easing.OutQuint } }
         width: parent.width
@@ -183,7 +190,18 @@ Scope {
         x: width * position
         visible: position < 1 && (depth < 0 || depth >= topDepth - 1)
         z: depth < 0 ? stack.length : depth
-        Component.onCompleted: page.parent = slot
+
+        Loader {
+            id: loader
+            anchors.fill: parent
+            active: slot.keepLoaded || (root.onScreen && slot.inView)
+            onLoaded: item.restoreScroll?.(slot.scrollY)
+        }
+        Connections {
+            target: loader.item
+            ignoreUnknownSignals: true
+            function onContentYChanged() { slot.scrollY = loader.item.contentY }
+        }
 
         Rectangle {
             anchors.fill: parent
@@ -259,7 +277,7 @@ Scope {
 
                     function focusCurrent() {
                         for (const slot of children)
-                            if (slot.name === current) slot.page.focusPage()
+                            if (slot.name === current) slot.page?.focusPage()
                     }
                     function push(name) {
                         stack = stack.concat([name])
@@ -280,6 +298,7 @@ Scope {
 
                     Slot {
                         name: "chat"
+                        keepLoaded: true
                         stack: display.stack
                         Chat {
                             anchors.fill: parent
