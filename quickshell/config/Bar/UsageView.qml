@@ -1,6 +1,7 @@
 import QtQuick
 import "../Theme" as Theme
 import "../Components" as Components
+import "../Services" as Services
 
 Item {
     id: root
@@ -19,9 +20,10 @@ Item {
     implicitWidth: 480
     implicitHeight: content.implicitHeight + 40
 
-    AgentUsage {
-        id: usage
-        active: root.active
+    Binding {
+        target: Services.AgentUsage
+        property: "shown"
+        value: root.active
     }
 
     Timer {
@@ -146,9 +148,9 @@ Item {
             id: use
             anchors.right: parent.right
             anchors.verticalCenter: parent.verticalCenter
-            label: usage.resetting ? "Resetting" : credit.armed ? "Confirm reset" : "Use reset"
+            label: Services.AgentUsage.resetting ? "Resetting" : credit.armed ? "Confirm reset" : "Use reset"
             primary: credit.armed
-            enabled: credit.applicable && !usage.resetting
+            enabled: credit.applicable && !Services.AgentUsage.resetting
             onClicked: {
                 if (!credit.armed) {
                     credit.armed = true
@@ -156,7 +158,7 @@ Item {
                     return
                 }
                 credit.armed = false
-                usage.resetCodex(credit.entry ? credit.entry.id : "")
+                Services.AgentUsage.resetCodex(credit.entry ? credit.entry.id : "")
             }
 
             Timer {
@@ -331,10 +333,10 @@ Item {
                 }
                 Text {
                     width: parent.width
-                    visible: usage.resetOutcome.length > 0
-                    text: usage.resetOutcome ? root.outcomeText(usage.resetOutcome) : ""
+                    visible: Services.AgentUsage.resetOutcome.length > 0
+                    text: Services.AgentUsage.resetOutcome ? root.outcomeText(Services.AgentUsage.resetOutcome) : ""
                     wrapMode: Text.WordWrap
-                    color: usage.resetOutcome === "reset" ? Theme.Colors.success : Theme.Colors.warning
+                    color: Services.AgentUsage.resetOutcome === "reset" ? Theme.Colors.success : Theme.Colors.warning
                     font.family: Theme.Fonts.family
                     font.weight: Theme.Fonts.weight
                     font.pixelSize: 11
@@ -366,8 +368,8 @@ Item {
                     font.bold: true
                 }
                 Text {
-                    text: usage.checking && !usage.loaded ? "Checking"
-                        : usage.loaded ? "Checked " + Qt.formatDateTime(usage.checkedAt, "HH:mm") + " \u00b7 every 2 minutes" : ""
+                    text: Services.AgentUsage.checking && !Services.AgentUsage.loaded ? "Checking"
+                        : Services.AgentUsage.loaded ? "Checked " + Qt.formatDateTime(Services.AgentUsage.checkedAt, "HH:mm") + " \u00b7 every 2 minutes" : ""
                     color: Theme.Colors.muted
                     font.family: Theme.Fonts.family
                     font.weight: Theme.Fonts.weight
@@ -381,24 +383,24 @@ Item {
                 height: 32
                 iconSize: 16
                 icon: "reboot"
-                tooltip: usage.checking ? "Checking" : "Check now"
-                enabled: !usage.checking
-                onClicked: usage.refresh()
+                tooltip: Services.AgentUsage.checking ? "Checking" : "Check now"
+                enabled: !Services.AgentUsage.checking
+                onClicked: Services.AgentUsage.refresh()
             }
         }
 
         ProviderCard {
             name: "Claude"
             visible: root.showsProvider(name)
-            reading: usage.claude
-            error: usage.claudeError
+            reading: Services.AgentUsage.claude
+            error: Services.AgentUsage.claudeError
         }
         ProviderCard {
             name: "Codex"
             visible: root.showsProvider(name)
-            plan: usage.codex && usage.codex.plan ? usage.codex.plan.charAt(0).toUpperCase() + usage.codex.plan.slice(1) + " plan" : ""
-            reading: usage.codex
-            error: usage.codexError
+            plan: Services.AgentUsage.codex && Services.AgentUsage.codex.plan ? Services.AgentUsage.codex.plan.charAt(0).toUpperCase() + Services.AgentUsage.codex.plan.slice(1) + " plan" : ""
+            reading: Services.AgentUsage.codex
+            error: Services.AgentUsage.codexError
         }
     }
 }

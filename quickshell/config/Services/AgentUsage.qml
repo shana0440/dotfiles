@@ -1,10 +1,12 @@
+pragma Singleton
 import QtQuick
+import Quickshell
 import Quickshell.Io
 
-Item {
+Singleton {
     id: root
 
-    property bool active: false
+    property bool shown: false
     property var claude: null
     property var codex: null
     property string claudeError: ""
@@ -14,8 +16,6 @@ Item {
     readonly property bool loaded: checkedAt.getTime() > 0
     readonly property bool resetting: redeem.running
     property string resetOutcome: ""
-
-    visible: false
 
     function refresh() {
         if (!query.running) {
@@ -54,7 +54,7 @@ Item {
 
     Timer {
         interval: 120000
-        running: root.active
+        running: root.shown
         repeat: true
         triggeredOnStart: true
         onTriggered: root.refresh()
