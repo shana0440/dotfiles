@@ -16,12 +16,24 @@ Singleton {
     readonly property bool loaded: checkedAt.getTime() > 0
     readonly property bool resetting: redeem.running
     property string resetOutcome: ""
+    readonly property int pollInterval: 60000
+    property real requestedAt: 0
+
+    onShownChanged: shown ? poll() : pollTimer.stop()
 
     function refresh() {
         if (!query.running) {
+            requestedAt = Date.now()
             query.started = false
             query.running = true
         }
+    }
+
+    function poll() {
+        if (Date.now() - requestedAt >= pollInterval)
+            refresh()
+        pollTimer.interval = Math.max(1000, requestedAt + pollInterval - Date.now())
+        pollTimer.restart()
     }
 
     function resetCodex(creditId) {
@@ -53,11 +65,8 @@ Singleton {
     }
 
     Timer {
-        interval: 120000
-        running: root.shown
-        repeat: true
-        triggeredOnStart: true
-        onTriggered: root.refresh()
+        id: pollTimer
+        onTriggered: root.poll()
     }
 
     Process {

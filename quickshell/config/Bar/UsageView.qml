@@ -369,7 +369,7 @@ Item {
                 }
                 Text {
                     text: Services.AgentUsage.checking && !Services.AgentUsage.loaded ? "Checking"
-                        : Services.AgentUsage.loaded ? "Checked " + Qt.formatDateTime(Services.AgentUsage.checkedAt, "HH:mm") + " \u00b7 every 2 minutes" : ""
+                        : Services.AgentUsage.loaded ? "Checked " + Qt.formatDateTime(Services.AgentUsage.checkedAt, "HH:mm") + " \u00b7 every minute" : ""
                     color: Theme.Colors.muted
                     font.family: Theme.Fonts.family
                     font.weight: Theme.Fonts.weight
