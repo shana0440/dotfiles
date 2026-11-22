@@ -34,8 +34,8 @@ forget_quickshell_crash_relaunch_environment() {
 notify_quickshell_without_waiting_for_its_poll() {
     {
         forget_quickshell_crash_relaunch_environment
-        timeout 2s quickshell --path "${XDG_CONFIG_HOME:-$HOME/.config}/quickshell" \
-            ipc call screenCapture changed
+        QS_CONFIG_PATH="${QS_CONFIG_PATH:-${XDG_CONFIG_HOME:-$HOME/.config}/quickshell}" \
+            timeout 2s quickshell ipc call screenCapture changed
     } >/dev/null 2>&1 &
 }
 
