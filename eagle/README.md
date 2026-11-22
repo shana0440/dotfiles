@@ -4,6 +4,8 @@
 
 ## Media Preview Server
 
-With a library open in Eagle, run `nix run .#eagle-media-preview` from this repo to install the [Media Preview Server](https://github.com/tuki0918/eagle-media-preview-server) plugin. Then open **Media Preview Server** in Eagle's plugin panel, click **Start**, and open the endpoint shown there.
+After `make home`, open a library in Eagle, run `eagle-media-preview-install`, and confirm the installation. To run the installer without switching Home Manager, use `nix run .#eagle-media-preview` from this repo instead.
+
+In Eagle's plugin panel, select **Service → Media Preview Server**, turn on the switch beside **Server Status**, and open the endpoint shown there. See the [plugin guide](https://github.com/tuki0918/eagle-media-preview-server) for settings.
 
 For access from other devices on a trusted LAN, configure password protection before turning on **Public Network**.
