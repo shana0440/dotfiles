@@ -8,7 +8,6 @@ Item {
 
     property bool active: false
     property date today: new Date()
-    readonly property alias calendar: calendar
     signal closeRequested()
 
     implicitWidth: calendar.implicitWidth + clockFace.implicitWidth
