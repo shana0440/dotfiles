@@ -28,6 +28,13 @@ Scope {
     readonly property bool busy: preparing
     readonly property string targetPath: setters.length ? setters[setters.length - 1].path : currentPath
 
+    MediaPlayer {
+        id: previewPlayer
+        source: root.previewing ? "file://" + root.previewing.split("/").map(encodeURIComponent).join("/") : ""
+        loops: MediaPlayer.Infinite
+        autoPlay: true
+    }
+
     function show() {
         chosenScreen = Quickshell.screens.find(s => s.name === Hyprland.focusedMonitor?.name)
             ?? Quickshell.screens[0] ?? null
@@ -339,13 +346,7 @@ Scope {
                                     sourceComponent: VideoOutput {
                                         id: preview
                                         fillMode: VideoOutput.PreserveAspectCrop
-                                        MediaPlayer {
-                                            id: player
-                                            source: "file://" + card.modelData.path.split("/").map(encodeURIComponent).join("/")
-                                            videoOutput: preview
-                                            loops: MediaPlayer.Infinite
-                                            autoPlay: true
-                                        }
+                                        Component.onCompleted: previewPlayer.videoOutput = preview
                                     }
                                 }
                                 Rectangle {
