@@ -6,7 +6,7 @@ import ".." as Phone
 Page {
     id: settings
 
-    property bool cleared: false
+    required property PageState reset
     signal openSchedules
     signal openTasks
     signal openCharacter
@@ -167,7 +167,7 @@ Page {
         },
         Caption {
             pt: settings.pt
-            text: settings.cleared ? Services.Mei.name + "'s memory and chat history are cleared."
+            text: settings.reset.done ? Services.Mei.name + "'s memory and chat history are cleared."
                 : "Forget everything " + Services.Mei.name + " remembers and delete the chat history."
         }
     ]
@@ -184,12 +184,16 @@ Page {
         onDismissed: settings.focusPage()
         onConfirmed: {
             resetAlert.error = ""
-            Services.Mei.resetMemory(failure => {
+            const reset = settings.reset
+            Services.Mei.resetMemory(failure => reset.finish(failure))
+        }
+
+        Connections {
+            target: settings.reset
+            function onFinished(failure) {
                 resetAlert.error = failure
-                if (failure) return
-                settings.cleared = true
-                resetAlert.close()
-            })
+                if (!failure) resetAlert.close()
+            }
         }
     }
 }

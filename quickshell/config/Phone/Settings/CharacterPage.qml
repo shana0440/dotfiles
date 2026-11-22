@@ -5,15 +5,12 @@ import "../../Services" as Services
 Page {
     id: editor
 
-    readonly property bool dirty: document.text !== Services.Mei.character
+    required property PageState draft
+    readonly property bool dirty: draft.text !== Services.Mei.character
 
     function save() {
-        Services.Mei.saveCharacter(document.text)
+        Services.Mei.saveCharacter(draft.text)
         back()
-    }
-    function load() {
-        document.text = Services.Mei.character
-        document.cursorPosition = 0
     }
 
     title: Services.Mei.characterTitle
@@ -29,6 +26,17 @@ Page {
         pt: editor.pt
         TextEdit {
             id: document
+            text: editor.draft.text
+            onTextChanged: editor.draft.text = text
+            onCursorPositionChanged: editor.draft.cursor = cursorPosition
+            Component.onCompleted: cursorPosition = editor.draft.cursor
+            Connections {
+                target: editor.draft
+                function onCursorChanged() {
+                    if (document.cursorPosition !== editor.draft.cursor)
+                        document.cursorPosition = editor.draft.cursor
+                }
+            }
             width: parent.width
             height: Math.max(implicitHeight, editor.height * 0.6)
             padding: 14 * editor.pt
@@ -66,7 +74,7 @@ Page {
         confirmLabel: "Discard"
         onDismissed: document.forceActiveFocus()
         onConfirmed: {
-            editor.load()
+            editor.draft.reset(Services.Mei.character)
             discardAlert.close()
             editor.back()
         }

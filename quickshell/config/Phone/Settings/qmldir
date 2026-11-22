@@ -16,3 +16,4 @@ BackgroundPage 1.0 BackgroundPage.qml
 NamePage 1.0 NamePage.qml
 TaskRow 1.0 TaskRow.qml
 TasksPage 1.0 TasksPage.qml
+PageState 1.0 PageState.qml

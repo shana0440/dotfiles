@@ -69,6 +69,15 @@ Scope {
         function state(): string { return JSON.stringify({ open: root.opened }) }
     }
 
+    Settings.PageState {
+        id: nameDraft
+        onFinished: failure => {
+            if (!failure && root.display?.current === "name") root.display.pop()
+        }
+    }
+    Settings.PageState { id: characterDraft }
+    Settings.PageState { id: memoryReset }
+
     QtObject {
         id: stage
         property real lift: hiddenLift
@@ -286,6 +295,7 @@ Scope {
                         stack: display.stack
                         Settings.SettingsPage {
                             anchors.fill: parent
+                            reset: memoryReset
                             active: root.raised && display.current === "settings"
                             hiddenBottom: display.hiddenBottom
                             onBack: display.pop()
@@ -293,11 +303,11 @@ Scope {
                             onOpenTasks: display.push("tasks")
                             onOpenBackground: display.push("background")
                             onOpenName: {
-                                namePage.load()
+                                nameDraft.reset(Services.Mei.name)
                                 display.push("name")
                             }
                             onOpenCharacter: {
-                                characterPage.load()
+                                characterDraft.reset(Services.Mei.character)
                                 display.push("character")
                             }
                         }
@@ -307,8 +317,8 @@ Scope {
                         name: "name"
                         stack: display.stack
                         Settings.NamePage {
-                            id: namePage
                             anchors.fill: parent
+                            draft: nameDraft
                             active: root.raised && display.current === "name"
                             hiddenBottom: display.hiddenBottom
                             onBack: display.pop()
@@ -330,8 +340,8 @@ Scope {
                         name: "character"
                         stack: display.stack
                         Settings.CharacterPage {
-                            id: characterPage
                             anchors.fill: parent
+                            draft: characterDraft
                             active: root.raised && display.current === "character"
                             hiddenBottom: display.hiddenBottom
                             onBack: display.pop()
