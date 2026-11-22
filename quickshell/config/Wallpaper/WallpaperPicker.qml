@@ -270,147 +270,153 @@ Scope {
 
                 Repeater {
                     model: root.items
-                    delegate: Item {
-                        id: card
+                    delegate: Loader {
+                        id: slot
                         required property var modelData
                         required property int index
-                        readonly property real offset: index - hand.position
-                        readonly property real distance: Math.abs(offset)
-                        readonly property real spread: offset * hand.step
-                        readonly property bool chosen: index === root.selected
-                        readonly property bool current: modelData.path === root.targetPath
-                        property real pick: chosen ? 1 : 0
-                        Behavior on pick { NumberAnimation { duration: 220; easing.type: Easing.OutCubic } }
-                        readonly property real mouseDistance: Math.hypot(torch.point.position.x - x - width / 2,
-                            torch.point.position.y - y - height / 2)
-                        readonly property real fullLight: hand.cardWidth * 0.3
-                        readonly property real noLight: hand.cardWidth * 1.3
-                        property real light: torch.hovered
-                            ? Math.max(0, Math.min(1, (noLight - mouseDistance) / (noLight - fullLight)))
-                            : 0
-                        Behavior on light { NumberAnimation { duration: 160; easing.type: Easing.OutCubic } }
-                        property real push: root.selected < 0 ? 0 : Math.sign(index - root.selected) * hand.grow / 2
-                        Behavior on push { NumberAnimation { duration: 220; easing.type: Easing.OutCubic } }
+                        readonly property real distance: Math.abs(index - hand.position)
+                        active: hand.deal > 0 && distance < hand.reach + 1
+                        z: index === root.selected ? root.items.length : root.items.length - 1 - index
+                        sourceComponent: Item {
+                            id: card
+                            readonly property var modelData: slot.modelData
+                            readonly property int index: slot.index
+                            readonly property real offset: index - hand.position
+                            readonly property real distance: slot.distance
+                            readonly property real spread: offset * hand.step
+                            readonly property bool chosen: index === root.selected
+                            readonly property bool current: modelData.path === root.targetPath
+                            property real pick: chosen ? 1 : 0
+                            Behavior on pick { NumberAnimation { duration: 220; easing.type: Easing.OutCubic } }
+                            readonly property real mouseDistance: Math.hypot(torch.point.position.x - x - width / 2,
+                                torch.point.position.y - y - height / 2)
+                            readonly property real fullLight: hand.cardWidth * 0.3
+                            readonly property real noLight: hand.cardWidth * 1.3
+                            property real light: torch.hovered
+                                ? Math.max(0, Math.min(1, (noLight - mouseDistance) / (noLight - fullLight)))
+                                : 0
+                            Behavior on light { NumberAnimation { duration: 160; easing.type: Easing.OutCubic } }
+                            property real push: root.selected < 0 ? 0 : Math.sign(index - root.selected) * hand.grow / 2
+                            Behavior on push { NumberAnimation { duration: 220; easing.type: Easing.OutCubic } }
 
-                        readonly property real dealDelay: 0.38 * Math.min(1, distance / hand.reach)
-                        readonly property real flight: Math.max(0, Math.min(1, (hand.deal - dealDelay) / 0.62))
-                        readonly property real fanned: flight * flight * (3 - 2 * flight)
-                        readonly property real fanY: hand.height - height * 1.12
-                            + spread * spread * hand.cardHeight * 0.035 - pick * hand.cardHeight * 0.07
+                            readonly property real dealDelay: 0.38 * Math.min(1, distance / hand.reach)
+                            readonly property real flight: Math.max(0, Math.min(1, (hand.deal - dealDelay) / 0.62))
+                            readonly property real fanned: flight * flight * (3 - 2 * flight)
+                            readonly property real fanY: hand.height - height * 1.12
+                                + spread * spread * hand.cardHeight * 0.035 - pick * hand.cardHeight * 0.07
 
-                        visible: hand.deal > 0 && distance < hand.reach + 1
-                        width: hand.cardWidth + pick * hand.grow * fanned
-                        height: hand.cardHeight
-                        x: hand.width / 2 - width / 2 + (spread * hand.cardWidth + push) * fanned
-                        y: hand.deckY + (fanY - hand.deckY) * fanned
-                        z: chosen ? root.items.length : root.items.length - 1 - index
-                        rotation: -8 + (spread * 7 + 8) * fanned
-                        transformOrigin: Item.Bottom
-                        scale: 0.72 + (0.22 + pick * 0.1) * fanned
-                        opacity: Math.min(1, hand.deal * 8)
-                            * Math.max(0, Math.min(1, hand.reach + 0.5 - distance))
+                            width: hand.cardWidth + pick * hand.grow * fanned
+                            height: hand.cardHeight
+                            x: hand.width / 2 - width / 2 + (spread * hand.cardWidth + push) * fanned
+                            y: hand.deckY + (fanY - hand.deckY) * fanned
+                            rotation: -8 + (spread * 7 + 8) * fanned
+                            transformOrigin: Item.Bottom
+                            scale: 0.72 + (0.22 + pick * 0.1) * fanned
+                            opacity: Math.min(1, hand.deal * 8)
+                                * Math.max(0, Math.min(1, hand.reach + 0.5 - distance))
 
-                        RectangularShadow {
-                            anchors.fill: face
-                            radius: face.radius
-                            offset.y: 10
-                            blur: 32
-                            spread: -6
-                            color: "#99000000"
-                        }
-                        Rectangle {
-                            id: face
-                            anchors.fill: parent
-                            radius: 22
-                            color: Theme.Colors.solidSurface
-                            border.width: card.chosen ? 2 : 1
-                            border.color: card.chosen ? Qt.alpha(Theme.Colors.foreground, 0.7) : Theme.Colors.edge
+                            RectangularShadow {
+                                anchors.fill: face
+                                radius: face.radius
+                                offset.y: 10
+                                blur: 32
+                                spread: -6
+                                color: "#99000000"
+                            }
+                            Rectangle {
+                                id: face
+                                anchors.fill: parent
+                                radius: 22
+                                color: Theme.Colors.solidSurface
+                                border.width: card.chosen ? 2 : 1
+                                border.color: card.chosen ? Qt.alpha(Theme.Colors.foreground, 0.7) : Theme.Colors.edge
 
-                            ClippingRectangle {
-                                id: art
-                                anchors { left: parent.left; right: parent.right; top: parent.top; margins: 8 }
-                                height: parent.height - 8 - caption.height
-                                radius: 15
-                                color: Theme.Colors.background
-                                Image {
-                                    anchors.fill: parent
-                                    source: card.visible ? card.modelData.thumbnail : ""
-                                    fillMode: Image.PreserveAspectCrop
-                                    asynchronous: true
-                                    sourceSize.height: 600
-                                }
-                                Loader {
-                                    anchors.fill: parent
-                                    active: card.chosen && root.previewing === card.modelData.path
-                                    asynchronous: true
-                                    sourceComponent: VideoOutput {
-                                        id: preview
-                                        fillMode: VideoOutput.PreserveAspectCrop
-                                        Component.onCompleted: previewPlayer.videoOutput = preview
+                                ClippingRectangle {
+                                    id: art
+                                    anchors { left: parent.left; right: parent.right; top: parent.top; margins: 8 }
+                                    height: parent.height - 8 - caption.height
+                                    radius: 15
+                                    color: Theme.Colors.background
+                                    Image {
+                                        anchors.fill: parent
+                                        source: card.modelData.thumbnail
+                                        fillMode: Image.PreserveAspectCrop
+                                        asynchronous: true
+                                        sourceSize.height: 600
+                                    }
+                                    Loader {
+                                        anchors.fill: parent
+                                        active: card.chosen && root.previewing === card.modelData.path
+                                        asynchronous: true
+                                        sourceComponent: VideoOutput {
+                                            id: preview
+                                            fillMode: VideoOutput.PreserveAspectCrop
+                                            Component.onCompleted: previewPlayer.videoOutput = preview
+                                        }
+                                    }
+                                    Rectangle {
+                                        anchors { left: parent.left; bottom: parent.bottom; margins: 10 }
+                                        visible: card.modelData.video
+                                        width: 30; height: 30; radius: 15
+                                        color: Qt.alpha(Theme.Colors.background, 0.75)
+                                        Components.Icon {
+                                            anchors.centerIn: parent
+                                            width: 14; height: 14
+                                            action: "play"
+                                            iconColor: Theme.Colors.foreground
+                                        }
                                     }
                                 }
                                 Rectangle {
-                                    anchors { left: parent.left; bottom: parent.bottom; margins: 10 }
-                                    visible: card.modelData.video
+                                    anchors { top: parent.top; right: parent.right; margins: 18 }
+                                    visible: card.current
                                     width: 30; height: 30; radius: 15
-                                    color: Qt.alpha(Theme.Colors.background, 0.75)
+                                    color: Theme.Colors.info
+                                    border { width: 2; color: Theme.Colors.foreground }
                                     Components.Icon {
                                         anchors.centerIn: parent
-                                        width: 14; height: 14
-                                        action: "play"
+                                        width: 16; height: 16
+                                        action: "check"
                                         iconColor: Theme.Colors.foreground
                                     }
                                 }
-                            }
-                            Rectangle {
-                                anchors { top: parent.top; right: parent.right; margins: 18 }
-                                visible: card.current
-                                width: 30; height: 30; radius: 15
-                                color: Theme.Colors.info
-                                border { width: 2; color: Theme.Colors.foreground }
-                                Components.Icon {
-                                    anchors.centerIn: parent
-                                    width: 16; height: 16
-                                    action: "check"
-                                    iconColor: Theme.Colors.foreground
+                                Item {
+                                    id: caption
+                                    anchors { left: parent.left; right: parent.right; bottom: parent.bottom }
+                                    height: 50
+                                    Text {
+                                        anchors { left: parent.left; right: number.left; leftMargin: 18; rightMargin: 12; verticalCenter: parent.verticalCenter }
+                                        text: card.modelData.name.replace(/\.[^.]+$/, "")
+                                        color: Theme.Colors.foreground
+                                        font { family: Theme.Fonts.family; weight: Theme.Fonts.weight; pixelSize: 16 }
+                                        elide: Text.ElideRight
+                                    }
+                                    Text {
+                                        id: number
+                                        anchors { right: parent.right; rightMargin: 18; verticalCenter: parent.verticalCenter }
+                                        text: String(card.index + 1).padStart(2, "0")
+                                        color: Theme.Colors.muted
+                                        font { family: Theme.Fonts.family; weight: Theme.Fonts.weight; pixelSize: 14 }
+                                    }
+                                }
+                                Rectangle {
+                                    anchors.fill: parent
+                                    radius: parent.radius
+                                    color: "#000000"
+                                    opacity: 0.4 * (1 - card.pick) * (1 - Math.min(1, card.light))
                                 }
                             }
-                            Item {
-                                id: caption
-                                anchors { left: parent.left; right: parent.right; bottom: parent.bottom }
-                                height: 50
-                                Text {
-                                    anchors { left: parent.left; right: number.left; leftMargin: 18; rightMargin: 12; verticalCenter: parent.verticalCenter }
-                                    text: card.modelData.name.replace(/\.[^.]+$/, "")
-                                    color: Theme.Colors.foreground
-                                    font { family: Theme.Fonts.family; weight: Theme.Fonts.weight; pixelSize: 16 }
-                                    elide: Text.ElideRight
-                                }
-                                Text {
-                                    id: number
-                                    anchors { right: parent.right; rightMargin: 18; verticalCenter: parent.verticalCenter }
-                                    text: String(card.index + 1).padStart(2, "0")
-                                    color: Theme.Colors.muted
-                                    font { family: Theme.Fonts.family; weight: Theme.Fonts.weight; pixelSize: 14 }
-                                }
-                            }
-                            Rectangle {
+                            MouseArea {
+                                id: pointer
                                 anchors.fill: parent
-                                radius: parent.radius
-                                color: "#000000"
-                                opacity: 0.4 * (1 - card.pick) * (1 - Math.min(1, card.light))
-                            }
-                        }
-                        MouseArea {
-                            id: pointer
-                            anchors.fill: parent
-                            anchors.bottomMargin: -card.pick * hand.cardHeight * 0.07 / card.scale
-                            enabled: !root.busy
-                            cursorShape: Qt.PointingHandCursor
-                            onClicked: root.selected = card.index
-                            onDoubleClicked: mouse => {
-                                if (card.chosen) root.apply()
-                                else mouse.accepted = false
+                                anchors.bottomMargin: -card.pick * hand.cardHeight * 0.07 / card.scale
+                                enabled: !root.busy
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: root.selected = card.index
+                                onDoubleClicked: mouse => {
+                                    if (card.chosen) root.apply()
+                                    else mouse.accepted = false
+                                }
                             }
                         }
                     }
