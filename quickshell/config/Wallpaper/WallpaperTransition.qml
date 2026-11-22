@@ -1,4 +1,5 @@
 import QtQuick
+import QtMultimedia
 import Quickshell
 import Quickshell.Io
 import Quickshell.Wayland
@@ -10,6 +11,8 @@ Scope {
     property int generation: 0
     property int orderAwwwAlreadyShows: 0
     property var swapQueue: []
+    property QtObject showingVideo: null
+    property int orderOfLastFinished: 0
     readonly property int duration: 1800
     readonly property int maxOverlappingChanges: 8
     readonly property int destroyAfterLayersStopBindingMs: 1000
@@ -46,7 +49,7 @@ Scope {
         generation++
         const t = transitionComponent.createObject(root, {
             token: String(generation), order: generation, image: parsed.image, map: parsed.map,
-            ember: parsed.ember ?? "#ff9a5c", seed: Math.random() * 100
+            video: parsed.video ?? "", ember: parsed.ember ?? "#ff9a5c", seed: Math.random() * 100
         })
         t.layers = windows.instances.map(window => layerComponent.createObject(window.contentItem,
             { transition: t, screenName: window.modelData.name }))
@@ -87,10 +90,38 @@ Scope {
         done[t.token] = { phase: phase, error: error }
         for (const key of Object.keys(done)) if (Number(key) < generation - 32) delete done[key]
         finalResultByToken = done
-        transitions = transitions.filter(x => x !== t)
         swapQueue = swapQueue.filter(x => x !== t)
+        const newest = phase === "done" && t.order > orderOfLastFinished
+        if (newest) orderOfLastFinished = t.order
+        if (newest && t.video) keepPlaying(t)
+        transitions = transitions.filter(x => x !== t)
+        if (newest && !t.video) keepPlaying(null)
+        if (showingVideo !== t) discard(t)
+    }
+    function discard(t) {
         for (const layer of t.layers) layer.destroy()
         t.destroy(destroyAfterLayersStopBindingMs)
+    }
+    function keepPlaying(t) {
+        const previous = showingVideo
+        showingVideo = t
+        if (previous) discard(previous)
+    }
+    function show(video) {
+        if (!video) { keepPlaying(null); return "ok" }
+        if (showingVideo?.video === video) return "same"
+        const t = transitionComponent.createObject(root, {
+            token: "", order: ++generation, video: video, progress: 1, phase: "done"
+        })
+        t.watchdog.stop()
+        t.layers = windows.instances.map(window => layerComponent.createObject(window.contentItem,
+            { transition: t, screenName: window.modelData.name }))
+        orderOfLastFinished = t.order
+        keepPlaying(t)
+        return "ok"
+    }
+    function state() {
+        return JSON.stringify({ video: showingVideo?.video ?? "", changing: transitions.map(t => t.video || t.image) })
     }
     function fail(t, reason) { if (t.phase !== "swapping") finish(t, "error", reason) }
     function abort(token) { const t = find(token); if (t) fail(t, "Transition cancelled") }
@@ -100,6 +131,14 @@ Scope {
         return JSON.stringify(finalResultByToken[token] ?? { phase: "superseded", error: "" })
     }
 
+    FileView {
+        id: currentWallpaper
+        path: (Quickshell.env("XDG_STATE_HOME") || Quickshell.env("HOME") + "/.local/state") + "/wallpaper/current"
+        onLoaded: {
+            const path = text().split("\n")[0]
+            if (/\.(mp4|webm|mkv|mov)$/i.test(path)) root.show(path)
+        }
+    }
     FileView {
         id: shaderPath
         path: (Quickshell.env("XDG_CONFIG_HOME") || Quickshell.env("HOME") + "/.config") + "/wallpaper/colonies-shader"
@@ -111,6 +150,8 @@ Scope {
         function go(token: string): string { return root.go(token) }
         function abort(token: string): void { root.abort(token) }
         function status(token: string): string { return root.status(token) }
+        function show(video: string): string { return root.show(video) }
+        function state(): string { return root.state() }
     }
     Process {
         id: swap
@@ -135,6 +176,7 @@ Scope {
             property string token
             property int order
             property string image
+            property string video
             property string map
             property color ember
             property real seed
@@ -163,17 +205,51 @@ Scope {
             required property string screenName
             anchors.fill: parent
 
+            readonly property bool plays: transition.video !== ""
+            readonly property bool spreading: transition.progress < 1
+            readonly property bool shaderShown: !plays || spreading
+            property bool firstFrameShown: false
+
             function checkReady() {
-                if (!transition) return
+                if (!transition || transition.phase !== "loading") return
+                const newReady = plays ? firstFrameShown : newImage.status === Image.Ready
                 if (newImage.status === Image.Error || colonyMap.status === Image.Error)
                     root.fail(transition, "Could not load transition images")
-                else if (newImage.status === Image.Ready && colonyMap.status === Image.Ready)
+                else if (newReady && colonyMap.status === Image.Ready)
                     root.ready(transition, screenName)
+            }
+            MediaPlayer {
+                id: player
+                source: root.fileUrl(layer.transition.video)
+                loops: MediaPlayer.Infinite
+                videoOutput: screenVideo
+                onErrorOccurred: (error, message) => root.fail(layer.transition, "Could not play the video: " + message)
+                Component.onCompleted: if (layer.plays) play()
+            }
+            VideoOutput {
+                id: screenVideo
+                anchors.fill: parent
+                visible: layer.plays
+                fillMode: VideoOutput.PreserveAspectCrop
+            }
+            Connections {
+                target: screenVideo.videoSink
+                enabled: layer.plays && !layer.firstFrameShown
+                function onVideoFrameChanged() {
+                    layer.firstFrameShown = true
+                    Qt.callLater(layer.checkReady)
+                }
+            }
+            ShaderEffectSource {
+                id: videoTexture
+                sourceItem: layer.plays && layer.spreading ? screenVideo : null
+                hideSource: true
+                visible: false
             }
             Image {
                 id: newImage
                 visible: false
-                source: root.fileUrl(layer.transition.image)
+                source: layer.plays ? "" : root.fileUrl(layer.transition.image)
                 asynchronous: true
                 cache: false
                 onStatusChanged: Qt.callLater(layer.checkReady)
@@ -181,7 +257,7 @@ Scope {
             Image {
                 id: colonyMap
                 visible: false
-                source: root.fileUrl(layer.transition.map)
+                source: layer.shaderShown ? root.fileUrl(layer.transition.map) : ""
                 asynchronous: true
                 cache: false
                 smooth: false
@@ -189,6 +265,7 @@ Scope {
             }
             ShaderEffect {
                 anchors.fill: parent
+                visible: layer.shaderShown
                 readonly property real progress: layer.transition.progress
                 readonly property real cellPx: 5
                 readonly property real screenW: width
@@ -196,9 +273,9 @@ Scope {
                 readonly property real mapW: Math.max(1, colonyMap.sourceSize.width)
                 readonly property real mapH: Math.max(1, colonyMap.sourceSize.height)
                 readonly property real seed: layer.transition.seed
-                readonly property vector4d newCrop: root.crop(newImage, width, height)
+                readonly property vector4d newCrop: layer.plays ? Qt.vector4d(0, 0, 1, 1) : root.crop(newImage, width, height)
                 readonly property color ember: layer.transition.ember
-                readonly property var newTexture: newImage
+                readonly property var newTexture: layer.plays ? videoTexture : newImage
                 readonly property var mapTexture: colonyMap
                 fragmentShader: root.fileUrl(root.shaderFile)
                 onStatusChanged: if (status === ShaderEffect.Error) root.fail(layer.transition, "Colony shader failed")
@@ -213,7 +290,7 @@ Scope {
         PanelWindow {
             required property var modelData
             screen: modelData
-            visible: root.transitions.length > 0
+            visible: root.transitions.length > 0 || root.showingVideo !== null
             anchors { top: true; bottom: true; left: true; right: true }
             color: "transparent"
             exclusionMode: ExclusionMode.Ignore

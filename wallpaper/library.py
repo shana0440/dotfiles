@@ -8,7 +8,39 @@ import sys
 import tempfile
 import time
 
-EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp"}
+IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp"}
+VIDEO_EXTENSIONS = {".mp4", ".webm", ".mkv", ".mov"}
+EXTENSIONS = IMAGE_EXTENSIONS | VIDEO_EXTENSIONS
+
+
+def is_video(path):
+    return path.suffix.lower() in VIDEO_EXTENSIONS
+
+
+def cached_name(source, extension):
+    stat = source.stat()
+    key = hashlib.sha256(str(source).encode()).hexdigest()
+    return f"{key}-{stat.st_mtime_ns}-{stat.st_size}{extension}"
+
+
+def poster(video):
+    posters = Path(os.environ.get("XDG_CACHE_HOME", str(Path.home() / ".cache"))) / "wallpaper/posters"
+    posters.mkdir(parents=True, exist_ok=True)
+    target = posters / cached_name(video, ".png")
+    if not target.is_file():
+        fd, temp = tempfile.mkstemp(suffix=".png", dir=posters)
+        os.close(fd)
+        try:
+            subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", str(video), "-frames:v", "1", temp],
+                           check=True, capture_output=True, timeout=30)
+            os.replace(temp, target)
+        finally:
+            Path(temp).unlink(missing_ok=True)
+    return target
+
+
+def still(source):
+    return poster(source) if is_video(source) else source
 
 
 def thumbnail_cache():
@@ -16,9 +48,7 @@ def thumbnail_cache():
 
 
 def thumbnail_path(source, cache):
-    stat = source.stat()
-    key = hashlib.sha256(str(source).encode()).hexdigest()
-    return cache / f"{key}-{stat.st_mtime_ns}-{stat.st_size}.jpg"
+    return cache / cached_name(source, ".jpg")
 
 
 def thumbnail(source, cache):
@@ -28,13 +58,14 @@ def thumbnail(source, cache):
         os.close(fd)
         try:
             subprocess.run([
-                "magick", f"{source}[0]", "-auto-orient", "-thumbnail", "900x500>",
+                "magick", f"{still(source)}[0]", "-auto-orient", "-thumbnail", "900x500>",
                 "-strip", "-quality", "85", temp,
             ], check=True, capture_output=True, timeout=30)
             os.replace(temp, target)
         finally:
             Path(temp).unlink(missing_ok=True)
-    return {"name": source.name, "path": str(source), "thumbnail": target.as_uri()}
+    return {"name": source.name, "path": str(source), "still": str(still(source)),
+            "video": is_video(source), "thumbnail": target.as_uri()}
 
 
 def catalog(directory, cache):
@@ -81,7 +112,7 @@ def wait_transition(token, expected, seconds):
     deadline = time.monotonic() + seconds
     while time.monotonic() < deadline:
         state = json.loads(transition_ipc("status", token))
-        if state["phase"] == expected:
+        if state["phase"] in expected:
             return
         if state["phase"] in {"error", "superseded", "idle"}:
             raise RuntimeError(state.get("error") or "Transition stopped")
@@ -94,7 +125,7 @@ def colonies(*arguments):
                           capture_output=True, text=True, timeout=10).stdout.strip()
 
 
-def colony_transition(image):
+def colony_transition(source, image):
     token = None
     complete = False
     try:
@@ -104,10 +135,10 @@ def colony_transition(image):
         if not outputs:
             return False
         colony_map = colonies("take")
-        cached_thumbnail = thumbnail_path(image, thumbnail_cache())
+        cached_thumbnail = thumbnail_path(source, thumbnail_cache())
         color_source = cached_thumbnail if cached_thumbnail.is_file() else image
         request = {"image": str(image), "map": colony_map, "ember": colonies("accent", str(color_source)),
-                   "outputs": outputs}
+                   "video": str(source) if is_video(source) else "", "outputs": outputs}
         token = transition_ipc("prepare", json.dumps(request))
         already_heading_there = token == "same"
         if already_heading_there:
@@ -118,11 +149,11 @@ def colony_transition(image):
         if not token.isdigit():
             token = None
             return False
-        wait_transition(token, "ready", 3)
+        wait_transition(token, {"ready"}, 3)
         print("transition-ready", flush=True)
         if transition_ipc("go", token) != "ok":
             raise RuntimeError("Colony transition did not start")
-        wait_transition(token, "done", 8)
+        wait_transition(token, {"done"}, 8)
         complete = True
         subprocess.Popen(["wallpaper-colonies", "renew", colony_map], stdin=subprocess.DEVNULL,
                          stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, start_new_session=True)
@@ -138,20 +169,28 @@ def colony_transition(image):
                 pass
 
 
-def set_wallpaper(image):
-    if not colony_transition(image):
+def set_wallpaper(source):
+    image = still(source)
+    if not colony_transition(source, image):
         subprocess.run(["awww", "img", str(image), "--transition-type", "fade",
                         "--transition-duration", "0.35"], check=True, timeout=5)
+        try:
+            transition_ipc("show", str(source) if is_video(source) else "")
+        except (OSError, subprocess.SubprocessError):
+            pass
+
+
+def current_file():
+    return Path(os.environ.get("XDG_STATE_HOME", str(Path.home() / ".local/state"))) / "wallpaper/current"
 
 
 def record_current(image):
-    state = Path(os.environ.get("XDG_STATE_HOME", str(Path.home() / ".local/state"))) / "wallpaper"
-    state.mkdir(parents=True, exist_ok=True)
-    fd, temp = tempfile.mkstemp(dir=state)
+    current_file().parent.mkdir(parents=True, exist_ok=True)
+    fd, temp = tempfile.mkstemp(dir=current_file().parent)
     try:
         with os.fdopen(fd, "w") as file:
             file.write(f"{image}\n")
-        os.replace(temp, state / "current")
+        os.replace(temp, current_file())
     finally:
         Path(temp).unlink(missing_ok=True)
 
@@ -159,10 +198,10 @@ def record_current(image):
 def main():
     if len(sys.argv) > 1 and sys.argv[1] == "set":
         if len(sys.argv) != 3:
-            raise ValueError("Usage: wallpaper-set IMAGE")
+            raise ValueError("Usage: wallpaper-set IMAGE_OR_VIDEO")
         image = Path(sys.argv[2]).expanduser().resolve(strict=True)
         if not image.is_file() or image.suffix.lower() not in EXTENSIONS:
-            raise ValueError("Choose a JPG, PNG, or WebP image")
+            raise ValueError("Choose a JPG, PNG, or WebP image, or an MP4, WebM, MKV, or MOV video")
         set_wallpaper(image)
         record_current(image)
         return

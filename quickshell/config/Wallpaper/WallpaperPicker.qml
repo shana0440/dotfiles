@@ -1,4 +1,5 @@
 import QtQuick
+import QtMultimedia
 import QtQuick.Effects
 import Quickshell
 import Quickshell.Io
@@ -14,6 +15,7 @@ Scope {
     property bool opened: false
     property bool preparing: false
     property var items: []
+    readonly property string previewing: opened && !preparing && items[selected]?.video ? items[selected].path : ""
     property string directory: ""
     property string message: ""
     property string currentPath: ""
@@ -22,8 +24,16 @@ Scope {
     property int finishedOrder: 0
     property int selected: -1
     property var chosenScreen: Quickshell.screens[0] ?? null
-    readonly property bool busy: preparing || query.running || library.running
+    property bool refreshAfterDeal: false
+    readonly property bool busy: preparing
     readonly property string targetPath: setters.length ? setters[setters.length - 1].path : currentPath
+
+    MediaPlayer {
+        id: previewPlayer
+        source: root.previewing ? "file://" + root.previewing.split("/").map(encodeURIComponent).join("/") : ""
+        loops: MediaPlayer.Infinite
+        autoPlay: true
+    }
 
     function show() {
         chosenScreen = Quickshell.screens.find(s => s.name === Hyprland.focusedMonitor?.name)
@@ -34,8 +44,8 @@ Scope {
         collectCards.stop()
         dealCards.stop()
         hand.deal = 0
+        refreshAfterDeal = false
         query.start()
-        if (!colonyWarm.running) colonyWarm.running = true
     }
     function finishOpening() {
         if (!opened || !preparing || query.running || library.running) return
@@ -118,7 +128,14 @@ Scope {
                 } catch (_) {}
             }
         }
-        onExited: library.start()
+        onExited: {
+            const item = root.items.find(i => i.still === root.currentPath)
+            if (item) root.currentPath = item.path
+            if (!library.running && root.items.some(i => i.path === root.targetPath)) {
+                root.refreshAfterDeal = true
+                Qt.callLater(root.finishOpening)
+            } else library.start()
+        }
         onFailedToStart: {
             root.message = "Could not run awww to find the current wallpaper"
             library.start()
@@ -131,8 +148,15 @@ Scope {
             onStreamFinished: {
                 try {
                     const result = JSON.parse(text)
-                    root.selected = -1
-                    root.items = result.items
+                    const unchanged = result.items.length === root.items.length
+                        && result.items.every((item, index) => item.thumbnail === root.items[index].thumbnail)
+                    if (!unchanged) {
+                        const path = root.items[root.selected]?.path
+                        root.items = result.items
+                        const index = root.items.findIndex(i => i.path === path)
+                        root.selected = root.items.length ? Math.max(0, index) : -1
+                    }
+                    root.currentPath = result.items.find(item => item.still === root.currentPath)?.path ?? root.currentPath
                     root.directory = result.directory
                     if (result.errors.length) root.message = result.errors.length + " image(s) could not be loaded"
                 } catch (_) { root.message = "Could not read the wallpaper library" }
@@ -176,7 +200,7 @@ Scope {
         function state(): string {
             return JSON.stringify({open: root.opened, busy: root.busy, count: root.items.length,
                 selected: root.items[root.selected]?.path ?? "", current: root.currentPath,
-                applying: root.setters.map(s => s.path), error: root.message})
+                applying: root.setters.map(s => s.path), previewing: root.previewing, error: root.message})
         }
     }
 
@@ -220,7 +244,14 @@ Scope {
                 anchors { left: parent.left; right: parent.right; top: parent.top; bottom: bar.top; bottomMargin: 24 }
                 property real deal: 0
                 readonly property int dealDuration: 300
-                NumberAnimation { id: dealCards; target: hand; property: "deal"; to: 1; duration: hand.dealDuration }
+                NumberAnimation {
+                    id: dealCards
+                    target: hand; property: "deal"; to: 1; duration: hand.dealDuration
+                    onFinished: {
+                        if (root.refreshAfterDeal) library.start()
+                        if (!colonyWarm.running) colonyWarm.running = true
+                    }
+                }
                 NumberAnimation { id: collectCards; target: hand; property: "deal"; to: 0; duration: hand.dealDuration }
                 readonly property real deckY: height + 100 - cardHeight * 0.48 * Math.min(1, deal * 5)
                 readonly property real cardHeight: Math.max(1, Math.min(height * 0.5, 440))
@@ -307,6 +338,28 @@ Scope {
                                     fillMode: Image.PreserveAspectCrop
                                     asynchronous: true
                                     sourceSize.height: 600
+                                }
+                                Loader {
+                                    anchors.fill: parent
+                                    active: card.chosen && root.previewing === card.modelData.path
+                                    asynchronous: true
+                                    sourceComponent: VideoOutput {
+                                        id: preview
+                                        fillMode: VideoOutput.PreserveAspectCrop
+                                        Component.onCompleted: previewPlayer.videoOutput = preview
+                                    }
+                                }
+                                Rectangle {
+                                    anchors { left: parent.left; bottom: parent.bottom; margins: 10 }
+                                    visible: card.modelData.video
+                                    width: 30; height: 30; radius: 15
+                                    color: Qt.alpha(Theme.Colors.background, 0.75)
+                                    Components.Icon {
+                                        anchors.centerIn: parent
+                                        width: 14; height: 14
+                                        action: "play"
+                                        iconColor: Theme.Colors.foreground
+                                    }
                                 }
                             }
                             Rectangle {

@@ -417,6 +417,12 @@ hl.layer_rule({
 })
 
 hl.layer_rule({
+    name    = "video-wallpaper-above-awww",
+    match   = { namespace = "^quickshell-wallpaper-transition$" },
+    order   = -1,
+})
+
+hl.layer_rule({
     name    = "capture-preview-priority",
     match   = { namespace = "^quickshell-capture-region$" },
     order   = -100,
