@@ -54,7 +54,8 @@ let
       for program in quickshell qs; do
         wrapProgram $out/bin/$program \
           --prefix QML_IMPORT_PATH : ${pkgs.qt6.qtmultimedia}/${pkgs.qt6.qtbase.qtQmlPrefix} \
-          --prefix QT_PLUGIN_PATH : ${pkgs.qt6.qtmultimedia}/${pkgs.qt6.qtbase.qtPluginPrefix}
+          --prefix QT_PLUGIN_PATH : ${pkgs.qt6.qtmultimedia}/${pkgs.qt6.qtbase.qtPluginPrefix} \
+          --set QT_FFMPEG_DECODING_HW_DEVICE_TYPES ""
       done
     '';
   };
