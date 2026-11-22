@@ -21,10 +21,15 @@ Singleton {
     onPickerOpenChanged: {
         if (pickerOpen)
             groupQuery.running = true
+        else
+            Qt.callLater(refreshCurrent)
     }
+    Component.onCompleted: Qt.callLater(refreshCurrent)
     onTrayIconChanged: {
         if (trayIcon.startsWith("fcitx_mozc_"))
             mozcIcon = trayIcon
+        if (!pickerOpen)
+            Qt.callLater(refreshCurrent)
     }
 
     function iconOf(name) {
@@ -48,15 +53,23 @@ Singleton {
         select(order[(index + 1) % order.length])
     }
 
-    Timer {
-        interval: 1000
-        repeat: true
-        running: !root.pickerOpen
-        onTriggered: currentQuery.running = true
+    function refreshCurrent() {
+        if (pickerOpen) return
+        if (currentQuery.running)
+            currentQuery.refreshPending = true
+        else
+            currentQuery.running = true
     }
 
     Process {
         id: currentQuery
+        property bool refreshPending: false
+        onRunningChanged: {
+            if (!running && refreshPending) {
+                refreshPending = false
+                Qt.callLater(root.refreshCurrent)
+            }
+        }
         command: ["busctl", "--user", "--json=short", "call", "org.fcitx.Fcitx5",
             "/controller", "org.fcitx.Fcitx.Controller1", "CurrentInputMethod"]
         stdout: StdioCollector {
