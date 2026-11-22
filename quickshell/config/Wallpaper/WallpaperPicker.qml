@@ -15,14 +15,7 @@ Scope {
     property bool opened: false
     property bool preparing: false
     property var items: []
-    property int previewBudget: 2
-    readonly property var warmPreviews: items.filter(item => item.video).slice(0, previewBudget).map(item => item.path)
-    Timer {
-        interval: 350
-        repeat: true
-        running: !root.opened && root.previewBudget < Math.min(6, root.items.filter(item => item.video).length)
-        onTriggered: root.previewBudget++
-    }
+    readonly property string previewing: opened && !preparing && items[selected]?.video ? items[selected].path : ""
     property string directory: ""
     property string message: ""
     property string currentPath: ""
@@ -200,7 +193,7 @@ Scope {
         function state(): string {
             return JSON.stringify({open: root.opened, busy: root.busy, count: root.items.length,
                 selected: root.items[root.selected]?.path ?? "", current: root.currentPath,
-                applying: root.setters.map(s => s.path), error: root.message})
+                applying: root.setters.map(s => s.path), previewing: root.previewing, error: root.message})
         }
     }
 
@@ -341,23 +334,10 @@ Scope {
                                 }
                                 Loader {
                                     anchors.fill: parent
-                                    active: card.modelData.video && (card.distance < hand.reach + 1
-                                        || root.warmPreviews.includes(card.modelData.path))
+                                    active: card.chosen && root.previewing === card.modelData.path
                                     asynchronous: true
                                     sourceComponent: VideoOutput {
                                         id: preview
-                                        readonly property bool playingCard: root.opened && !root.preparing && card.visible
-                                        property bool primed: false
-                                        function pauseIfHidden() { if (!playingCard) player.pause() }
-                                        onPlayingCardChanged: if (playingCard) player.play(); else if (primed) player.pause()
-                                        Connections {
-                                            target: preview.videoSink
-                                            enabled: !preview.primed
-                                            function onVideoFrameChanged() {
-                                                preview.primed = true
-                                                Qt.callLater(preview.pauseIfHidden)
-                                            }
-                                        }
                                         fillMode: VideoOutput.PreserveAspectCrop
                                         MediaPlayer {
                                             id: player
