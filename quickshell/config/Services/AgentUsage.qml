@@ -1,10 +1,12 @@
+pragma Singleton
 import QtQuick
+import Quickshell
 import Quickshell.Io
 
-Item {
+Singleton {
     id: root
 
-    property bool active: false
+    property bool shown: false
     property var claude: null
     property var codex: null
     property string claudeError: ""
@@ -14,14 +16,24 @@ Item {
     readonly property bool loaded: checkedAt.getTime() > 0
     readonly property bool resetting: redeem.running
     property string resetOutcome: ""
+    readonly property int pollInterval: 60000
+    property real requestedAt: 0
 
-    visible: false
+    onShownChanged: shown ? poll() : pollTimer.stop()
 
     function refresh() {
         if (!query.running) {
+            requestedAt = Date.now()
             query.started = false
             query.running = true
         }
+    }
+
+    function poll() {
+        if (Date.now() - requestedAt >= pollInterval)
+            refresh()
+        pollTimer.interval = Math.max(1000, requestedAt + pollInterval - Date.now())
+        pollTimer.restart()
     }
 
     function resetCodex(creditId) {
@@ -53,11 +65,8 @@ Item {
     }
 
     Timer {
-        interval: 120000
-        running: root.active
-        repeat: true
-        triggeredOnStart: true
-        onTriggered: root.refresh()
+        id: pollTimer
+        onTriggered: root.poll()
     }
 
     Process {

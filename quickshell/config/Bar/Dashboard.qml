@@ -10,27 +10,34 @@ Item {
     property bool active: false
     property date today: new Date()
     property int maximumHeight: 560
-    readonly property alias calendar: homeView.calendar
-    readonly property bool inputMethodsOpen: tab === "settings" && settingsView.page === "inputMethod"
-    readonly property Item currentPage: tab === "media" ? mediaView
-        : tab === "notifications" ? notificationList
-        : tab === "network" ? networkView
-        : tab === "settings" ? settingsView
-        : tab === "system" ? systemView
-        : tab === "usage" ? usageView
-        : tab === "pomodoro" ? pomodoroView
-        : tab === "power" ? powerView : homeView
+    readonly property bool inputMethodsOpen: tab === "settings" && settingsPage.view?.page === "inputMethod"
+    readonly property Item currentPage: [homePage, mediaPage, notificationsPage, networkPage, settingsPage,
+        systemPage, usagePage, pomodoroPage, powerPage].find(page => page.current)?.view ?? null
     signal tabRequested(string tab)
+
+    component Page: Components.ViewReveal {
+        id: page
+        required property string name
+        default property alias content: loader.sourceComponent
+        view: loader.item
+        current: root.tab === name
+        alignment: Qt.AlignLeft
+
+        Loader {
+            id: loader
+            active: page.current || page.opacity > 0
+        }
+    }
     signal closeRequested()
 
     readonly property int sidebarWidth: 52
 
-    readonly property int pageWidth: homeView.implicitWidth
+    readonly property int pageWidth: 480
     readonly property string query: searchField.text
     readonly property int searchHeight: searchBar.visible ? searchBar.height + 8 : 0
 
     width: sidebarWidth + 1 + pageWidth
-    height: searchHeight + Math.max(tabs.implicitHeight + 16, currentPage.height)
+    height: searchHeight + Math.max(tabs.implicitHeight + 16, currentPage?.height ?? 0)
 
     onActiveChanged: if (!active) searchField.clear()
 
@@ -88,11 +95,11 @@ Item {
     }
 
     function showInputMethods() {
-        settingsView.page = "inputMethod"
+        settingsPage.view.page = "inputMethod"
     }
 
     function showBluetooth() {
-        settingsView.page = "bluetooth"
+        settingsPage.view.page = "bluetooth"
     }
 
     function focusSearch() {
@@ -109,6 +116,8 @@ Item {
 
     function moveFocus(forward) {
         const page = currentPage
+        if (!page)
+            return
         const inPage = item => {
             for (let ancestor = item; ancestor; ancestor = ancestor.parent) {
                 if (ancestor === page)
@@ -218,6 +227,8 @@ Item {
         acceptedButtons: Qt.BackButton | Qt.ForwardButton
         onPressed: mouse => {
             const page = root.currentPage
+            if (!page)
+                return
             if (mouse.button === Qt.BackButton && page.navigateBack)
                 page.navigateBack()
             else if (mouse.button === Qt.ForwardButton && page.navigateForward)
@@ -290,68 +301,91 @@ Item {
         color: Theme.Colors.ring
     }
 
-    Components.ViewStack {
+    Item {
         x: root.sidebarWidth + 1
         y: root.searchHeight
         width: root.pageWidth
         height: root.height - root.searchHeight
-        alignment: Qt.AlignLeft
-        activeView: root.currentPage
 
-        views: [
+        Page {
+            id: homePage
+            name: "home"
             HomeView {
-                id: homeView
                 today: root.today
                 active: root.active && root.tab === "home"
                 onCloseRequested: root.closeRequested()
-            },
+            }
+        }
+        Page {
+            id: mediaPage
+            name: "media"
             MediaView {
-                id: mediaView
                 width: root.pageWidth
                 active: root.active && root.tab === "media"
-            },
+            }
+        }
+        Page {
+            id: notificationsPage
+            name: "notifications"
             NotificationView {
-                id: notificationList
                 width: root.pageWidth
                 maximumHeight: root.maximumHeight - root.searchHeight
-            },
+            }
+        }
+        Page {
+            id: networkPage
+            name: "network"
             NetworkView {
-                id: networkView
                 width: root.pageWidth
                 maximumHeight: root.maximumHeight - root.searchHeight
                 active: root.active && root.tab === "network"
                 onCloseRequested: root.closeRequested()
-            },
+            }
+        }
+        Page {
+            id: settingsPage
+            name: "settings"
             SettingsView {
-                id: settingsView
                 width: root.pageWidth
                 maximumHeight: root.maximumHeight - root.searchHeight
                 active: root.active && root.tab === "settings"
                 onCloseRequested: root.closeRequested()
-            },
+            }
+        }
+        Page {
+            id: systemPage
+            name: "system"
             SystemView {
-                id: systemView
                 width: root.pageWidth
                 active: root.active && root.tab === "system"
-            },
+            }
+        }
+        Page {
+            id: usagePage
+            name: "usage"
             UsageView {
-                id: usageView
                 width: root.pageWidth
                 query: root.normalizedQuery
                 active: root.active && root.tab === "usage"
-            },
+            }
+        }
+        Page {
+            id: pomodoroPage
+            name: "pomodoro"
             PomodoroView {
-                id: pomodoroView
                 width: root.pageWidth
                 active: root.active && root.tab === "pomodoro"
-            },
+            }
+        }
+        Page {
+            id: powerPage
+            name: "power"
             PowerView {
-                id: powerView
                 width: root.pageWidth
                 fillHeight: tabs.implicitHeight + 16
                 active: root.active && root.tab === "power"
                 onCloseRequested: root.closeRequested()
             }
-        ]
+        }
     }
 }

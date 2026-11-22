@@ -63,6 +63,24 @@ PanelWindow {
         }
     }
 
+    IpcHandler {
+        target: "usage"
+        function refresh(): void { Services.AgentUsage.refresh() }
+        function state(): string {
+            const usage = Services.AgentUsage
+            return JSON.stringify({
+                shown: usage.shown,
+                checking: usage.checking,
+                requestedAt: usage.requestedAt ? new Date(usage.requestedAt).toISOString() : null,
+                checkedAt: usage.loaded ? usage.checkedAt.toISOString() : null,
+                claude: usage.claude,
+                claudeError: usage.claudeError,
+                codex: usage.codex,
+                codexError: usage.codexError
+            })
+        }
+    }
+
     function openDashboard(tab) {
         centerIsland.open(["home", "media", "notifications", "network", "settings", "system", "usage", "pomodoro", "power"].includes(tab) ? tab : "home")
     }

@@ -111,11 +111,6 @@ Components.ExpandableIsland {
         value: root.expanded && root.expandedView === "notifications"
     }
 
-    onExpandedChanged: {
-        if (expanded)
-            dashboard.calendar.displayedMonth = new Date(clock.date.getFullYear(), clock.date.getMonth(), 1)
-    }
-
     SystemClock {
         id: clock
         precision: SystemClock.Minutes

@@ -35,6 +35,7 @@ Scope {
     }
 
     readonly property bool raised: opened && !Services.Mei.choosingAvatar && !Services.ChatBackground.choosing
+    property bool onScreen: false
 
     onOpenedChanged: if (opened) Services.Mei.refresh()
 
@@ -50,6 +51,7 @@ Scope {
     }
     onRaisedChanged: {
         if (raised) {
+            onScreen = true
             exitAnim.stop()
             stage.lift = Math.min(stage.lift, stage.hiddenLift)
             enterAnim.restart()
@@ -68,6 +70,15 @@ Scope {
         function close(): void { root.close() }
         function state(): string { return JSON.stringify({ open: root.opened }) }
     }
+
+    Settings.PageState {
+        id: nameDraft
+        onFinished: failure => {
+            if (!failure && root.display?.current === "name") root.display.pop()
+        }
+    }
+    Settings.PageState { id: characterDraft }
+    Settings.PageState { id: memoryReset }
 
     QtObject {
         id: stage
@@ -93,6 +104,7 @@ Scope {
 
     ParallelAnimation {
         id: exitAnim
+        onFinished: if (!root.raised) root.onScreen = false
         SequentialAnimation {
             NumberAnimation { target: stage; property: "lift"; to: stage.exitPeak; duration: 130; easing.type: Easing.OutQuad }
             NumberAnimation { target: stage; property: "lift"; to: stage.hiddenLift; duration: 340; easing.type: Easing.InCubic }
@@ -164,9 +176,13 @@ Scope {
         id: slot
         required property string name
         required property var stack
-        default property Item page
+        property bool keepLoaded: false
+        default property alias content: loader.sourceComponent
+        readonly property Item page: loader.item
+        property real scrollY: 0
         readonly property int depth: stack.indexOf(name)
         readonly property int topDepth: stack.length - 1
+        readonly property bool inView: depth >= 0 ? depth >= topDepth - 1 : position < 1
         property real position: depth < 0 ? 1 : depth === topDepth ? 0 : -0.3
         Behavior on position { NumberAnimation { duration: 380; easing.type: Easing.OutQuint } }
         width: parent.width
@@ -174,7 +190,18 @@ Scope {
         x: width * position
         visible: position < 1 && (depth < 0 || depth >= topDepth - 1)
         z: depth < 0 ? stack.length : depth
-        Component.onCompleted: page.parent = slot
+
+        Loader {
+            id: loader
+            anchors.fill: parent
+            active: slot.keepLoaded || (root.onScreen && slot.inView)
+            onLoaded: item.restoreScroll?.(slot.scrollY)
+        }
+        Connections {
+            target: loader.item
+            ignoreUnknownSignals: true
+            function onContentYChanged() { slot.scrollY = loader.item.contentY }
+        }
 
         Rectangle {
             anchors.fill: parent
@@ -250,7 +277,7 @@ Scope {
 
                     function focusCurrent() {
                         for (const slot of children)
-                            if (slot.name === current) slot.page.focusPage()
+                            if (slot.name === current) slot.page?.focusPage()
                     }
                     function push(name) {
                         stack = stack.concat([name])
@@ -271,6 +298,7 @@ Scope {
 
                     Slot {
                         name: "chat"
+                        keepLoaded: true
                         stack: display.stack
                         Chat {
                             anchors.fill: parent
@@ -286,6 +314,7 @@ Scope {
                         stack: display.stack
                         Settings.SettingsPage {
                             anchors.fill: parent
+                            reset: memoryReset
                             active: root.raised && display.current === "settings"
                             hiddenBottom: display.hiddenBottom
                             onBack: display.pop()
@@ -293,11 +322,11 @@ Scope {
                             onOpenTasks: display.push("tasks")
                             onOpenBackground: display.push("background")
                             onOpenName: {
-                                namePage.load()
+                                nameDraft.reset(Services.Mei.name)
                                 display.push("name")
                             }
                             onOpenCharacter: {
-                                characterPage.load()
+                                characterDraft.reset(Services.Mei.character)
                                 display.push("character")
                             }
                         }
@@ -307,8 +336,8 @@ Scope {
                         name: "name"
                         stack: display.stack
                         Settings.NamePage {
-                            id: namePage
                             anchors.fill: parent
+                            draft: nameDraft
                             active: root.raised && display.current === "name"
                             hiddenBottom: display.hiddenBottom
                             onBack: display.pop()
@@ -330,8 +359,8 @@ Scope {
                         name: "character"
                         stack: display.stack
                         Settings.CharacterPage {
-                            id: characterPage
                             anchors.fill: parent
+                            draft: characterDraft
                             active: root.raised && display.current === "character"
                             hiddenBottom: display.hiddenBottom
                             onBack: display.pop()

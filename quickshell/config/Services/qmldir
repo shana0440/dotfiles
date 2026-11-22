@@ -15,3 +15,4 @@ ImagePicker 1.0 ImagePicker.qml
 singleton ChatBackground 1.0 ChatBackground.qml
 singleton LinkPreviews 1.0 LinkPreviews.qml
 MeiConfig 1.0 MeiConfig.qml
+singleton AgentUsage 1.0 AgentUsage.qml

@@ -43,9 +43,18 @@ PanelWindow {
         return groups
     }
 
+    readonly property var windowLayoutEvents: [
+        "openwindow", "closewindow", "movewindowv2", "changefloatingmode", "fullscreen",
+        "togglegroup", "moveintogroup", "moveoutofgroup", "activespecialv2",
+        "moveworkspacev2", "monitoraddedv2", "monitorremovedv2"
+    ]
+
     Connections {
         target: Hyprland
-        function onRawEvent(event) { windowLayoutRefresh.restart() }
+        function onRawEvent(event) {
+            if (root.windowLayoutEvents.includes(event.name))
+                windowLayoutRefresh.restart()
+        }
     }
 
     Timer {

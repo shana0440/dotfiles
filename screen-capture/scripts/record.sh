@@ -27,22 +27,32 @@ recording_mode() {
     printf 'none\n'
 }
 
+mode_with_running_recorder() {
+    local active_mode
+    active_mode=$(recording_mode)
+    [[ "$active_mode" != none ]] || { printf 'none\n'; return; }
+    case "$(systemctl --user show --property=SubState --value "screen-capture-record-$active_mode.service")" in
+        stop-post|final-sigterm|final-sigkill|failed|dead) printf 'none\n' ;;
+        *) printf '%s\n' "$active_mode" ;;
+    esac
+}
+
 forget_quickshell_crash_relaunch_environment() {
     unset "${!__QUICKSHELL_CRASH_@}"
 }
 
-notify_quickshell_without_waiting_for_its_poll() {
+notify_quickshell() {
     {
         forget_quickshell_crash_relaunch_environment
-        timeout 2s quickshell --path "${XDG_CONFIG_HOME:-$HOME/.config}/quickshell" \
-            ipc call screenCapture changed
+        QS_CONFIG_PATH="${QS_CONFIG_PATH:-${XDG_CONFIG_HOME:-$HOME/.config}/quickshell}" \
+            timeout 2s quickshell ipc call screenCapture changed
     } >/dev/null 2>&1 &
 }
 
 mode="${1:-}"
 case "$mode" in
     status)
-        active_mode=$(recording_mode)
+        active_mode=$(mode_with_running_recorder)
         if [[ "${2:-}" == --json ]]; then
             started_at_seconds=0
             if [[ "$active_mode" != none && -n "${XDG_RUNTIME_DIR:-}" ]]; then
@@ -75,7 +85,6 @@ case "$mode" in
         active_mode=$(recording_mode)
         if [[ "$active_mode" != none ]]; then
             systemctl --user stop "screen-capture-record-$active_mode.service"
-            notify_quickshell_without_waiting_for_its_poll
         fi
         exit 0
         ;;
@@ -151,6 +160,7 @@ if ! systemd-run --user --quiet --collect --service-type=exec \
     --property="ExecStopPost=$(command -v screen-capture-recording-finished) $mode" \
     --setenv="XDG_CONFIG_HOME=${XDG_CONFIG_HOME:-$HOME/.config}" \
     --setenv="XDG_CACHE_HOME=${XDG_CACHE_HOME:-$HOME/.cache}" \
+    --setenv="QS_CONFIG_PATH=${QS_CONFIG_PATH:-${XDG_CONFIG_HOME:-$HOME/.config}/quickshell}" \
     --setenv="DBUS_SESSION_BUS_ADDRESS=${DBUS_SESSION_BUS_ADDRESS:-unix:path=$XDG_RUNTIME_DIR/bus}" \
     --setenv="WAYLAND_DISPLAY=$WAYLAND_DISPLAY" \
     --setenv="XDG_RUNTIME_DIR=$XDG_RUNTIME_DIR" \
@@ -158,5 +168,5 @@ if ! systemd-run --user --quiet --collect --service-type=exec \
     rm -f -- "$recording_path" "$session_file"
     exit 1
 fi
-notify_quickshell_without_waiting_for_its_poll
+notify_quickshell
 printf '%s\n' "$recording_path"

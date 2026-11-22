@@ -13,14 +13,26 @@ Item {
     property bool holdBack: false
     property real topPadding: 24 * pt
     default property alias content: sections.data
+    property alias contentY: body.contentY
     property alias overlays: overlayLayer.data
     property alias footer: footerColumn.data
     readonly property real pt: width / 390
+    property real pendingY: 0
     signal back
     signal backHeld
     signal actionTriggered
 
     function focusPage() { body.forceActiveFocus() }
+    function restoreScroll(y) {
+        pendingY = y
+        applyPendingScroll()
+    }
+    function applyPendingScroll() {
+        if (pendingY <= 0) return
+        const bottom = Math.max(0, body.contentHeight - body.height)
+        body.contentY = Math.min(pendingY, bottom)
+        if (bottom >= pendingY) pendingY = 0
+    }
     function reveal(item, rect) {
         const top = item.mapToItem(body.contentItem, rect.x, rect.y).y
         if (top < body.contentY) body.contentY = top
@@ -43,6 +55,8 @@ Item {
         boundsBehavior: Flickable.StopAtBounds
         interactive: false
         clip: true
+        onContentHeightChanged: page.applyPendingScroll()
+        onHeightChanged: page.applyPendingScroll()
         Keys.onEscapePressed: page.requestBack()
 
         Components.KineticScroll {

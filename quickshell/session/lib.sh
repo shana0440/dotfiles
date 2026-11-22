@@ -83,7 +83,7 @@ wait_for() {
 isolated() {
     env -u WAYLAND_DISPLAY -u DISPLAY -u HYPRLAND_INSTANCE_SIGNATURE -u QT_QPA_PLATFORM -u SWAYSOCK \
         XDG_RUNTIME_DIR="$rt" XDG_STATE_HOME="$work/state" XDG_DATA_HOME="$work/data" \
-        PIPEWIRE_RUNTIME_DIR="$pipewire_dir" WALLPAPER_SHELL="$work/config" WALLPAPER_DIR="$wallpaper_dir" \
+        PIPEWIRE_RUNTIME_DIR="$pipewire_dir" WALLPAPER_SHELL="$work/config" QS_CONFIG_PATH="$work/config" WALLPAPER_DIR="$wallpaper_dir" \
         XDG_PICTURES_DIR="$work/pictures" MEI_HOME="$work/mei" \
         GTK_THEME=adw-gtk3-dark ADW_DEBUG_COLOR_SCHEME=prefer-dark \
         LD_LIBRARY_PATH=/run/opengl-driver/lib \
@@ -215,12 +215,12 @@ EOF
     chmod +x "$work/bin/quickshell"
     local record_command
     record_command=$(command -v screen-capture-record)
+    ln -s "$pipewire_dir/systemd" "$rt/systemd"
+    mkdir -p "$rt/pulse"
+    ln -s "$pipewire_dir/pulse/native" "$rt/pulse/native"
     cat > "$work/bin/screen-capture-record" <<EOF
 #!/bin/sh
-if [ "\$1" = status ]; then
-    exec env XDG_RUNTIME_DIR="$pipewire_dir" DBUS_SESSION_BUS_ADDRESS="unix:path=$pipewire_dir/bus" "$record_command" "\$@"
-fi
-exec "$record_command" "\$@"
+exec env DBUS_SESSION_BUS_ADDRESS="unix:path=$pipewire_dir/bus" "$record_command" "\$@"
 EOF
     chmod +x "$work/bin/screen-capture-record"
 }

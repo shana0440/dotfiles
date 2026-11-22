@@ -395,6 +395,7 @@ Singleton {
 
     SystemClock {
         id: recordingClock
+        enabled: root.recording
         precision: SystemClock.Seconds
     }
 
@@ -508,11 +509,5 @@ Singleton {
         function changed(): void { root.refreshRecordingStatus() }
     }
 
-    Timer {
-        interval: 5000
-        running: true
-        repeat: true
-        triggeredOnStart: true
-        onTriggered: root.refreshRecordingStatus()
-    }
+    Component.onCompleted: refreshRecordingStatus()
 }
