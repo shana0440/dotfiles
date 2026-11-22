@@ -33,6 +33,7 @@ description: Control the user's Linux desktop (Hyprland and the Quickshell deskt
 | Volume | `quickshell ipc call sound state`, `quickshell ipc call sound setVolume 40`, `quickshell ipc call sound setAppVolume spotify 60` |
 | Wi-Fi, Bluetooth | `nmcli`, `bluetoothctl` |
 | Agent usage limits | `agent-usage` |
+| Install the Media Preview Server plugin in Eagle | `eagle-media-preview-install`; see [Eagle on Linux](../../../eagle/README.md) |
 | Apps started in the tray at login | `app-autostart list`; start one again with `app-autostart start <name>` |
 
 `hyprctl dispatch` takes Lua; `hyprland/hyprland.lua` in the dotfiles shows
