@@ -305,6 +305,55 @@ Singleton {
         }
     }
 
+    property int heardUpTo: -1
+
+    function hear(line) {
+        let event
+        try { event = JSON.parse(line) } catch (_) { return }
+        if (event.id === undefined || event.status === "running") return
+        heardUpTo = event.id
+        const report = event.error ?? event.result ?? ""
+        if (!report.trim()) return
+        append("mei", report, event.finishedAt)
+        announce(report)
+    }
+
+    Component {
+        id: listenerComponent
+
+        Socket {
+            id: listener
+            property bool closed: false
+
+            function close() {
+                if (closed) return
+                closed = true
+                relisten.start()
+                Qt.callLater(() => listener.destroy())
+            }
+
+            path: root.socketPath
+            connected: true
+            parser: SplitParser { onRead: line => root.hear(line) }
+            onConnectionStateChanged: {
+                if (!connected) {
+                    close()
+                    return
+                }
+                write(JSON.stringify(root.heardUpTo < 0 ? { type: "listen" }
+                    : { type: "listen", after: root.heardUpTo }) + "\n")
+                flush()
+            }
+            onError: close()
+        }
+    }
+
+    Timer {
+        id: relisten
+        interval: 1000
+        onTriggered: listenerComponent.createObject(root)
+    }
+
     Component {
         id: replyNotification
 
@@ -383,6 +432,7 @@ Singleton {
     }
 
     Component.onCompleted: {
+        listenerComponent.createObject(root)
         refresh()
         readConfig()
     }
