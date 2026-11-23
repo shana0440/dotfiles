@@ -9,12 +9,14 @@ import "Services" as Services
 
 ShellRoot {
     Services.SavedTheme {}
-    Bar {}
+    Bar {
+        onMissionControlRequested: missionControl.show()
+    }
     Dock {}
     WallpaperTransition {}
     WallpaperPicker {}
     ScreenCapture {}
-    MissionControl {}
+    MissionControl { id: missionControl }
     Phone {}
     Lock {}
 }

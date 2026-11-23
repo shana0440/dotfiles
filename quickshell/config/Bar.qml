@@ -11,6 +11,8 @@ import "Services" as Services
 PanelWindow {
     id: root
 
+    signal missionControlRequested()
+
     readonly property int islandMargin: 20
     readonly property int compactIslandHeight: 32
     readonly property int islandSpacing: 8
@@ -316,6 +318,7 @@ PanelWindow {
 
         BarComponents.WorkspaceIsland {
             id: workspaceIsland
+            onMissionControlRequested: root.missionControlRequested()
             bare: workspaceGoo.ready
             anchors.left: parent.left
             height: root.compactIslandHeight

@@ -101,7 +101,7 @@ Item {
 
     FileView {
         id: svgTemplate
-        path: Quickshell.shellPath("Icons/lucide/" + root.iconName + ".svg")
+        path: Quickshell.shellPath(root.action === "nixos" ? "Icons/nixos.svg" : "Icons/lucide/" + root.iconName + ".svg")
         blockLoading: true
     }
 
