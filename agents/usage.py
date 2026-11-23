@@ -1,4 +1,5 @@
 import json
+import os
 import socket
 import sys
 import time
@@ -6,11 +7,16 @@ import urllib.error
 import urllib.request
 import uuid
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from contextlib import contextmanager
 from datetime import datetime, timezone
 from pathlib import Path
 
 HOME = Path.home()
+PI_AUTH = HOME / ".pi/agent/auth.json"
 TIMEOUT = 10
+CLAUDE_TOKEN_URL = "https://platform.claude.com/v1/oauth/token"
+CLAUDE_CLIENT_ID = "9d1c250a-e61b-44d9-88ed-5944d1962f5e"
+LOCK_STALE_SECONDS = 30
 
 def try_ipv4_before_possibly_unroutable_ipv6():
     resolve = socket.getaddrinfo
@@ -51,8 +57,64 @@ def iso(epoch_seconds):
     return datetime.fromtimestamp(epoch_seconds, timezone.utc).isoformat()
 
 
+@contextmanager
+def pi_auth_lock():
+    lock = PI_AUTH.with_name(PI_AUTH.name + ".lock")
+    deadline = time.time() + LOCK_STALE_SECONDS
+    while True:
+        try:
+            lock.mkdir()
+            break
+        except FileExistsError:
+            try:
+                if time.time() - lock.stat().st_mtime > LOCK_STALE_SECONDS:
+                    lock.rmdir()
+                    continue
+            except FileNotFoundError:
+                continue
+            if time.time() > deadline:
+                raise TimeoutError("auth.json is locked")
+            time.sleep(0.05)
+    try:
+        yield
+    finally:
+        lock.rmdir()
+
+
+def write_pi_auth(auth):
+    staging = PI_AUTH.with_name(PI_AUTH.name + ".usage-tmp")
+    staging.write_text(json.dumps(auth, indent=2))
+    staging.chmod(0o600)
+    os.replace(staging, PI_AUTH)
+
+
+def renew_pi_claude_login():
+    with pi_auth_lock():
+        auth = read_json(PI_AUTH) or {}
+        login = auth.get("anthropic") or {}
+        if not expired(login.get("expires")):
+            return login
+        if not login.get("refresh"):
+            return None
+        try:
+            data = get(CLAUDE_TOKEN_URL, {"User-Agent": "agent-usage"}, {
+                "grant_type": "refresh_token",
+                "client_id": CLAUDE_CLIENT_ID,
+                "refresh_token": login["refresh"],
+            })
+        except urllib.error.HTTPError:
+            return None
+        login = {**login, "type": "oauth", "access": data["access_token"],
+                 "refresh": data.get("refresh_token") or login["refresh"],
+                 "expires": int(time.time() * 1000) + data["expires_in"] * 1000 - 5 * 60 * 1000}
+        write_pi_auth({**auth, "anthropic": login})
+        return login
+
+
 def claude_login():
-    pi = (read_json(HOME / ".pi/agent/auth.json") or {}).get("anthropic") or {}
+    pi = (read_json(PI_AUTH) or {}).get("anthropic") or {}
+    if pi.get("access") and expired(pi.get("expires")):
+        pi = renew_pi_claude_login() or pi
     if pi.get("access"):
         return pi["access"], pi.get("expires")
     code = (read_json(HOME / ".claude/.credentials.json") or {}).get("claudeAiOauth") or {}
@@ -62,7 +124,7 @@ def claude_login():
 
 
 def codex_login():
-    pi = (read_json(HOME / ".pi/agent/auth.json") or {}).get("openai-codex") or {}
+    pi = (read_json(PI_AUTH) or {}).get("openai-codex") or {}
     if pi.get("access"):
         return pi["access"], pi.get("accountId"), pi.get("expires")
     tokens = (read_json(HOME / ".codex/auth.json") or {}).get("tokens") or {}
