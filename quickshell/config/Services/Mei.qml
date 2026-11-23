@@ -29,7 +29,6 @@ Singleton {
     property int waiting: 0
     property string activity: ""
     property bool reachable: true
-    property string lastTopic: ""
     property bool chatInView: false
     property int historyVersion: 0
     signal openRequested()
@@ -75,12 +74,6 @@ Singleton {
     function append(kind, text, ms) {
         messages.append({ kind: kind, text: text, time: ms ? clock(ms) : "", streaming: false })
         return messages.count - 1
-    }
-
-    function noteTopic(topic) {
-        if (!topic || topic === lastTopic) return
-        lastTopic = topic
-        append("topic", topic, 0)
     }
 
     function send(text, attachment) {
@@ -175,7 +168,6 @@ Singleton {
             if (!reply.error) {
                 historyVersion++
                 messages.clear()
-                lastTopic = ""
             }
             finished(reply.error ?? "")
         })
@@ -183,24 +175,16 @@ Singleton {
 
     function refresh() {
         if (waiting > 0) return
-        requestComponent.createObject(root, { message: { type: "status" }, historyVersion: historyVersion })
+        requestComponent.createObject(root, { message: { type: "history" }, historyVersion: historyVersion })
     }
 
-    function showHistory(events) {
-        const rows = []
-        const row = (kind, text, ms) => rows.push({ kind: kind, text: text, time: ms ? clock(ms) : "", streaming: false })
-        let topic = ""
-        for (const event of events) {
-            if (event.type !== "user.message" || (event.status !== "done" && event.status !== "failed")) continue
-            row("user", event.payload.text, event.createdAt)
-            if (event.topic && event.topic !== topic) {
-                topic = event.topic
-                row("topic", topic, 0)
-            }
-            if (event.error) row("notice", event.error, 0)
-            else row("mei", event.result, event.finishedAt)
-        }
-        lastTopic = topic
+    function showHistory(said) {
+        const rows = said.filter(message => message.text).map(message => ({
+            kind: message.role === "user" ? "user" : "mei",
+            text: message.text,
+            time: clock(message.at),
+            streaming: false
+        }))
 
         let kept = 0
         while (kept < rows.length && kept < messages.count) {
@@ -242,14 +226,6 @@ Singleton {
                 stream("")
             }
 
-            function showTopic(topic) {
-                if (!topic || topic === root.lastTopic) return
-                root.lastTopic = topic
-                root.messages.set(replyRow, { kind: "topic", text: topic, streaming: false })
-                replyRow = -1
-                showTyping()
-            }
-
             function finish(reply) {
                 answered = true
                 root.reachable = true
@@ -257,9 +233,9 @@ Singleton {
                     answer(reply)
                     return
                 }
-                if (message.type === "status") {
+                if (message.type === "history") {
                     if (historyVersion === root.historyVersion)
-                        root.showHistory(reply.events ?? [])
+                        root.showHistory(reply.messages ?? [])
                     return
                 }
                 root.waiting--
@@ -269,7 +245,6 @@ Singleton {
                     root.append("notice", reply.error, 0)
                     return
                 }
-                root.noteTopic(reply.topic)
                 stream(reply.result)
                 root.messages.setProperty(replyRow, "streaming", false)
                 root.messages.setProperty(replyRow, "time", root.clock(Date.now()))
@@ -281,7 +256,6 @@ Singleton {
                 try { data = JSON.parse(line) } catch (_) { return }
                 if (data.type === "mei_route") {
                     showTyping()
-                    showTopic(data.topic)
                 } else if (data.type === "tool_execution_start") {
                     root.activity = "using " + data.toolName + "…"
                     showTyping()
