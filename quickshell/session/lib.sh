@@ -119,6 +119,8 @@ click() { send click; sleep "${1:-1}"; }
 right_click() { send rightclick; sleep "${1:-1}"; }
 click_at() { move "$1" "$2" 0.4; click "${3:-1}"; }
 press() { send key "$1"; sleep "${2:-1}"; }
+hold() { send keydown "$1"; sleep 0.1; }
+release() { send keyup "$1"; sleep "${2:-0.5}"; }
 type_text() { send type "$1"; sleep "${2:-1}"; }
 scroll_down() { local _; for _ in $(seq "${1:-1}"); do send scroll 120; sleep 0.15; done; sleep "${2:-0.5}"; }
 scroll_up() { local _; for _ in $(seq "${1:-1}"); do send scroll -120; sleep 0.15; done; sleep "${2:-0.5}"; }
