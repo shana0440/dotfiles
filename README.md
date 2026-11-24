@@ -110,8 +110,9 @@ All bindings are in `hyprland/hyprland.lua`. The main ones:
 - `Ctrl+Left` / `Ctrl+Right`: previous / next workspace (overrides apps'
   word navigation).
 - `Super+Arrow`: move focus.
-- `Super+Tab`: switch to the previous window; keep `Super` held and press `Tab`
-  again to go further back. Add `Shift` to cycle the other way.
+- `Super+Tab`: switch to the previous window. Keep `Super` held to show the
+  window list; press `Tab` to move through it (`Shift+Tab` goes back) and
+  release `Super` to switch.
 - `Super+Shift+S`: screen capture ([details](quickshell/config/Capture/README.md)).
 - `Super+Shift+L`: lock the screen.
 - `Super+Shift+W`: wallpaper picker ([details](wallpaper/README.md)).
