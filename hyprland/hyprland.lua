@@ -273,10 +273,40 @@ hl.on("window.close", function(event)
     end
 end)
 
+local windowSwitch = nil
+local function switchWindow(step)
+    local active = hl.get_active_window()
+    local current = windowSwitch and windowSwitch.addresses[windowSwitch.index]
+    if not current or not active or active.address ~= current then
+        local windows = {}
+        for _, window in ipairs(hl.get_windows()) do
+            if window.mapped and window.workspace then
+                table.insert(windows, window)
+            end
+        end
+        table.sort(windows, function(a, b) return a.focus_history_id < b.focus_history_id end)
+        local addresses = {}
+        for _, window in ipairs(windows) do
+            table.insert(addresses, window.address)
+        end
+        windowSwitch = { addresses = addresses, index = 1 }
+    end
+
+    local count = #windowSwitch.addresses
+    if count < 2 then
+        return
+    end
+    windowSwitch.index = (windowSwitch.index - 1 + step) % count + 1
+    hl.dispatch(hl.dsp.focus({ window = "address:" .. windowSwitch.addresses[windowSwitch.index] }))
+end
+hl.bind(mainMod .. " + Tab", function() switchWindow(1) end)
+hl.bind(mainMod .. " + SHIFT + Tab", function() switchWindow(-1) end)
+
 local superTap = { held = false, combined = false }
 hl.bind("Super_L", function()
     superTap.held = true
     superTap.combined = false
+    windowSwitch = nil
 end, { non_consuming = true })
 hl.bind(mainMod .. " + Super_L", function()
     if superTap.held and not superTap.combined then
