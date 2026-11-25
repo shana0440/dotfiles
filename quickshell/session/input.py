@@ -134,6 +134,8 @@ while True:
                 frame(devices[SCROLL])
             elif word == "key":
                 combo(rest)
+            elif word in ("keydown", "keyup"):
+                key(KEYS[rest], word == "keydown")
             elif word == "type":
                 for ch in rest:
                     type_char(ch)

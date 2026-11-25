@@ -24,7 +24,7 @@ shot opened
 record_save
 ```
 
-- Input: `press`, `type_text`, `move`, `click`, `click_at`, `right_click`,
+- Input: `press`, `hold`/`release` (keep a key down across presses), `type_text`, `move`, `click`, `click_at`, `right_click`,
   `drag`, `scroll_up`, `scroll_down`. Waiting: `wait_for`, `click_until` with
   `has_layer`, `lacks_layer`, `has_client`, `lacks_client`, `active_class_is`,
   `active_workspace_is`, `mei_answered`, `brightness`. Inspection: `hypr`,

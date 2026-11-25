@@ -273,6 +273,92 @@ hl.on("window.close", function(event)
     end
 end)
 
+local windowSwitch = nil
+local function sendWindowSwitcher(data)
+    hl.dispatch(hl.dsp.event("windowSwitcher " .. data))
+end
+local function endWindowSwitch()
+    local switch = windowSwitch
+    windowSwitch = nil
+    switch.timer:set_enabled(false)
+    hl.dispatch(hl.dsp.submap("reset"))
+    sendWindowSwitcher("close")
+    return switch
+end
+local function finishWindowSwitch()
+    local switch = endWindowSwitch()
+    hl.dispatch(hl.dsp.focus({ window = "address:" .. switch.addresses[switch.index] }))
+end
+local function finishWindowSwitchOnSuperRelease()
+    if windowSwitch and not hl.is_key_down("Super_L") and not hl.is_key_down("Super_R") then
+        finishWindowSwitch()
+    end
+end
+local function showWindowSwitch()
+    sendWindowSwitcher("show " .. windowSwitch.index .. " " .. table.concat(windowSwitch.addresses, " "))
+end
+local function windowSwitchIndexOf(address)
+    for index, candidate in ipairs(windowSwitch and windowSwitch.addresses or {}) do
+        if candidate == address then
+            return index
+        end
+    end
+end
+windowSwitcher = {
+    select = function(address)
+        local index = windowSwitchIndexOf(address)
+        if index and index ~= windowSwitch.index then
+            windowSwitch.index = index
+            showWindowSwitch()
+        end
+    end,
+    choose = function(address)
+        local index = windowSwitchIndexOf(address)
+        if index then
+            windowSwitch.index = index
+            finishWindowSwitch()
+        end
+    end,
+}
+local function switchWindow(step)
+    if not windowSwitch then
+        local windows = {}
+        for _, window in ipairs(hl.get_windows()) do
+            if window.mapped and window.workspace then
+                table.insert(windows, window)
+            end
+        end
+        if #windows < 2 then
+            return
+        end
+        table.sort(windows, function(a, b) return a.focus_history_id < b.focus_history_id end)
+        local addresses = {}
+        for _, window in ipairs(windows) do
+            table.insert(addresses, window.address)
+        end
+        windowSwitch = {
+            addresses = addresses,
+            index = 1,
+            timer = hl.timer(finishWindowSwitchOnSuperRelease, { timeout = 30, type = "repeat" }),
+        }
+        hl.dispatch(hl.dsp.submap("windowSwitch"))
+    end
+
+    windowSwitch.index = (windowSwitch.index - 1 + step) % #windowSwitch.addresses + 1
+    showWindowSwitch()
+end
+local function bindWindowSwitchKeys()
+    hl.bind(mainMod .. " + Tab", function() switchWindow(1) end)
+    hl.bind(mainMod .. " + SHIFT + Tab", function() switchWindow(-1) end)
+end
+bindWindowSwitchKeys()
+hl.define_submap("windowSwitch", function()
+    bindWindowSwitchKeys()
+    hl.bind(mainMod .. " + left", function() switchWindow(-1) end)
+    hl.bind(mainMod .. " + right", function() switchWindow(1) end)
+    hl.bind(mainMod .. " + Escape", endWindowSwitch)
+end)
+
 local superTap = { held = false, combined = false }
 hl.bind("Super_L", function()
     superTap.held = true

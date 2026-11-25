@@ -5,6 +5,7 @@ import "Lock"
 import "MissionControl"
 import "Phone"
 import "Wallpaper"
+import "WindowSwitcher"
 import "Services" as Services
 
 ShellRoot {
@@ -17,6 +18,7 @@ ShellRoot {
     WallpaperPicker {}
     ScreenCapture {}
     MissionControl { id: missionControl }
+    WindowSwitcher {}
     Phone {}
     Lock {}
 }
