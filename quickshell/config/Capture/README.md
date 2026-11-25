@@ -1,20 +1,19 @@
 # Screen capture
 
-Press `Super+Shift+S`. The desktop freezes and a toolbar appears; pick a mode,
-then **Capture**/**Record** (or Enter). Esc closes it.
+Press `Super+Shift+S`. The desktop freezes and a toolbar appears. Pick a target
+and a capture type, then press Enter or click the rightmost button. Esc closes it.
 
-| Key | Mode |
+| Key | Selection |
 | --- | --- |
-| 1 | Screenshot all screens |
-| 2 | Screenshot a window |
-| 3 | Screenshot a region |
-| 4 | Record a screen |
-| 5 | Record a window |
-| 6 | Record a region |
+| `1` | Full screen (all displays for screenshots) |
+| `2` | Window |
+| `3` | Select range |
+| `F1` | Screenshot |
+| `F2` | Recording |
 
-- **Window:** hover a window, click to lock it.
-- **Region:** drag, then move or resize with the handles.
-- While recording, the bar shows elapsed time and **Stop**.
+- **Window:** hover a window, then click to lock it.
+- **Select range:** drag, then move or resize with the handles.
+- While recording, the bar shows elapsed time beside the stop icon.
 
 Captures are saved by the [`screen-capture-*` commands](../../../screen-capture/README.md),
 which also work on their own.

@@ -29,6 +29,7 @@ description: Control the user's Linux desktop (Hyprland and the Quickshell deskt
 | Open an app | `hyprctl dispatch 'hl.dsp.exec_cmd("kitty")'` |
 | Set the wallpaper | `wallpaper-set <image-or-video>` (files live in `~/Pictures/Wallpapers`); `quickshell ipc call wallpaperTransition state` shows the playing video |
 | Take a screenshot or record | `screen-capture-screenshot full`, `screen-capture-record full <monitor>`, `screen-capture-record stop` |
+| Change the capture toolbar selection | `quickshell ipc call capture open`, then use `capture selectTarget <full\|window\|region>` and `capture selectKind <screenshot\|recording>` with `quickshell ipc call`; read the selection with `capture state` |
 | Show the user something | `notify-send '<title>' '<body>'` |
 | Turn notification sounds on or off | `quickshell ipc call notifications sound true` or `quickshell ipc call notifications sound false` |
 | Use the clipboard | `wl-copy`, `wl-paste` |

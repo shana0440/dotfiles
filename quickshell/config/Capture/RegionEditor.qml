@@ -29,8 +29,10 @@ Item {
     Keys.onEnterPressed: if (editing && hasRegion && !dragging) root.confirmed()
 
     MouseArea {
+        id: drawArea
         anchors.fill: parent
         enabled: root.editing
+        hoverEnabled: root.editing
         cursorShape: Qt.CrossCursor
         property point start
         onPressed: mouse => {
@@ -69,6 +71,26 @@ Item {
             width: modelData.width
             height: modelData.height
             color: Theme.Colors.scrim
+        }
+    }
+
+    Item {
+        anchors.fill: parent
+        visible: root.editing && drawArea.containsMouse && (!root.hasRegion || drawArea.pressed)
+        opacity: 0.55
+
+        Rectangle {
+            x: Math.floor(drawArea.mouseX)
+            width: 1
+            height: parent.height
+            color: Theme.Colors.foreground
+        }
+
+        Rectangle {
+            y: Math.floor(drawArea.mouseY)
+            width: parent.width
+            height: 1
+            color: Theme.Colors.foreground
         }
     }
 
