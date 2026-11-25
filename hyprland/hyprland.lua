@@ -277,14 +277,18 @@ local windowSwitch = nil
 local function sendWindowSwitcher(data)
     hl.dispatch(hl.dsp.event("windowSwitcher " .. data))
 end
-local function finishWindowSwitchOnSuperRelease()
-    if not windowSwitch or hl.is_key_down("Super_L") or hl.is_key_down("Super_R") then
-        return
-    end
+local function endWindowSwitch()
     local switch = windowSwitch
     windowSwitch = nil
     switch.timer:set_enabled(false)
     sendWindowSwitcher("close")
+    return switch
+end
+local function finishWindowSwitchOnSuperRelease()
+    if not windowSwitch or hl.is_key_down("Super_L") or hl.is_key_down("Super_R") then
+        return
+    end
+    local switch = endWindowSwitch()
     hl.dispatch(hl.dsp.focus({ window = "address:" .. switch.addresses[switch.index] }))
 end
 local function switchWindow(step)
@@ -315,6 +319,11 @@ local function switchWindow(step)
 end
 hl.bind(mainMod .. " + Tab", function() switchWindow(1) end)
 hl.bind(mainMod .. " + SHIFT + Tab", function() switchWindow(-1) end)
+hl.bind(mainMod .. " + Escape", function()
+    if windowSwitch then
+        endWindowSwitch()
+    end
+end)
 
 local superTap = { held = false, combined = false }
 hl.bind("Super_L", function()
