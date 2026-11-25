@@ -34,12 +34,16 @@ Scope {
 
     function openMenu() {
         message = ""
-        if (menuOpen && !Services.Capture.previewActive && !Services.Capture.recording) {
-            menuOpen = false
-            reopenDelay.restart()
-        } else {
-            Services.Capture.openPreview()
+        if (!Services.Capture.previewActive && !Services.Capture.recording) {
+            targetMode = "full"
+            captureKind = "screenshot"
+            if (menuOpen) {
+                menuOpen = false
+                reopenDelay.restart()
+                return
+            }
         }
+        Services.Capture.openPreview()
     }
 
     function configureSelection() {
