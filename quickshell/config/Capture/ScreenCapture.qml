@@ -29,7 +29,7 @@ Scope {
     ]
     readonly property var kinds: [
         { value: "screenshot", label: "Screenshot", icon: "screenshot", key: "F1" },
-        { value: "recording", label: "Recording", icon: "record", key: "F2" }
+        { value: "recording", label: "Recording", icon: "screenRecord", key: "F2" }
     ]
 
     function openMenu() {
@@ -308,7 +308,7 @@ Scope {
 
                             Components.Icon {
                                 anchors.verticalCenter: parent.verticalCenter
-                                action: Services.Capture.recording ? "stop" : root.recordingMode ? "record" : "screenshot"
+                                action: Services.Capture.recording ? "stop" : root.recordingMode ? "screenRecord" : "screenshot"
                                 iconColor: Theme.Colors.background
                             }
 

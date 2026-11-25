@@ -40,6 +40,7 @@ Item {
         window: "app-window",
         region: "square-dashed",
         record: "video",
+        screenRecord: "circle-dot",
         recordRegion: "square-dashed",
         pen: "pen-line",
         crop: "crop",
