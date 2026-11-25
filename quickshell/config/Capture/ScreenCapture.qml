@@ -12,21 +12,24 @@ Scope {
 
     property bool menuOpen: false
     property string message: ""
-    property int mode: 0
+    property string targetMode: "full"
+    property string captureKind: "screenshot"
     property string outputName: Quickshell.screens[0]?.name ?? ""
     readonly property var outputScreen: Quickshell.screens.find(screen => screen.name === outputName) ?? Quickshell.screens[0]
-    readonly property bool regionMode: modes[mode].region
-    readonly property bool windowMode: modes[mode].window
-    readonly property bool recordingMode: modes[mode].recording
+    readonly property bool regionMode: targetMode === "region"
+    readonly property bool windowMode: targetMode === "window"
+    readonly property bool recordingMode: captureKind === "recording"
+    readonly property bool canChooseMode: menuOpen && Services.Capture.previewActive && !Services.Capture.recording
     readonly property bool selectionMissing: windowMode ? Services.Capture.selectedWindow === null
         : regionMode && (Services.Capture.selectionRect.width <= 0 || Services.Capture.selectionRect.height <= 0)
-    readonly property var modes: [
-        { label: "1 · Capture entire desktop", region: false, window: false, recording: false },
-        { label: "2 · Capture a window", region: false, window: true, recording: false },
-        { label: "3 · Capture selected portion", region: true, window: false, recording: false },
-        { label: "4 · Record entire screen", region: false, window: false, recording: true },
-        { label: "5 · Record a window", region: false, window: true, recording: true },
-        { label: "6 · Record selected portion", region: true, window: false, recording: true }
+    readonly property var targets: [
+        { value: "full", label: "Full screen", icon: "screen", key: "1" },
+        { value: "window", label: "Window", icon: "window", key: "2" },
+        { value: "region", label: "Select range", icon: "region", key: "3" }
+    ]
+    readonly property var kinds: [
+        { value: "screenshot", label: "Screenshot", icon: "screenshot", key: "F1" },
+        { value: "recording", label: "Recording", icon: "record", key: "F2" }
     ]
 
     function openMenu() {
@@ -40,29 +43,34 @@ Scope {
     }
 
     function configureSelection() {
-        const drawn = Services.Capture.selectionRect
-        const previous = Services.Capture.selectingRegion && drawn.width > 0 && drawn.height > 0 ? drawn : null
-        const previousScreen = Services.Capture.selectionScreenName
         Services.Capture.cancelRegionSelection()
         Services.Capture.cancelWindowSelection()
+        message = ""
         if (!Services.Capture.previewActive || !outputScreen)
             return
         if (windowMode) {
-            Services.Capture.beginWindowSelection(recordingMode ? "recording" : "screenshot")
+            Services.Capture.beginWindowSelection(captureKind)
             message = Services.Capture.preview?.windowError ?? ""
-            return
+        } else if (regionMode) {
+            Services.Capture.beginRegionSelection(captureKind, outputName)
         }
-        if (!regionMode)
-            return
-        Services.Capture.beginRegionSelection(recordingMode ? "recording" : "screenshot", outputName)
-        if (previous && previousScreen === outputName)
-            Services.Capture.setRegionSelection(outputName, previous)
     }
 
-    function chooseMode(index) {
-        mode = index
-        message = ""
+    function selectTarget(value) {
+        if (!canChooseMode || value === targetMode || !targets.some(target => target.value === value))
+            return
+        targetMode = value
         configureSelection()
+    }
+
+    function selectKind(value) {
+        if (!canChooseMode || value === captureKind || !kinds.some(kind => kind.value === value))
+            return
+        captureKind = value
+        if (Services.Capture.selectingWindow)
+            Services.Capture.windowSelectionKind = value
+        if (Services.Capture.selectingRegion)
+            Services.Capture.selectionKind = value
     }
 
     function dismiss() {
@@ -134,8 +142,12 @@ Scope {
         function open(): void { root.openMenu() }
         function close(): void { if (root.menuOpen) root.dismiss() }
         function stop(): void { Services.Capture.stopRecording() }
+        function selectTarget(value: string): void { root.selectTarget(value) }
+        function selectKind(value: string): void { root.selectKind(value) }
         function state(): string {
             return JSON.stringify({
+                target: root.targetMode,
+                kind: root.captureKind,
                 recording: Services.Capture.recording,
                 mode: Services.Capture.recordingMode,
                 startedAtMs: Services.Capture.recordingStartedAtMs,
@@ -228,61 +240,93 @@ Scope {
                     Layout.alignment: Qt.AlignHCenter
                     spacing: 6
                     Repeater {
-                        model: root.modes
-                        RowLayout {
-                            id: modeGroup
+                        model: root.targets
+                        ModeButton {
+                            id: targetButton
                             required property var modelData
-                            required property int index
                             visible: !Services.Capture.recording
-                            spacing: 6
-
-                            Rectangle {
-                                visible: modeGroup.index === 3
-                                Layout.preferredWidth: 1
-                                Layout.preferredHeight: 28
-                                Layout.leftMargin: 4
-                                Layout.rightMargin: 4
-                                color: Theme.Colors.track
+                            enabled: root.canChooseMode
+                            icon: modelData.icon
+                            tooltip: modelData.label
+                            shortcutKey: modelData.key
+                            highlighted: root.targetMode === modelData.value
+                            onClicked: root.selectTarget(modelData.value)
+                            Shortcut {
+                                sequence: targetButton.shortcutKey
+                                context: Qt.ApplicationShortcut
+                                enabled: targetButton.enabled
+                                onActivated: root.selectTarget(targetButton.modelData.value)
                             }
-                            ModeButton {
-                                icon: modeGroup.modelData.region ? "region" : modeGroup.modelData.window ? "window" : "screen"
-                                tooltip: modeGroup.modelData.label
-                                recording: modeGroup.modelData.recording
-                                highlighted: root.mode === modeGroup.index
-                                enabled: !Services.Capture.recording && Services.Capture.previewActive
-                                onClicked: root.chooseMode(modeGroup.index)
-                                Shortcut {
-                                    sequence: String(modeGroup.index + 1)
-                                    context: Qt.ApplicationShortcut
-                                    enabled: root.menuOpen && !Services.Capture.recording
-                                    onActivated: root.chooseMode(modeGroup.index)
-                                }
+                        }
+                    }
+                    Rectangle {
+                        visible: !Services.Capture.recording
+                        Layout.preferredWidth: 1
+                        Layout.preferredHeight: 28
+                        Layout.leftMargin: 4
+                        Layout.rightMargin: 4
+                        color: Theme.Colors.track
+                    }
+                    Repeater {
+                        model: root.kinds
+                        ModeButton {
+                            id: kindButton
+                            required property var modelData
+                            visible: !Services.Capture.recording
+                            enabled: root.canChooseMode
+                            icon: modelData.icon
+                            tooltip: modelData.label
+                            shortcutKey: modelData.key
+                            highlighted: root.captureKind === modelData.value
+                            onClicked: root.selectKind(modelData.value)
+                            Shortcut {
+                                sequence: kindButton.shortcutKey
+                                context: Qt.ApplicationShortcut
+                                enabled: kindButton.enabled
+                                onActivated: root.selectKind(kindButton.modelData.value)
                             }
                         }
                     }
                     Rectangle {
                         id: captureButton
-                        readonly property string label: Services.Capture.recording
-                            ? "Stop · " + Services.Capture.recordingElapsedSeconds + "s"
-                            : root.recordingMode ? "Record" : "Capture"
+                        readonly property string label: Services.Capture.recording ? "Stop recording"
+                            : root.recordingMode ? "Start recording" : "Take screenshot"
                         enabled: !Services.Capture.recordingCommandRunning
                             && (Services.Capture.recording || (Services.Capture.previewActive && !root.selectionMissing))
                         Layout.leftMargin: 4
-                        Layout.preferredWidth: 96
-                        Layout.preferredHeight: 40
+                        Layout.preferredWidth: Services.Capture.recording ? 80 : 44
+                        Layout.preferredHeight: 44
                         radius: 8
                         color: Theme.Colors.foreground
                         opacity: !enabled ? 0.4 : captureMouse.pressed ? 0.75 : captureMouse.containsMouse ? 0.88 : 1
                         Accessible.role: Accessible.Button
                         Accessible.name: label
 
-                        Text {
-                            font.family: Theme.Fonts.family
+                        Row {
                             anchors.centerIn: parent
-                            text: captureButton.label
-                            color: Theme.Colors.background
-                            font.pixelSize: 13
-                            font.weight: Font.DemiBold
+                            spacing: 6
+
+                            Components.Icon {
+                                anchors.verticalCenter: parent.verticalCenter
+                                action: Services.Capture.recording ? "stop" : root.recordingMode ? "record" : "screenshot"
+                                iconColor: Theme.Colors.background
+                            }
+
+                            Text {
+                                anchors.verticalCenter: parent.verticalCenter
+                                visible: Services.Capture.recording
+                                text: Services.Capture.recordingElapsedSeconds + "s"
+                                color: Theme.Colors.background
+                                font.family: Theme.Fonts.family
+                                font.pixelSize: 13
+                                font.weight: Font.DemiBold
+                            }
+                        }
+
+                        Components.Tooltip {
+                            text: captureButton.label + " (Enter)"
+                            shown: captureMouse.containsMouse
+                            alignment: Qt.AlignHCenter
                         }
 
                         MouseArea {
