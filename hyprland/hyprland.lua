@@ -281,16 +281,45 @@ local function endWindowSwitch()
     local switch = windowSwitch
     windowSwitch = nil
     switch.timer:set_enabled(false)
+    hl.dispatch(hl.dsp.submap("reset"))
     sendWindowSwitcher("close")
     return switch
 end
-local function finishWindowSwitchOnSuperRelease()
-    if not windowSwitch or hl.is_key_down("Super_L") or hl.is_key_down("Super_R") then
-        return
-    end
+local function finishWindowSwitch()
     local switch = endWindowSwitch()
     hl.dispatch(hl.dsp.focus({ window = "address:" .. switch.addresses[switch.index] }))
 end
+local function finishWindowSwitchOnSuperRelease()
+    if windowSwitch and not hl.is_key_down("Super_L") and not hl.is_key_down("Super_R") then
+        finishWindowSwitch()
+    end
+end
+local function showWindowSwitch()
+    sendWindowSwitcher("show " .. windowSwitch.index .. " " .. table.concat(windowSwitch.addresses, " "))
+end
+local function windowSwitchIndexOf(address)
+    for index, candidate in ipairs(windowSwitch and windowSwitch.addresses or {}) do
+        if candidate == address then
+            return index
+        end
+    end
+end
+windowSwitcher = {
+    select = function(address)
+        local index = windowSwitchIndexOf(address)
+        if index and index ~= windowSwitch.index then
+            windowSwitch.index = index
+            showWindowSwitch()
+        end
+    end,
+    choose = function(address)
+        local index = windowSwitchIndexOf(address)
+        if index then
+            windowSwitch.index = index
+            finishWindowSwitch()
+        end
+    end,
+}
 local function switchWindow(step)
     if not windowSwitch then
         local windows = {}
@@ -312,17 +341,20 @@ local function switchWindow(step)
             index = 1,
             timer = hl.timer(finishWindowSwitchOnSuperRelease, { timeout = 30, type = "repeat" }),
         }
+        hl.dispatch(hl.dsp.submap("windowSwitch"))
     end
 
     windowSwitch.index = (windowSwitch.index - 1 + step) % #windowSwitch.addresses + 1
-    sendWindowSwitcher("show " .. windowSwitch.index .. " " .. table.concat(windowSwitch.addresses, " "))
+    showWindowSwitch()
 end
-hl.bind(mainMod .. " + Tab", function() switchWindow(1) end)
-hl.bind(mainMod .. " + SHIFT + Tab", function() switchWindow(-1) end)
-hl.bind(mainMod .. " + Escape", function()
-    if windowSwitch then
-        endWindowSwitch()
-    end
+local function bindWindowSwitchKeys()
+    hl.bind(mainMod .. " + Tab", function() switchWindow(1) end)
+    hl.bind(mainMod .. " + SHIFT + Tab", function() switchWindow(-1) end)
+end
+bindWindowSwitchKeys()
+hl.define_submap("windowSwitch", function()
+    bindWindowSwitchKeys()
+    hl.bind(mainMod .. " + Escape", endWindowSwitch)
 end)
 
 local superTap = { held = false, combined = false }

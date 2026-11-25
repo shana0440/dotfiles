@@ -13,11 +13,22 @@ Rectangle {
     property bool selected: false
     readonly property var entry: DesktopEntries.heuristicLookup(window.lastIpcObject?.class ?? window.wayland?.appId ?? "")
 
+    signal hovered()
+    signal clicked()
+
     height: thumbHeight + headerHeight + padding / 2 + 4
     radius: 12
     color: selected ? Theme.Colors.highlight : "transparent"
     border.width: selected ? 2 : 0
     border.color: Theme.Colors.foreground
+
+    MouseArea {
+        anchors.fill: parent
+        hoverEnabled: true
+        cursorShape: Qt.PointingHandCursor
+        onPositionChanged: tile.hovered()
+        onClicked: tile.clicked()
+    }
 
     Row {
         x: tile.padding / 2

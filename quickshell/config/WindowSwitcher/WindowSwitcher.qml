@@ -8,7 +8,7 @@ Scope {
     id: root
 
     property var addresses: []
-    property int selected: 0
+    property string selected: ""
     property bool requested: false
     property bool opened: false
 
@@ -18,10 +18,17 @@ Scope {
 
     function show(index, list) {
         if (!requested) Hyprland.refreshToplevels()
-        addresses = list.map(address => address.replace(/^0x/, ""))
-        selected = index - 1
+        const shown = list.map(address => address.replace(/^0x/, ""))
+        if (shown.join() !== addresses.join()) addresses = shown
+        selected = shown[index - 1] ?? ""
         requested = true
         if (!opened) reveal.restart()
+    }
+    function select(address) {
+        Hyprland.dispatch("function() windowSwitcher.select(\"0x" + address + "\") end")
+    }
+    function choose(address) {
+        Hyprland.dispatch("function() windowSwitcher.choose(\"0x" + address + "\") end")
     }
     function close() {
         reveal.stop()
@@ -50,7 +57,7 @@ Scope {
         function state(): string {
             return JSON.stringify({
                 open: root.opened,
-                selected: root.windows[root.selected]?.address ?? null,
+                selected: root.selected || null,
                 windows: root.windows.map(window => ({
                     address: window.address,
                     class: window.lastIpcObject?.class ?? "",

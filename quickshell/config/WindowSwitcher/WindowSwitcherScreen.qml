@@ -84,10 +84,12 @@ PanelWindow {
                             required property int modelData
                             window: win.controller.windows[modelData]
                             width: win.tileWidth(window, win.thumbHeight)
-                            selected: modelData === win.controller.selected
+                            selected: window.address === win.controller.selected
                             thumbHeight: win.thumbHeight
                             padding: win.padding
                             headerHeight: win.headerHeight
+                            onHovered: win.controller.select(window.address)
+                            onClicked: win.controller.choose(window.address)
                         }
                     }
                 }
