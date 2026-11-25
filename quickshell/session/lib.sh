@@ -266,7 +266,7 @@ printf '%s' "\$DBUS_SESSION_BUS_ADDRESS" > $work/bus
 exec sleep infinity
 EOF
     chmod +x "$work/session-start" "$work/host-session"
-    printf '[Windows]\nPlacement=Maximizing\nBorderlessMaximizedWindows=true\n' > "$work/kwin-config/kwinrc"
+    printf '[Windows]\nPlacement=Maximizing\nBorderlessMaximizedWindows=true\n[MouseBindings]\nCommandAll1=Nothing\nCommandAll2=Nothing\nCommandAll3=Nothing\n' > "$work/kwin-config/kwinrc"
 }
 
 start_mei() {
