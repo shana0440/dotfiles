@@ -354,6 +354,8 @@ end
 bindWindowSwitchKeys()
 hl.define_submap("windowSwitch", function()
     bindWindowSwitchKeys()
+    hl.bind(mainMod .. " + left", function() switchWindow(-1) end)
+    hl.bind(mainMod .. " + right", function() switchWindow(1) end)
     hl.bind(mainMod .. " + Escape", endWindowSwitch)
 end)
 
