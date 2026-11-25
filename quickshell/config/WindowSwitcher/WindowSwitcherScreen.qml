@@ -24,11 +24,27 @@ PanelWindow {
         const aspect = size ? size[0] / Math.max(1, size[1]) : 16 / 10
         return Math.max(0.75, Math.min(1.9, aspect))
     }
+    function tileWidth(window, thumb) { return Math.round(thumb * aspectOf(window)) + padding }
     readonly property real fullRowWidth: controller.windows
-        .reduce((sum, window) => sum + fullThumbHeight * aspectOf(window) + padding, 0)
+        .reduce((sum, window) => sum + tileWidth(window, fullThumbHeight), 0)
         + spacing * Math.max(0, controller.windows.length - 1)
     readonly property real scale: Math.max(0.6, Math.min(1, availableWidth / Math.max(1, fullRowWidth)))
     readonly property real thumbHeight: Math.round(fullThumbHeight * scale)
+    readonly property var rows: {
+        const rows = []
+        let row = [], width = 0
+        controller.windows.forEach((window, index) => {
+            const tile = tileWidth(window, thumbHeight)
+            if (row.length && width + spacing + tile > availableWidth) {
+                rows.push(row)
+                row = []
+            }
+            width = row.length ? width + spacing + tile : tile
+            row.push(index)
+        })
+        if (row.length) rows.push(row)
+        return rows
+    }
 
     screen: screenInfo
     visible: shown
@@ -42,81 +58,36 @@ PanelWindow {
 
     Components.Surface {
         id: panel
-        width: tiles.width + win.padding * 2
-        height: tiles.height + win.padding * 2
+        width: tiles.implicitWidth + win.padding * 2
+        height: tiles.implicitHeight + win.padding * 2
         radius: 18
         clearness: 0
 
-        Flow {
+        Column {
             id: tiles
             x: win.padding
             y: win.padding
-            width: Math.min(win.fullRowWidth * win.scale, win.availableWidth)
             spacing: win.spacing
 
             Repeater {
-                model: win.shown ? win.controller.windows : []
+                model: win.shown ? win.rows : []
 
-                Rectangle {
-                    id: tile
+                Row {
                     required property var modelData
-                    required property int index
-                    readonly property bool selected: index === win.controller.selected
-                    readonly property var entry: DesktopEntries.heuristicLookup(modelData.lastIpcObject?.class ?? modelData.wayland?.appId ?? "")
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    spacing: win.spacing
 
-                    width: Math.round(win.thumbHeight * win.aspectOf(modelData)) + win.padding
-                    height: win.thumbHeight + win.headerHeight + win.padding / 2 + 4
-                    radius: 12
-                    color: selected ? Theme.Colors.highlight : "transparent"
-                    border.width: selected ? 2 : 0
-                    border.color: Theme.Colors.foreground
+                    Repeater {
+                        model: parent.modelData
 
-                    Row {
-                        id: header
-                        x: win.padding / 2
-                        y: 6
-                        width: parent.width - win.padding
-                        height: win.headerHeight - 6
-                        spacing: 8
-
-                        Image {
-                            id: icon
-                            anchors.verticalCenter: parent.verticalCenter
-                            width: 18
-                            height: 18
-                            sourceSize: Qt.size(36, 36)
-                            source: Quickshell.iconPath(tile.entry?.icon || "application-x-executable", true)
-                        }
-                        Text {
-                            anchors.verticalCenter: parent.verticalCenter
-                            width: parent.width - icon.width - parent.spacing
-                            text: tile.modelData.title || tile.entry?.name || ""
-                            textFormat: Text.PlainText
-                            elide: Text.ElideRight
-                            color: Theme.Colors.foreground
-                            font.family: Theme.Fonts.family
-                            font.weight: Theme.Fonts.weight
-                            font.pixelSize: 12
-                        }
-                    }
-
-                    Rectangle {
-                        x: win.padding / 2
-                        y: win.headerHeight
-                        width: parent.width - win.padding
-                        height: win.thumbHeight
-                        radius: 6
-                        color: capture.hasContent ? "transparent" : Theme.Colors.solidSurface
-
-                        ScreencopyView {
-                            id: capture
-                            readonly property real aspect: sourceSize.width / Math.max(1, sourceSize.height) || 1
-                            anchors.centerIn: parent
-                            width: Math.min(parent.width, parent.height * aspect)
-                            height: Math.min(parent.height, parent.width / aspect)
-                            captureSource: tile.modelData.wayland
-                            live: true
-                            paintCursor: false
+                        WindowSwitcherTile {
+                            required property int modelData
+                            window: win.controller.windows[modelData]
+                            width: win.tileWidth(window, win.thumbHeight)
+                            selected: modelData === win.controller.selected
+                            thumbHeight: win.thumbHeight
+                            padding: win.padding
+                            headerHeight: win.headerHeight
                         }
                     }
                 }
