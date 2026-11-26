@@ -19,6 +19,7 @@ require("lazy").setup({
     config = function()
       require("kanagawa").setup({
         theme = "wave",
+        transparent = true,
       })
       vim.cmd.colorscheme("kanagawa")
     end,
