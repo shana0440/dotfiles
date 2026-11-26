@@ -40,6 +40,7 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
     nixpkgs.url = "https://channels.nixos.org/nixos-26.05/nixexprs.tar.xz";
+    nixpkgs-anki.url = "https://channels.nixos.org/nixos-unstable/nixexprs.tar.xz";
     home-manager = {
       url = "https://github.com/nix-community/home-manager/archive/refs/heads/release-26.05.tar.gz";
       inputs.nixpkgs.follows = "nixpkgs";

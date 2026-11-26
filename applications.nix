@@ -54,6 +54,8 @@
 
   homeManager = { inputs, lib, pkgs, zen-browser, ... }:
     let
+      ankiPkgs = if lib.versionAtLeast pkgs.anki.version "26.09.4" then pkgs
+        else inputs.nixpkgs-anki.legacyPackages.${pkgs.stdenv.hostPlatform.system};
       applications = with pkgs; [
         brave
         discord
@@ -63,8 +65,8 @@
         remmina
         uxplay
         zen-browser.packages.${pkgs.stdenv.hostPlatform.system}.beta
-        (pkgs.anki.withAddons [
-          (pkgs.ankiAddons.anki-connect.withConfig {
+        (ankiPkgs.anki.withAddons [
+          (ankiPkgs.ankiAddons.anki-connect.withConfig {
             config = {
               webBindAddress = "127.0.0.1";
               webBindPort = 8765;
