@@ -189,9 +189,17 @@ local function sendFullKeyPressOutsideBind(mods, key)
     end, { timeout = 1, type = "oneshot" })
     return { ok = true }
 end
+local terminalClipboardClasses = { kitty = true, ["herdr-app"] = true }
 for _, key in ipairs({ "C", "V", "X", "A", "Z", "F", "S", "O", "L", "T", "W", "R" }) do
     hl.bind(mainMod .. " + " .. key, function()
-        return sendFullKeyPressOutsideBind("CTRL", key)
+        local mods = "CTRL"
+        if key == "C" or key == "V" then
+            local window = hl.get_active_window()
+            if window and terminalClipboardClasses[window.class] then
+                mods = "CTRL SHIFT"
+            end
+        end
+        return sendFullKeyPressOutsideBind(mods, key)
     end, { auto_consuming = true })
 end
 for _, key in ipairs({ "Z", "T", "R" }) do
