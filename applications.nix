@@ -56,6 +56,13 @@
     let
       ankiPkgs = if lib.versionAtLeast pkgs.anki.version "26.09.4" then pkgs
         else inputs.nixpkgs-anki.legacyPackages.${pkgs.stdenv.hostPlatform.system};
+      ankiConnect = ankiPkgs.ankiAddons.anki-connect.withConfig {
+        config = {
+          webBindAddress = "127.0.0.1";
+          webBindPort = 8765;
+          webCorsOriginList = [ "http://localhost" ];
+        };
+      };
       applications = with pkgs; [
         brave
         discord
@@ -65,15 +72,7 @@
         remmina
         uxplay
         zen-browser.packages.${pkgs.stdenv.hostPlatform.system}.beta
-        (ankiPkgs.anki.withAddons [
-          (ankiPkgs.ankiAddons.anki-connect.withConfig {
-            config = {
-              webBindAddress = "127.0.0.1";
-              webBindPort = 8765;
-              webCorsOriginList = [ "http://localhost" ];
-            };
-          })
-        ])
+        ankiPkgs.anki
       ] ++ lib.optionals (pkgs.stdenv.hostPlatform.system == "x86_64-linux") [
         inputs.self.packages.x86_64-linux.eagle
         inputs.self.packages.x86_64-linux.eagle-media-preview
@@ -163,6 +162,10 @@
 
       home.packages = builtins.filter supported applications
         ++ lib.optionals pkgs.stdenv.isLinux [ spotifyInTray appAutostart ];
+
+      xdg.dataFile."Anki2/addons21/anki-connect" = lib.mkIf (supported ankiPkgs.anki) {
+        source = "${ankiConnect}/share/anki/addons/anki-connect";
+      };
 
       warnings = map
         (pkg: "Skipping ${pkg.pname}: unavailable on ${pkgs.stdenv.hostPlatform.system}.")
