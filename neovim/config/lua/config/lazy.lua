@@ -201,11 +201,31 @@ require("lazy").setup({
     "nvim-lualine/lualine.nvim",
     dependencies = { "nvim-tree/nvim-web-devicons" },
     config = function()
+      local function fit_status_path(path)
+        local available = vim.o.columns - 72
+        local shortened = path
+        local start = 1
+        while vim.fn.strdisplaywidth(shortened) > available do
+          local slash = path:find("/", start, true)
+          if not slash then
+            break
+          end
+          start = slash + 1
+          shortened = ".../" .. path:sub(start)
+        end
+        return shortened
+      end
+
       require("lualine").setup({
         options = {
           theme = "auto",
           globalstatus = true,
           icons_enabled = false,
+        },
+        sections = {
+          lualine_c = {
+            { "filename", path = 1, shorting_target = 0, fmt = fit_status_path },
+          },
         },
       })
     end,
