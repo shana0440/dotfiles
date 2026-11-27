@@ -373,16 +373,22 @@ Scope {
         property real spinRate: 0
         property bool contact: false
         property real lastSurface: 1e6
-        property real lastX: -1
+        property real lastGroundGap: Infinity
 
         running: root.shown && (root.flying || (root.phoneHere && root.phone.present))
+        onRunningChanged: if (!running) lastGroundGap = Infinity
+
+        function groundGap(surface) {
+            return root.overPhone(cat.x) ? surface - (skyCat.y + cat.sitLine) : NaN
+        }
 
         function liftOff() {
+            const y = skyCat.y
             hopAnim.stop()
             bonk.stop()
             hop.lift = 0
             skyCat.x = cat.x
-            skyCat.y = root.floorY
+            skyCat.y = y
             vx = 0
             vy = 0
             spin = 0
@@ -406,10 +412,10 @@ Scope {
             const dt = Math.min(frameTime, 0.05)
             if (!root.flying) {
                 const surface = root.phoneSurfaceAt(cat.x)
-                const floorLine = root.floorY + cat.sitLine
-                if (lastX === cat.x && lastSurface > floorLine && surface <= floorLine) liftOff()
+                const gap = groundGap(surface)
+                if (lastGroundGap >= 0 && gap < 0) liftOff()
                 lastSurface = surface
-                lastX = cat.x
+                lastGroundGap = gap
                 return
             }
 
@@ -463,7 +469,7 @@ Scope {
                 skyCat.y = root.floorY
                 settle()
                 lastSurface = root.phoneSurfaceAt(cat.x)
-                lastX = cat.x
+                lastGroundGap = groundGap(lastSurface)
             }
         }
     }
