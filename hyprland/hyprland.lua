@@ -417,16 +417,19 @@ end
 
 local function focusAdjacentWorkspaceWithoutWrapping(direction)
     local current = hl.get_active_workspace()
-    if not current then
+    if not current or not current.id then
         return
     end
     local target
     local distance = math.huge
     for _, workspace in ipairs(hl.get_workspaces()) do
-        local offset = (workspace.id - current.id) * direction
-        if workspace.id > 0 and offset > 0 and offset < distance then
-            target = workspace.id
-            distance = offset
+        local id = workspace.id
+        if id and id > 0 then
+            local offset = (id - current.id) * direction
+            if offset > 0 and offset < distance then
+                target = id
+                distance = offset
+            end
         end
     end
     if target then
