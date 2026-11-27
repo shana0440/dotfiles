@@ -3,6 +3,7 @@ import QtQuick.Shapes
 import Quickshell
 import Quickshell.Io
 import Quickshell.Wayland
+import "../Theme" as Theme
 
 PanelWindow {
     id: root
@@ -156,7 +157,7 @@ PanelWindow {
                     preferredRendererType: Shape.CurveRenderer
 
                     ShapePath {
-                        strokeColor: "#4a4a4a"
+                        strokeColor: Theme.Colors.background
                         strokeWidth: 20
                         fillColor: "transparent"
                         capStyle: ShapePath.RoundCap
@@ -164,17 +165,17 @@ PanelWindow {
                     }
                     ShapePath {
                         strokeWidth: -1
-                        fillColor: "#4a4a4a"
+                        fillColor: Theme.Colors.background
                         PathSvg { path: "M 52 180 A 160 112 0 1 1 372 180 A 160 112 0 1 1 52 180 Z" }
                     }
                     ShapePath {
                         strokeWidth: -1
-                        fillColor: "#4a4a4a"
+                        fillColor: Theme.Colors.background
                         PathSvg { path: "M 100 104 L 120 34 Q 128 10 148 24 L 204 74 Z" }
                     }
                     ShapePath {
                         strokeWidth: -1
-                        fillColor: "#4a4a4a"
+                        fillColor: Theme.Colors.background
                         PathSvg { path: "M 226 72 L 278 28 Q 298 12 304 36 L 322 108 Z" }
                     }
                 }
