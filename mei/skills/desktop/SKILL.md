@@ -38,7 +38,7 @@ description: Control the user's Linux desktop (Hyprland and the Quickshell deskt
 | Agent usage limits | `agent-usage` |
 | Manage Anki add-ons | Run `ls "${XDG_DATA_HOME:-$HOME/.local/share}/Anki2/addons21"` to list them or `anki /absolute/path/to/add-on.ankiaddon` to install a package. Use `applications.nix` to configure AnkiConnect. |
 | Install the Media Preview Server plugin in Eagle | `eagle-media-preview-install`; see [Eagle on Linux](../../../eagle/README.md) |
-| Open the JellyBox Jellyfin client on Linux | `jellybox` |
+| Play music from Jellyfin | Run `feishin`, then add a Jellyfin server using `http://localhost:8096` for the local server |
 | Manage the local Jellyfin server | Open [Jellyfin](http://localhost:8096) for setup and media libraries; run `systemctl status jellyfin` to check the service |
 | Apps started in the tray at login | `app-autostart list`; start one again with `app-autostart start <name>` |
 

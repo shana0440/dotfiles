@@ -74,53 +74,13 @@
         uxplay
         zen-browser.packages.${pkgs.stdenv.hostPlatform.system}.beta
         ankiPkgs.anki
-      ] ++ lib.optional (builtins.hasAttr pkgs.stdenv.hostPlatform.system jellyboxSources) jellybox
-        ++ lib.optionals (pkgs.stdenv.hostPlatform.system == "x86_64-linux") [
-          inputs.self.packages.x86_64-linux.eagle
-          inputs.self.packages.x86_64-linux.eagle-media-preview
-          (import ./nexon/package.nix { inherit pkgs; })
-        ];
+        feishin
+      ] ++ lib.optionals (pkgs.stdenv.hostPlatform.system == "x86_64-linux") [
+        inputs.self.packages.x86_64-linux.eagle
+        inputs.self.packages.x86_64-linux.eagle-media-preview
+        (import ./nexon/package.nix { inherit pkgs; })
+      ];
       supported = pkg: lib.meta.availableOn pkgs.stdenv.hostPlatform pkg;
-
-      jellyboxSources = {
-        x86_64-linux = {
-          arch = "x86_64";
-          hash = "sha256-LIB/sfxTQyKSj4zfA3GFwaob3oh9+kKFn9K5NR44ooY=";
-        };
-        aarch64-linux = {
-          arch = "aarch64";
-          hash = "sha256-xzHTMRW5tSIFoZFR2L4Ygwm0ghrzaYl7Hd7Ipk5Zc8g=";
-        };
-      };
-      jellybox = let
-        pname = "jellybox";
-        version = "2.13.0";
-        source = jellyboxSources.${pkgs.stdenv.hostPlatform.system};
-        contents = pkgs.appimageTools.extract {
-          inherit pname version;
-          src = pkgs.fetchurl {
-            url = "https://github.com/avdept/JellyBoxPlayer/releases/download/v${version}/JellyBox-${source.arch}.AppImage";
-            inherit (source) hash;
-          };
-          postExtract = ''
-            rm "$out"/lib/libX11*.so.*
-          '';
-        };
-      in pkgs.appimageTools.wrapAppImage {
-        inherit pname version;
-        src = contents;
-        extraPkgs = pkgs: [ pkgs.mesa ];
-        extraInstallCommands = ''
-          install -Dm644 ${contents}/com.prodigytech.jellybox.desktop -t "$out/share/applications"
-          install -Dm644 ${contents}/jellybox.png -t "$out/share/icons/hicolor/256x256/apps"
-        '';
-        meta = {
-          description = "Jellyfin desktop client";
-          homepage = "https://jellybox.app/";
-          mainProgram = "jellybox";
-          platforms = builtins.attrNames jellyboxSources;
-        };
-      };
 
       signalInTray = pkgs.symlinkJoin {
         name = "signal-desktop-in-tray";
