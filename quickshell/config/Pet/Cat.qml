@@ -10,7 +10,8 @@ Item {
     property real facing: 1
     property real squash: 1
     property real spin: 0
-    property bool wagging: false
+    property real lid: 1
+    property bool tailUp: false
 
     width: 380 * drawingScale
     height: 235 * drawingScale
@@ -38,7 +39,7 @@ Item {
                     strokeWidth: 20
                     fillColor: "transparent"
                     capStyle: ShapePath.RoundCap
-                    PathSvg { id: tail; path: "M 80 222 Q 45 200 20 210" }
+                    PathSvg { path: cat.tailUp ? "M 80 222 Q 45 186 26 176" : "M 80 222 Q 45 200 20 210" }
                 }
                 ShapePath {
                     strokeWidth: -1
@@ -69,33 +70,10 @@ Item {
                         height: 46
                         radius: 12
                         color: "#ffffff"
-                        transform: Scale { origin.y: 23; yScale: blink.lid }
+                        transform: Scale { origin.y: 23; yScale: cat.lid }
                     }
                 }
             }
         }
-    }
-
-    QtObject {
-        id: blink
-        property real lid: 1
-    }
-
-    SequentialAnimation {
-        running: cat.visible
-        loops: Animation.Infinite
-        PauseAnimation { duration: 2600 + Math.random() * 2400 }
-        NumberAnimation { target: blink; property: "lid"; to: 0.1; duration: 70 }
-        NumberAnimation { target: blink; property: "lid"; to: 1; duration: 110 }
-    }
-
-    SequentialAnimation {
-        running: cat.visible && cat.wagging
-        loops: Animation.Infinite
-        alwaysRunToEnd: true
-        PropertyAction { target: tail; property: "path"; value: "M 80 222 Q 45 186 26 176" }
-        PauseAnimation { duration: 220 }
-        PropertyAction { target: tail; property: "path"; value: "M 80 222 Q 45 200 20 210" }
-        PauseAnimation { duration: 220 }
     }
 }

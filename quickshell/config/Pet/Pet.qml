@@ -23,7 +23,7 @@ Scope {
     readonly property real headroom: 14
     readonly property real edgeMargin: 24
     readonly property real wallGap: 8
-    readonly property bool hovered: touch.containsMouse
+    readonly property bool hovered: touch.containsMouse || nearby.containsMouse
     readonly property bool reaching: hovered || grabbed || linger.running
     onHoveredChanged: if (!hovered) linger.restart()
     readonly property real minX: edgeMargin
@@ -108,7 +108,7 @@ Scope {
 
     function screenPoint(mouse) {
         const point = touch.mapToItem(null, mouse.x, mouse.y)
-        return { x: point.x, y: (petScreen?.height ?? 0) - ground.height + point.y }
+        return { x: point.x, y: point.y }
     }
     function press(point) {
         dragged = false
@@ -161,6 +161,30 @@ Scope {
     Timer {
         id: linger
         interval: 1500
+    }
+
+    QtObject {
+        id: looks
+        property real lid: 1
+        property bool tailUp: false
+    }
+
+    SequentialAnimation {
+        running: root.shown
+        loops: Animation.Infinite
+        PauseAnimation { duration: 2600 + Math.random() * 2400 }
+        NumberAnimation { target: looks; property: "lid"; to: 0.1; duration: 70 }
+        NumberAnimation { target: looks; property: "lid"; to: 1; duration: 110 }
+    }
+
+    SequentialAnimation {
+        running: root.shown && (root.hovered || root.grabbed || flight.contact)
+        loops: Animation.Infinite
+        alwaysRunToEnd: true
+        PropertyAction { target: looks; property: "tailUp"; value: true }
+        PauseAnimation { duration: 220 }
+        PropertyAction { target: looks; property: "tailUp"; value: false }
+        PauseAnimation { duration: 220 }
     }
 
     QtObject {
@@ -254,11 +278,10 @@ Scope {
         screen: root.petScreen
         visible: root.shown
         anchors { bottom: true; left: true; right: true }
-        readonly property real stripHeight: cat.sitLine + root.jumpHeight + root.headroom
-        implicitHeight: root.reaching ? (root.petScreen?.height ?? stripHeight) : stripHeight
+        implicitHeight: cat.sitLine + root.jumpHeight + root.headroom
         exclusionMode: ExclusionMode.Ignore
         color: "transparent"
-        mask: Region { item: root.flying && !root.grabbed ? nothing : grip }
+        mask: Region { item: root.flying ? nothing : nearby }
         WlrLayershell.layer: WlrLayer.Top
         WlrLayershell.namespace: "quickshell-pet"
         WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
@@ -274,17 +297,56 @@ Scope {
             y: ground.height - sitLine + perch - hop.lift
             facing: root.facing
             squash: hop.squash
-            wagging: root.hovered
+            lid: looks.lid
+            tailUp: looks.tailUp
+        }
+
+        MouseArea {
+            id: nearby
+            readonly property real margin: 16
+            x: cat.x - margin
+            y: cat.y - margin
+            width: cat.width + margin * 2
+            height: cat.height + margin
+            hoverEnabled: true
+            cursorShape: Qt.PointingHandCursor
+            onClicked: root.poked()
+        }
+    }
+
+    PanelWindow {
+        id: sky
+        screen: root.petScreen
+        visible: root.shown && (root.flying || root.reaching)
+        anchors { top: true; bottom: true; left: true; right: true }
+        exclusionMode: ExclusionMode.Ignore
+        color: "transparent"
+        mask: Region { item: root.flying && !root.grabbed ? untouchable : grip }
+        WlrLayershell.layer: WlrLayer.Top
+        WlrLayershell.namespace: "quickshell-pet-sky"
+        WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
+
+        Item { id: untouchable }
+
+        Cat {
+            id: skyCat
+            Binding on x { when: !root.flying; value: cat.x; restoreMode: Binding.RestoreNone }
+            Binding on y { when: !root.flying; value: (root.petScreen?.height ?? 0) - ground.height + cat.y; restoreMode: Binding.RestoreNone }
+            facing: root.facing
+            squash: root.grabbed ? 1.08 : hop.squash
+            spin: flight.spin
+            lid: looks.lid
+            tailUp: looks.tailUp
         }
 
         Item {
             id: grip
             readonly property bool holding: touch.pressed || root.grabbed
             readonly property real margin: 16
-            x: holding ? 0 : cat.x - margin
-            y: holding ? 0 : cat.y - margin
-            width: holding ? ground.width : cat.width + margin * 2
-            height: holding ? ground.height : cat.height + margin
+            x: holding ? 0 : skyCat.x - margin
+            y: holding ? 0 : skyCat.y - margin
+            width: holding ? sky.width : skyCat.width + margin * 2
+            height: holding ? sky.height : skyCat.height + margin
 
             MouseArea {
                 id: touch
@@ -298,27 +360,6 @@ Scope {
                 onCanceled: root.letGo()
                 onClicked: if (!root.dragged) root.poked()
             }
-        }
-    }
-
-    PanelWindow {
-        id: sky
-        screen: root.petScreen
-        visible: root.shown && root.flying
-        anchors { top: true; bottom: true; left: true; right: true }
-        exclusionMode: ExclusionMode.Ignore
-        color: "transparent"
-        mask: Region {}
-        WlrLayershell.layer: WlrLayer.Top
-        WlrLayershell.namespace: "quickshell-pet-sky"
-        WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
-
-        Cat {
-            id: skyCat
-            facing: root.facing
-            squash: root.grabbed ? 1.08 : hop.squash
-            wagging: flight.contact || root.grabbed
-            spin: flight.spin
         }
     }
 
@@ -352,9 +393,9 @@ Scope {
         }
 
         function settle() {
+            cat.x = root.freeSpot(skyCat.x)
             root.flying = false
             contact = false
-            cat.x = root.freeSpot(skyCat.x)
             spin = 0
             spinRate = 0
             landing.restart()
