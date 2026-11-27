@@ -503,6 +503,13 @@ hl.layer_rule({
 })
 
 hl.layer_rule({
+    name    = "pet-draws-its-own-motion",
+    match   = { namespace = "^quickshell-pet(-sky)?$" },
+
+    no_anim = true,
+})
+
+hl.layer_rule({
     name    = "video-wallpaper-above-awww",
     match   = { namespace = "^quickshell-wallpaper-transition$" },
     order   = -1,
