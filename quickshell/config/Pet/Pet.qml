@@ -23,7 +23,9 @@ Scope {
     readonly property real wallGap: 8
     readonly property bool hovered: touch.containsMouse
     readonly property real minX: edgeMargin
-    readonly property real maxX: ground.width - cat.width - edgeMargin
+    readonly property real maxX: (petScreen?.width ?? 0) - cat.width - edgeMargin
+    property bool loaded: false
+    readonly property bool measured: loaded && maxX > minX
     readonly property var allWalls: watching && phoneHere
         ? walls.concat([{ left: phone.bodyLeft, right: phone.bodyRight, phone: true }])
         : walls
@@ -63,6 +65,7 @@ Scope {
         return Math.max(minX, Math.min(maxX, x))
     }
     function hopTo(goal) {
+        if (!measured) return
         const room = roomAt(cat.x)
         goalX = Math.max(room.lo, Math.min(room.hi, goal))
         bumping = goal < room.lo || goal > room.hi
@@ -89,7 +92,7 @@ Scope {
         hopTo(cat.x + direction * (60 + Math.random() * 300))
     }
     function stepAside() {
-        if (flying) return
+        if (flying || !measured) return
         const free = freeSpot(cat.x)
         if (Math.abs(free - cat.x) < 1) return
         goalX = free
@@ -97,6 +100,7 @@ Scope {
         if (!hop.running) step()
     }
 
+    Component.onCompleted: loaded = true
     onAllWallsChanged: stepAside()
     onWatchingChanged: {
         if (watching && phoneHere && !flying && !overPhone(cat.x))
@@ -189,14 +193,16 @@ Scope {
         WlrLayershell.namespace: "quickshell-pet"
         WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
 
+
+
         Item { id: nothing }
 
         Cat {
             id: cat
+            x: root.maxX
             property real perch: root.hovered && !hop.running ? -8 : touch.pressed ? 6 : 0
             Behavior on perch { NumberAnimation { duration: 260; easing.type: Easing.OutBack } }
             visible: !root.flying
-            x: ground.width - width - 40
             y: ground.height - sitLine + perch - hop.lift
             facing: root.facing
             squash: hop.squash
