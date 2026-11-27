@@ -29,6 +29,9 @@ Scope {
         show()
         Qt.callLater(() => root.display?.focusCurrent())
     }
+    function toggle() {
+        if (opened) close(); else show()
+    }
     function close() {
         if (!opened) return
         opened = false
@@ -65,7 +68,7 @@ Scope {
 
     IpcHandler {
         target: "phone"
-        function toggle(): void { if (root.opened) root.close(); else root.show() }
+        function toggle(): void { root.toggle() }
         function open(): void { root.show() }
         function close(): void { root.close() }
         function state(): string { return JSON.stringify({ open: root.opened }) }

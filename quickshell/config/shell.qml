@@ -3,6 +3,7 @@ import "Capture"
 import "Dock"
 import "Lock"
 import "MissionControl"
+import "Pet"
 import "Phone"
 import "Wallpaper"
 import "WindowSwitcher"
@@ -19,6 +20,10 @@ ShellRoot {
     ScreenCapture {}
     MissionControl { id: missionControl }
     WindowSwitcher {}
-    Phone {}
+    Phone { id: phone }
+    Pet {
+        watching: phone.opened
+        onPoked: phone.toggle()
+    }
     Lock {}
 }

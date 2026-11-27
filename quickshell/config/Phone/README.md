@@ -1,6 +1,6 @@
 # Phone
 
-`Super+K` slides up a phone for chatting with [mei](https://github.com/shana0440/mei);
+`Super+K`, or a click on the cat in the bottom-right corner, slides up a phone for chatting with [mei](https://github.com/shana0440/mei);
 press it again or click outside it to slide it away. It talks to the mei daemon
 at `$MEI_HOME/state/mei.sock` (default `~/.local/share/mei`) and shows mei as
 offline when the daemon is not running.
