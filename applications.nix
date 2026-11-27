@@ -41,6 +41,7 @@
     };
 
     programs.steam.enable = true;
+    services.jellyfin.enable = true;
 
     services.avahi = {
       enable = true;
