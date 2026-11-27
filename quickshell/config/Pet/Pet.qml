@@ -1,31 +1,31 @@
 import QtQuick
-import QtQuick.Shapes
 import Quickshell
 import Quickshell.Io
 import Quickshell.Wayland
-import "../Theme" as Theme
 
-PanelWindow {
+Scope {
     id: root
 
     signal poked()
     property bool shown: true
     property bool watching: false
+    property var phoneScreen: null
+    property real phoneCrestX: 0
+    property real phoneCrestY: 1e6
+    property real phoneCrestAngle: 0
     property real facing: 1
+    property bool flying: false
 
-    readonly property real drawingScale: 0.32
-    readonly property real peekHeight: 72
+    readonly property var petScreen: Quickshell.screens[0] ?? null
+    readonly property real floorY: (petScreen?.height ?? 1080) - cat.sitLine
     readonly property real jumpHeight: 36
     readonly property real headroom: 14
     readonly property real edgeMargin: 24
     readonly property bool hovered: touch.containsMouse
     readonly property real minX: edgeMargin
-    readonly property real maxX: width - cat.width - edgeMargin
+    readonly property real maxX: ground.width - cat.width - edgeMargin
 
     property real goalX: 0
-    property real watchedLeft: 0
-    property real watchedRight: 0
-    readonly property real watchedCenter: (watchedLeft + watchedRight) / 2
 
     function hopTo(goal) {
         goalX = Math.max(minX, Math.min(maxX, goal))
@@ -33,10 +33,7 @@ PanelWindow {
     }
     function step() {
         const distance = goalX - cat.x
-        if (Math.abs(distance) < 1) {
-            if (watching) faceWatched()
-            return
-        }
+        if (Math.abs(distance) < 1) return
         facing = distance > 0 ? 1 : -1
         hop.from = cat.x
         hop.target = cat.x + facing * Math.min(Math.abs(distance), 100)
@@ -46,32 +43,11 @@ PanelWindow {
         const direction = Math.random() < (maxX - cat.x) / (maxX - minX) ? 1 : -1
         hopTo(cat.x + direction * (60 + Math.random() * 300))
     }
-    function faceWatched() {
-        facing = watchedCenter > cat.x + cat.width / 2 ? 1 : -1
-    }
-    function besideWatched() {
-        const gap = 16
-        if (cat.x + cat.width < watchedLeft - gap || cat.x > watchedRight + gap) return cat.x
-        const right = watchedRight + gap
-        const left = watchedLeft - gap - cat.width
-        if (right > maxX) return left
-        if (left < minX) return right
-        return cat.x + cat.width / 2 > watchedCenter ? right : left
-    }
 
-    onWatchingChanged: if (watching) hopTo(besideWatched())
-    onWatchedCenterChanged: if (watching) hopTo(besideWatched())
-
-    screen: Quickshell.screens[0] ?? null
-    visible: shown
-    anchors { bottom: true; left: true; right: true }
-    implicitHeight: peekHeight + jumpHeight + headroom
-    exclusionMode: ExclusionMode.Ignore
-    color: "transparent"
-    mask: Region { item: cat }
-    WlrLayershell.layer: WlrLayer.Top
-    WlrLayershell.namespace: "quickshell-pet"
-    WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
+    onWatchingChanged: {
+        if (watching && shown && !flying && phoneScreen === petScreen)
+            flight.takeOff()
+    }
 
     IpcHandler {
         target: "pet"
@@ -83,7 +59,10 @@ PanelWindow {
             return JSON.stringify({
                 shown: root.shown,
                 watching: root.watching,
-                x: Math.round(cat.x),
+                flying: root.flying,
+                riding: flight.contact,
+                x: Math.round(root.flying ? skyCat.x : cat.x),
+                y: Math.round(root.flying ? skyCat.y : root.floorY),
                 facing: root.facing > 0 ? "right" : "left",
                 jumping: hop.running
             })
@@ -91,10 +70,9 @@ PanelWindow {
     }
 
     Timer {
-        id: roam
         interval: 2000
         repeat: true
-        running: root.visible && !root.hovered && !root.watching && !hop.running
+        running: ground.visible && !root.flying && !root.hovered && !root.watching && !hop.running
         onTriggered: {
             interval = 2000 + Math.random() * 5000
             root.wander()
@@ -124,111 +102,146 @@ PanelWindow {
         }
         NumberAnimation { target: hop; property: "squash"; to: 0.84; duration: 70; easing.type: Easing.OutQuad }
         NumberAnimation { target: hop; property: "squash"; to: 1; duration: 160; easing.type: Easing.OutBack }
-        onFinished: {
-            if (root.watching || !root.hovered) root.step()
+        onFinished: if (!root.hovered && !root.flying) root.step()
+    }
+
+    SequentialAnimation {
+        id: landing
+        NumberAnimation { target: hop; property: "squash"; to: 0.78; duration: 80; easing.type: Easing.OutQuad }
+        NumberAnimation { target: hop; property: "squash"; to: 1; duration: 260; easing.type: Easing.OutBack }
+    }
+
+    PanelWindow {
+        id: ground
+        screen: root.petScreen
+        visible: root.shown
+        anchors { bottom: true; left: true; right: true }
+        implicitHeight: cat.sitLine + root.jumpHeight + root.headroom
+        exclusionMode: ExclusionMode.Ignore
+        color: "transparent"
+        mask: Region { item: root.flying ? nothing : cat }
+        WlrLayershell.layer: WlrLayer.Top
+        WlrLayershell.namespace: "quickshell-pet"
+        WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
+
+        Item { id: nothing }
+
+        Cat {
+            id: cat
+            property real perch: root.hovered && !hop.running ? -8 : touch.pressed ? 6 : 0
+            Behavior on perch { NumberAnimation { duration: 260; easing.type: Easing.OutBack } }
+            visible: !root.flying
+            x: ground.width - width - 40
+            y: ground.height - sitLine + perch - hop.lift
+            facing: root.facing
+            squash: hop.squash
+            wagging: root.hovered
+
+            MouseArea {
+                id: touch
+                anchors.fill: parent
+                hoverEnabled: true
+                cursorShape: Qt.PointingHandCursor
+                onClicked: root.poked()
+            }
         }
     }
 
-    Item {
-        id: cat
-        property real perch: root.hovered && !hop.running ? -8 : touch.pressed ? 6 : 0
-        Behavior on perch { NumberAnimation { duration: 260; easing.type: Easing.OutBack } }
-        x: root.width - width - 40
-        y: root.height - root.peekHeight + perch - hop.lift
-        width: 380 * root.drawingScale
-        height: 235 * root.drawingScale
+    PanelWindow {
+        id: sky
+        screen: root.petScreen
+        visible: root.shown && root.flying
+        anchors { top: true; bottom: true; left: true; right: true }
+        exclusionMode: ExclusionMode.Ignore
+        color: "transparent"
+        mask: Region {}
+        WlrLayershell.layer: WlrLayer.Top
+        WlrLayershell.namespace: "quickshell-pet-sky"
+        WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
 
-        Item {
-            anchors.fill: parent
-            transform: [
-                Scale { origin.x: cat.width / 2; xScale: root.facing },
-                Scale { origin.x: cat.width / 2; origin.y: root.peekHeight; yScale: hop.squash; xScale: 2 - hop.squash }
-            ]
+        Cat {
+            id: skyCat
+            facing: root.facing
+            squash: hop.squash
+            wagging: flight.contact
+            spin: flight.spin
+        }
+    }
 
-            Item {
-                id: drawing
-                width: 380
-                height: 235
-                scale: root.drawingScale
-                transformOrigin: Item.TopLeft
+    FrameAnimation {
+        id: flight
+        readonly property real gravity: 3200
+        readonly property real launchCap: 1050
+        readonly property real hopSpeed: 900
+        property real vy: 0
+        property real spin: 0
+        property real spinRate: 0
+        property bool contact: false
+        property real lastCrestY: 1e6
 
-                Shape {
-                    anchors.fill: parent
-                    preferredRendererType: Shape.CurveRenderer
+        running: root.flying
 
-                    ShapePath {
-                        strokeColor: Theme.Colors.background
-                        strokeWidth: 20
-                        fillColor: "transparent"
-                        capStyle: ShapePath.RoundCap
-                        PathSvg { id: tail; path: "M 80 222 Q 45 200 20 210" }
-                    }
-                    ShapePath {
-                        strokeWidth: -1
-                        fillColor: Theme.Colors.background
-                        PathSvg { path: "M 52 180 A 160 112 0 1 1 372 180 A 160 112 0 1 1 52 180 Z" }
-                    }
-                    ShapePath {
-                        strokeWidth: -1
-                        fillColor: Theme.Colors.background
-                        PathSvg { path: "M 100 104 L 120 34 Q 128 10 148 24 L 204 74 Z" }
-                    }
-                    ShapePath {
-                        strokeWidth: -1
-                        fillColor: Theme.Colors.background
-                        PathSvg { path: "M 226 72 L 278 28 Q 298 12 304 36 L 322 108 Z" }
-                    }
-                }
+        function takeOff() {
+            hopAnim.stop()
+            hop.lift = 0
+            skyCat.x = cat.x
+            skyCat.y = root.floorY
+            vy = -hopSpeed
+            spin = 0
+            spinRate = 0
+            contact = false
+            lastCrestY = root.phoneCrestY
+            root.flying = true
+        }
 
-                Row {
-                    id: eyes
-                    x: 194
-                    y: 128
-                    spacing: 50
+        function settle() {
+            root.flying = false
+            cat.x = Math.max(root.minX, Math.min(root.maxX, skyCat.x))
+            spin = 0
+            landing.restart()
+        }
 
-                    Repeater {
-                        model: 2
-                        Rectangle {
-                            width: 24
-                            height: 46
-                            radius: 12
-                            color: "#ffffff"
-                            transform: Scale { origin.y: 23; yScale: blink.lid }
-                        }
-                    }
+        onTriggered: {
+            const dt = Math.min(frameTime, 0.05)
+            const crestY = root.phoneCrestY
+            const crestVy = (crestY - lastCrestY) / dt
+            lastCrestY = crestY
+            const targetX = root.phoneCrestX - skyCat.width / 2
+            const overPhone = crestY < root.floorY + cat.sitLine && Math.abs(skyCat.x - targetX) < skyCat.width * 0.6
+
+            if (root.watching) {
+                skyCat.x += (targetX - skyCat.x) * Math.min(1, dt * 10)
+                root.facing = targetX > skyCat.x + 1 ? 1 : targetX < skyCat.x - 1 ? -1 : root.facing
+            }
+
+            vy += gravity * dt
+            skyCat.y += vy * dt
+            spin += spinRate * dt
+
+            const seat = crestY - skyCat.sitLine
+            if (overPhone && skyCat.y >= seat && vy >= crestVy) {
+                if (!contact && spinRate !== 0) landing.restart()
+                skyCat.y = seat
+                vy = Math.max(crestVy, -launchCap)
+                contact = true
+                spin = root.phoneCrestAngle
+                spinRate = 0
+            } else if (contact) {
+                contact = false
+                if (vy < -600) spinRate = 360 * root.facing / (2 * -vy / gravity)
+            }
+
+            if (!contact && skyCat.y >= root.floorY) {
+                skyCat.y = root.floorY
+                spinRate = 0
+                spin = 0
+                if (root.watching) {
+                    vy = -hopSpeed
+                } else {
+                    vy = 0
+                    settle()
                 }
             }
         }
-
-        MouseArea {
-            id: touch
-            anchors.fill: parent
-            hoverEnabled: true
-            cursorShape: Qt.PointingHandCursor
-            onClicked: root.poked()
-        }
-    }
-
-    QtObject {
-        id: blink
-        property real lid: 1
-    }
-
-    SequentialAnimation {
-        running: root.visible
-        loops: Animation.Infinite
-        PauseAnimation { duration: 2600 + Math.random() * 2400 }
-        NumberAnimation { target: blink; property: "lid"; to: 0.1; duration: 70 }
-        NumberAnimation { target: blink; property: "lid"; to: 1; duration: 110 }
-    }
-
-    SequentialAnimation {
-        running: root.visible && root.hovered
-        loops: Animation.Infinite
-        alwaysRunToEnd: true
-        PropertyAction { target: tail; property: "path"; value: "M 80 222 Q 45 186 26 176" }
-        PauseAnimation { duration: 220 }
-        PropertyAction { target: tail; property: "path"; value: "M 80 222 Q 45 200 20 210" }
-        PauseAnimation { duration: 220 }
     }
 }

@@ -18,8 +18,10 @@ Scope {
     readonly property real horizontalCenterShare: 0.7
     readonly property real bounce: 34
     readonly property real pocketRoll: 12
-    readonly property real bodyLeft: phone.x
-    readonly property real bodyRight: phone.x + phone.width
+    readonly property real crestAngle: pocketRoll * stage.tilt
+    readonly property real crestX: phone.x + phone.width / 2 + phone.height * Math.sin(crestAngle * Math.PI / 180)
+    readonly property real crestY: onScreen && win.height > 0
+        ? phone.y + phone.height * (1 - Math.cos(crestAngle * Math.PI / 180)) : 1e6
 
     function show() {
         chosenScreen = Quickshell.screens.find(s => s.name === Hyprland.focusedMonitor?.name)
