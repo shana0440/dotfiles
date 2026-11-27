@@ -14,6 +14,8 @@ PanelWindow {
     readonly property int padding: 6
     readonly property int spacing: 4
     property int entriesRevision: 0
+    readonly property real wallLeft: dock.x
+    readonly property real wallRight: dock.x + dock.width
 
     function workspaceRank(toplevel) {
         const id = toplevel.workspace?.id ?? 0

@@ -25,24 +25,67 @@ Scope {
     readonly property real minX: edgeMargin
     readonly property real maxX: ground.width - cat.width - edgeMargin
 
+    property var walls: []
+    readonly property real wallGap: 8
     property real goalX: 0
+    property bool bumping: false
 
+    function roomAt(x) {
+        let lo = minX
+        let hi = maxX
+        for (const wall of walls) {
+            if (wall.right <= x + 1) lo = Math.max(lo, wall.right + wallGap)
+            else if (wall.left >= x + cat.width - 1) hi = Math.min(hi, wall.left - wallGap - cat.width)
+        }
+        return { lo: lo, hi: Math.max(lo, hi) }
+    }
+    function freeSpot(x) {
+        for (const wall of walls) {
+            if (x + cat.width + wallGap <= wall.left || x >= wall.right + wallGap) continue
+            const left = wall.left - wallGap - cat.width
+            const right = wall.right + wallGap
+            if (left < minX) return right
+            if (right > maxX) return left
+            return x + cat.width / 2 < (wall.left + wall.right) / 2 ? left : right
+        }
+        return Math.max(minX, Math.min(maxX, x))
+    }
     function hopTo(goal) {
-        goalX = Math.max(minX, Math.min(maxX, goal))
+        const room = roomAt(cat.x)
+        goalX = Math.max(room.lo, Math.min(room.hi, goal))
+        bumping = goal < room.lo || goal > room.hi
         if (!hop.running) step()
     }
     function step() {
+        const room = roomAt(cat.x)
+        goalX = Math.max(room.lo, Math.min(room.hi, goalX))
         const distance = goalX - cat.x
-        if (Math.abs(distance) < 1) return
+        if (Math.abs(distance) < 1) {
+            if (bumping) bonk.restart()
+            bumping = false
+            return
+        }
         facing = distance > 0 ? 1 : -1
         hop.from = cat.x
         hop.target = cat.x + facing * Math.min(Math.abs(distance), 100)
         hop.restart()
     }
     function wander() {
-        const direction = Math.random() < (maxX - cat.x) / (maxX - minX) ? 1 : -1
+        const room = roomAt(cat.x)
+        if (room.hi - room.lo < 1) return
+        const direction = Math.random() < (room.hi - cat.x) / (room.hi - room.lo) ? 1 : -1
         hopTo(cat.x + direction * (60 + Math.random() * 300))
     }
+    function stepAside() {
+        if (flying) return
+        const free = freeSpot(cat.x)
+        if (Math.abs(free - cat.x) < 1) return
+        goalX = free
+        bumping = false
+        if (!hop.running) step()
+    }
+
+    onWallsChanged: stepAside()
 
     onWatchingChanged: {
         if (watching && shown && !flying && phoneScreen === petScreen)
@@ -64,7 +107,9 @@ Scope {
                 x: Math.round(root.flying ? skyCat.x : cat.x),
                 y: Math.round(root.flying ? skyCat.y : root.floorY),
                 facing: root.facing > 0 ? "right" : "left",
-                jumping: hop.running
+                jumping: hop.running,
+                room: root.roomAt(cat.x),
+                walls: root.walls
             })
         }
     }
@@ -103,6 +148,14 @@ Scope {
         NumberAnimation { target: hop; property: "squash"; to: 0.84; duration: 70; easing.type: Easing.OutQuad }
         NumberAnimation { target: hop; property: "squash"; to: 1; duration: 160; easing.type: Easing.OutBack }
         onFinished: if (!root.hovered && !root.flying) root.step()
+    }
+
+    SequentialAnimation {
+        id: bonk
+        NumberAnimation { target: hop; property: "squash"; to: 1.18; duration: 90; easing.type: Easing.OutQuad }
+        NumberAnimation { target: hop; property: "squash"; to: 1; duration: 220; easing.type: Easing.OutBack }
+        PauseAnimation { duration: 260 }
+        ScriptAction { script: root.facing = -root.facing }
     }
 
     SequentialAnimation {
@@ -196,9 +249,10 @@ Scope {
 
         function settle() {
             root.flying = false
-            cat.x = Math.max(root.minX, Math.min(root.maxX, skyCat.x))
+            cat.x = root.freeSpot(skyCat.x)
             spin = 0
             landing.restart()
+            root.stepAside()
         }
 
         onTriggered: {
@@ -209,6 +263,8 @@ Scope {
             const targetX = root.phoneCrestX - skyCat.width / 2
             const overPhone = crestY < root.floorY + cat.sitLine && Math.abs(skyCat.x - targetX) < skyCat.width * 0.6
 
+            if (!root.watching && !contact)
+                skyCat.x += (root.freeSpot(skyCat.x) - skyCat.x) * Math.min(1, dt * 8)
             if (root.watching) {
                 skyCat.x += (targetX - skyCat.x) * Math.min(1, dt * 10)
                 root.facing = targetX > skyCat.x + 1 ? 1 : targetX < skyCat.x - 1 ? -1 : root.facing

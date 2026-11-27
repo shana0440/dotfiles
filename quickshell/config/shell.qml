@@ -14,7 +14,7 @@ ShellRoot {
     Bar {
         onMissionControlRequested: missionControl.show()
     }
-    Dock {}
+    Dock { id: dock }
     WallpaperTransition {}
     WallpaperPicker {}
     ScreenCapture {}
@@ -24,6 +24,7 @@ ShellRoot {
     Pet {
         watching: phone.opened
         phoneScreen: phone.chosenScreen
+        walls: dock.visible ? [{ left: dock.wallLeft, right: dock.wallRight }] : []
         phoneCrestX: phone.crestX
         phoneCrestY: phone.crestY
         phoneCrestAngle: phone.crestAngle
