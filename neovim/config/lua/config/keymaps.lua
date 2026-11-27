@@ -28,14 +28,6 @@ local function show_references()
   local actions = require("telescope.actions")
 
   require("telescope.builtin").lsp_references({
-    previewer = true,
-    layout_strategy = "vertical",
-    layout_config = {
-      preview_cutoff = 1,
-      preview_height = 0.6,
-      prompt_position = "top",
-      mirror = true,
-    },
     attach_mappings = function(_, map_telescope)
       map_telescope({ "i", "n" }, "<C-s>", actions.select_horizontal)
       map_telescope({ "i", "n" }, "<C-v>", actions.select_vertical)

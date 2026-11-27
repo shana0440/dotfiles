@@ -66,6 +66,18 @@ require("lazy").setup({
           find_files = {
             hidden = true,
           },
+          lsp_references = {
+            preview = true,
+            show_line = false,
+            sorting_strategy = "ascending",
+            layout_strategy = "vertical",
+            layout_config = {
+              preview_cutoff = 1,
+              preview_height = 0.6,
+              prompt_position = "top",
+              mirror = true,
+            },
+          },
         },
       })
     end,
