@@ -12,6 +12,8 @@ Scope {
     property var walls: []
     property real facing: -1
     property bool flying: false
+    property bool grabbed: false
+    property bool dragged: false
 
     readonly property var petScreen: Quickshell.screens[0] ?? null
     readonly property bool watching: phone?.opened ?? false
@@ -22,6 +24,8 @@ Scope {
     readonly property real edgeMargin: 24
     readonly property real wallGap: 8
     readonly property bool hovered: touch.containsMouse
+    readonly property bool reaching: hovered || grabbed || linger.running
+    onHoveredChanged: if (!hovered) linger.restart()
     readonly property real minX: edgeMargin
     readonly property real maxX: (petScreen?.width ?? 0) - cat.width - edgeMargin
     property bool loaded: false
@@ -101,10 +105,74 @@ Scope {
     }
 
     Component.onCompleted: loaded = true
+
+    function screenPoint(mouse) {
+        const point = touch.mapToItem(null, mouse.x, mouse.y)
+        return { x: point.x, y: (petScreen?.height ?? 0) - ground.height + point.y }
+    }
+    function press(point) {
+        dragged = false
+        hand.startX = point.x
+        hand.startY = point.y
+    }
+    function drag(point) {
+        if (!grabbed) {
+            if (flying || Math.hypot(point.x - hand.startX, point.y - hand.startY) < 6) return
+            pickUp()
+        }
+        const now = Date.now()
+        const dt = Math.max(0.008, (now - hand.time) / 1000)
+        hand.vx = hand.vx * 0.5 + 0.5 * (point.x - hand.x) / dt
+        hand.vy = hand.vy * 0.5 + 0.5 * (point.y - hand.y) / dt
+        hand.x = point.x
+        hand.y = point.y
+        hand.time = now
+    }
+    function pickUp() {
+        hopAnim.stop()
+        bonk.stop()
+        hop.lift = 0
+        skyCat.x = cat.x
+        skyCat.y = floorY + cat.perch
+        hand.x = hand.startX
+        hand.y = hand.startY
+        hand.vx = 0
+        hand.vy = 0
+        hand.time = Date.now()
+        flight.contact = false
+        flight.spinRate = 0
+        dragged = true
+        grabbed = true
+        flying = true
+    }
+    function letGo() {
+        if (!grabbed) return
+        grabbed = false
+        flight.vx = Math.max(-1400, Math.min(1400, hand.vx))
+        flight.vy = Math.max(-1600, Math.min(1600, hand.vy))
+        flight.lastSurface = phoneSurfaceAt(skyCat.x)
+    }
     onAllWallsChanged: stepAside()
     onWatchingChanged: {
         if (watching && phoneHere && !flying && !overPhone(cat.x))
             facing = (phone.bodyLeft + phone.bodyRight) / 2 > cat.x + cat.width / 2 ? 1 : -1
+    }
+
+    Timer {
+        id: linger
+        interval: 1500
+    }
+
+    QtObject {
+        id: hand
+        readonly property real scruff: 24
+        property real startX: 0
+        property real startY: 0
+        property real x: 0
+        property real y: 0
+        property real vx: 0
+        property real vy: 0
+        property real time: 0
     }
 
     IpcHandler {
@@ -120,6 +188,7 @@ Scope {
                 watching: root.watching,
                 flying: root.flying,
                 riding: flight.contact,
+                grabbed: root.grabbed,
                 x: Math.round(root.flying ? skyCat.x : cat.x),
                 y: Math.round(root.flying ? skyCat.y : root.floorY),
                 facing: root.facing > 0 ? "right" : "left",
@@ -185,15 +254,14 @@ Scope {
         screen: root.petScreen
         visible: root.shown
         anchors { bottom: true; left: true; right: true }
-        implicitHeight: cat.sitLine + root.jumpHeight + root.headroom
+        readonly property real stripHeight: cat.sitLine + root.jumpHeight + root.headroom
+        implicitHeight: root.reaching ? (root.petScreen?.height ?? stripHeight) : stripHeight
         exclusionMode: ExclusionMode.Ignore
         color: "transparent"
-        mask: Region { item: root.flying ? nothing : cat }
+        mask: Region { item: root.flying && !root.grabbed ? nothing : grip }
         WlrLayershell.layer: WlrLayer.Top
         WlrLayershell.namespace: "quickshell-pet"
         WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
-
-
 
         Item { id: nothing }
 
@@ -207,13 +275,28 @@ Scope {
             facing: root.facing
             squash: hop.squash
             wagging: root.hovered
+        }
+
+        Item {
+            id: grip
+            readonly property bool holding: touch.pressed || root.grabbed
+            readonly property real margin: 16
+            x: holding ? 0 : cat.x - margin
+            y: holding ? 0 : cat.y - margin
+            width: holding ? ground.width : cat.width + margin * 2
+            height: holding ? ground.height : cat.height + margin
 
             MouseArea {
                 id: touch
                 anchors.fill: parent
                 hoverEnabled: true
-                cursorShape: Qt.PointingHandCursor
-                onClicked: root.poked()
+                preventStealing: true
+                cursorShape: root.grabbed ? Qt.ClosedHandCursor : Qt.PointingHandCursor
+                onPressed: mouse => root.press(root.screenPoint(mouse))
+                onPositionChanged: mouse => { if (pressed) root.drag(root.screenPoint(mouse)) }
+                onReleased: root.letGo()
+                onCanceled: root.letGo()
+                onClicked: if (!root.dragged) root.poked()
             }
         }
     }
@@ -233,8 +316,8 @@ Scope {
         Cat {
             id: skyCat
             facing: root.facing
-            squash: hop.squash
-            wagging: flight.contact
+            squash: root.grabbed ? 1.08 : hop.squash
+            wagging: flight.contact || root.grabbed
             spin: flight.spin
         }
     }
@@ -243,6 +326,7 @@ Scope {
         id: flight
         readonly property real gravity: 3200
         readonly property real launchCap: 1050
+        property real vx: 0
         property real vy: 0
         property real spin: 0
         property real spinRate: 0
@@ -258,6 +342,7 @@ Scope {
             hop.lift = 0
             skyCat.x = cat.x
             skyCat.y = root.floorY
+            vx = 0
             vy = 0
             spin = 0
             spinRate = 0
@@ -287,6 +372,16 @@ Scope {
                 return
             }
 
+            if (root.grabbed) {
+                const follow = Math.min(1, dt * 25)
+                skyCat.x += (hand.x - skyCat.width / 2 - skyCat.x) * follow
+                skyCat.y += (hand.y - hand.scruff - skyCat.y) * follow
+                spin += (Math.max(-35, Math.min(35, -hand.vx * 0.03)) - spin) * Math.min(1, dt * 8)
+                hand.vx *= Math.exp(-dt * 6)
+                hand.vy *= Math.exp(-dt * 6)
+                return
+            }
+
             vy += gravity * dt
             if (contact) {
                 const seatY = root.phoneSurfaceAt(skyCat.x) - skyCat.sitLine
@@ -300,8 +395,14 @@ Scope {
                 if (vy < -600) spinRate = 360 * root.facing / (2 * -vy / gravity)
             }
 
+            skyCat.x += vx * dt
+            vx *= Math.exp(-dt * 1.2)
+            if (skyCat.x < root.minX || skyCat.x > root.maxX) {
+                skyCat.x = Math.max(root.minX, Math.min(root.maxX, skyCat.x))
+                vx = -vx * 0.4
+            }
             skyCat.y += vy * dt
-            spin += spinRate * dt
+            spin += spinRate === 0 ? -spin * Math.min(1, dt * 4) : spinRate * dt
             if (!root.watching)
                 skyCat.x += (root.freeSpot(skyCat.x) - skyCat.x) * Math.min(1, dt * 8)
 
