@@ -14,7 +14,7 @@ description: Control the user's Linux desktop (Hyprland and the Quickshell deskt
   focuses or cycles one), `status` (background tray apps, sound view), `sound`
   (output, input and app volume, audio devices), `windowSwitcher` (the
   Super+Tab window list), `pet` (the cat hopping along the bottom of the screen; `poke` toggles the
-  phone, `jump left|right` moves it, `show` and `hide` it), `usage` (the dashboard's
+  phone, `jump left|right` or `goTo <x>` moves it, `show` and `hide` it), `usage` (the dashboard's
   cached Claude and Codex limits; `refresh` checks now). Each has a `state` function
   that reads it. Leave the rest to the shell itself.
 

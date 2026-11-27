@@ -8,40 +8,52 @@ Scope {
 
     signal poked()
     property bool shown: true
-    property bool watching: false
-    property var phoneScreen: null
-    property real phoneCrestX: 0
-    property real phoneCrestY: 1e6
-    property real phoneCrestAngle: 0
+    property var phone: null
+    property var walls: []
     property real facing: 1
     property bool flying: false
 
     readonly property var petScreen: Quickshell.screens[0] ?? null
+    readonly property bool watching: phone?.opened ?? false
+    readonly property bool phoneHere: !!phone && phone.chosenScreen === petScreen
     readonly property real floorY: (petScreen?.height ?? 1080) - cat.sitLine
     readonly property real jumpHeight: 36
     readonly property real headroom: 14
     readonly property real edgeMargin: 24
+    readonly property real wallGap: 8
     readonly property bool hovered: touch.containsMouse
     readonly property real minX: edgeMargin
     readonly property real maxX: ground.width - cat.width - edgeMargin
+    readonly property var allWalls: watching && phoneHere
+        ? walls.concat([{ left: phone.bodyLeft, right: phone.bodyRight, phone: true }])
+        : walls
 
-    property var walls: []
-    readonly property real wallGap: 8
     property real goalX: 0
     property bool bumping: false
 
+    function overPhone(x) {
+        const middle = x + cat.width / 2
+        return phoneHere && phone.present && middle >= phone.bodyLeft + 4 && middle <= phone.bodyRight - 4
+    }
+    function phoneSurfaceAt(x) {
+        return overPhone(x) ? phone.surfaceAt(x + cat.width / 2) : 1e6
+    }
+    function liftPending(x) {
+        return overPhone(x) && phoneSurfaceAt(x) > floorY + cat.sitLine
+    }
     function roomAt(x) {
         let lo = minX
         let hi = maxX
-        for (const wall of walls) {
+        for (const wall of allWalls) {
             if (wall.right <= x + 1) lo = Math.max(lo, wall.right + wallGap)
             else if (wall.left >= x + cat.width - 1) hi = Math.min(hi, wall.left - wallGap - cat.width)
         }
         return { lo: lo, hi: Math.max(lo, hi) }
     }
     function freeSpot(x) {
-        for (const wall of walls) {
+        for (const wall of allWalls) {
             if (x + cat.width + wallGap <= wall.left || x >= wall.right + wallGap) continue
+            if (wall.phone && liftPending(x)) continue
             const left = wall.left - wallGap - cat.width
             const right = wall.right + wallGap
             if (left < minX) return right
@@ -85,11 +97,10 @@ Scope {
         if (!hop.running) step()
     }
 
-    onWallsChanged: stepAside()
-
+    onAllWallsChanged: stepAside()
     onWatchingChanged: {
-        if (watching && shown && !flying && phoneScreen === petScreen)
-            flight.takeOff()
+        if (watching && phoneHere && !flying && !overPhone(cat.x))
+            facing = (phone.bodyLeft + phone.bodyRight) / 2 > cat.x + cat.width / 2 ? 1 : -1
     }
 
     IpcHandler {
@@ -98,6 +109,7 @@ Scope {
         function show(): void { root.shown = true }
         function hide(): void { root.shown = false }
         function jump(direction: string): void { root.hopTo(cat.x + (direction === "left" ? -80 : 80)) }
+        function goTo(x: int): void { root.hopTo(x) }
         function state(): string {
             return JSON.stringify({
                 shown: root.shown,
@@ -109,7 +121,7 @@ Scope {
                 facing: root.facing > 0 ? "right" : "left",
                 jumping: hop.running,
                 room: root.roomAt(cat.x),
-                walls: root.walls
+                walls: root.allWalls
             })
         }
     }
@@ -225,78 +237,85 @@ Scope {
         id: flight
         readonly property real gravity: 3200
         readonly property real launchCap: 1050
-        readonly property real hopSpeed: 900
         property real vy: 0
         property real spin: 0
         property real spinRate: 0
         property bool contact: false
-        property real lastCrestY: 1e6
+        property real lastSurface: 1e6
+        property real lastX: -1
 
-        running: root.flying
+        running: root.shown && (root.flying || (root.phoneHere && root.phone.present))
 
-        function takeOff() {
+        function liftOff() {
             hopAnim.stop()
+            bonk.stop()
             hop.lift = 0
             skyCat.x = cat.x
             skyCat.y = root.floorY
-            vy = -hopSpeed
+            vy = 0
             spin = 0
             spinRate = 0
-            contact = false
-            lastCrestY = root.phoneCrestY
+            contact = true
             root.flying = true
+            landing.restart()
         }
 
         function settle() {
             root.flying = false
+            contact = false
             cat.x = root.freeSpot(skyCat.x)
             spin = 0
+            spinRate = 0
             landing.restart()
             root.stepAside()
         }
 
         onTriggered: {
             const dt = Math.min(frameTime, 0.05)
-            const crestY = root.phoneCrestY
-            const crestVy = (crestY - lastCrestY) / dt
-            lastCrestY = crestY
-            const targetX = root.phoneCrestX - skyCat.width / 2
-            const overPhone = crestY < root.floorY + cat.sitLine && Math.abs(skyCat.x - targetX) < skyCat.width * 0.6
-
-            if (!root.watching && !contact)
-                skyCat.x += (root.freeSpot(skyCat.x) - skyCat.x) * Math.min(1, dt * 8)
-            if (root.watching) {
-                skyCat.x += (targetX - skyCat.x) * Math.min(1, dt * 10)
-                root.facing = targetX > skyCat.x + 1 ? 1 : targetX < skyCat.x - 1 ? -1 : root.facing
+            if (!root.flying) {
+                const surface = root.phoneSurfaceAt(cat.x)
+                const floorLine = root.floorY + cat.sitLine
+                if (lastX === cat.x && lastSurface > floorLine && surface <= floorLine) liftOff()
+                lastSurface = surface
+                lastX = cat.x
+                return
             }
 
             vy += gravity * dt
-            skyCat.y += vy * dt
-            spin += spinRate * dt
-
-            const seat = crestY - skyCat.sitLine
-            if (overPhone && skyCat.y >= seat && vy >= crestVy) {
-                if (!contact && spinRate !== 0) landing.restart()
-                skyCat.y = seat
-                vy = Math.max(crestVy, -launchCap)
-                contact = true
-                spin = root.phoneCrestAngle
-                spinRate = 0
-            } else if (contact) {
+            if (contact) {
+                const seatY = root.phoneSurfaceAt(skyCat.x) - skyCat.sitLine
+                if (seatY < root.floorY && skyCat.y + vy * dt >= seatY) {
+                    vy = Math.max((seatY - skyCat.y) / dt, -launchCap)
+                    skyCat.y = seatY
+                    spin = root.phone.tiltAngle
+                    return
+                }
                 contact = false
                 if (vy < -600) spinRate = 360 * root.facing / (2 * -vy / gravity)
             }
 
-            if (!contact && skyCat.y >= root.floorY) {
-                skyCat.y = root.floorY
+            skyCat.y += vy * dt
+            spin += spinRate * dt
+            if (!root.watching)
+                skyCat.x += (root.freeSpot(skyCat.x) - skyCat.x) * Math.min(1, dt * 8)
+
+            const surface = root.phoneSurfaceAt(skyCat.x)
+            const wasAbove = skyCat.y + skyCat.sitLine - vy * dt <= lastSurface + 2
+            lastSurface = surface
+            if (wasAbove && skyCat.y + skyCat.sitLine >= surface) {
+                if (spinRate !== 0) landing.restart()
+                contact = true
                 spinRate = 0
-                spin = 0
-                if (root.watching) {
-                    vy = -hopSpeed
-                } else {
-                    vy = 0
-                    settle()
-                }
+                skyCat.y = surface - skyCat.sitLine
+                vy = 0
+                return
+            }
+
+            if (skyCat.y >= root.floorY) {
+                skyCat.y = root.floorY
+                settle()
+                lastSurface = root.phoneSurfaceAt(cat.x)
+                lastX = cat.x
             }
         }
     }

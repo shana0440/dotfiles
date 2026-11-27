@@ -22,12 +22,8 @@ ShellRoot {
     WindowSwitcher {}
     Phone { id: phone }
     Pet {
-        watching: phone.opened
-        phoneScreen: phone.chosenScreen
+        phone: phone
         walls: dock.visible ? [{ left: dock.wallLeft, right: dock.wallRight }] : []
-        phoneCrestX: phone.crestX
-        phoneCrestY: phone.crestY
-        phoneCrestAngle: phone.crestAngle
         onPoked: phone.toggle()
     }
     Lock {}

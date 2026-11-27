@@ -18,10 +18,37 @@ Scope {
     readonly property real horizontalCenterShare: 0.7
     readonly property real bounce: 34
     readonly property real pocketRoll: 12
-    readonly property real crestAngle: pocketRoll * stage.tilt
-    readonly property real crestX: phone.x + phone.width / 2 + phone.height * Math.sin(crestAngle * Math.PI / 180)
-    readonly property real crestY: onScreen && win.height > 0
-        ? phone.y + phone.height * (1 - Math.cos(crestAngle * Math.PI / 180)) : 1e6
+    readonly property real tiltAngle: pocketRoll * stage.tilt
+    readonly property bool present: onScreen && win.height > 0
+    readonly property real bodyLeft: phone.x
+    readonly property real bodyRight: phone.x + phone.width
+
+    function surfaceAt(x) {
+        if (!present) return 1e6
+        const a = tiltAngle * Math.PI / 180
+        const w = phone.width
+        const h = phone.height
+        const pivotX = phone.x + w / 2
+        const pivotY = phone.y + h
+        const corner = (u, v) => ({ x: pivotX + u * Math.cos(a) - v * Math.sin(a), y: pivotY + u * Math.sin(a) + v * Math.cos(a) })
+        const outline = [corner(-w / 2, -h), corner(w / 2, -h), corner(w / 2, 0), corner(-w / 2, 0)]
+        let top = 1e6
+        let onTopEdge = false
+        for (let i = 0; i < 4; i++) {
+            const p = outline[i]
+            const q = outline[(i + 1) % 4]
+            if (x < Math.min(p.x, q.x) || x > Math.max(p.x, q.x)) continue
+            const y = Math.abs(q.x - p.x) < 0.001 ? Math.min(p.y, q.y) : p.y + (q.y - p.y) * (x - p.x) / (q.x - p.x)
+            if (y < top) {
+                top = y
+                onTopEdge = i === 0
+            }
+        }
+        if (!onTopEdge) return top
+        const r = phone.cornerRadius
+        const intoCorner = Math.abs((x - outline[0].x) / Math.cos(a) - w / 2) - (w / 2 - r)
+        return top + (intoCorner > 0 ? r - Math.sqrt(Math.max(0, r * r - intoCorner * intoCorner)) : 0)
+    }
 
     function show() {
         chosenScreen = Quickshell.screens.find(s => s.name === Hyprland.focusedMonitor?.name)
