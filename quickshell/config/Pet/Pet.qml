@@ -10,7 +10,7 @@ Scope {
     property bool shown: true
     property var phone: null
     property var walls: []
-    property real facing: 1
+    property real facing: -1
     property bool flying: false
 
     readonly property var petScreen: Quickshell.screens[0] ?? null
