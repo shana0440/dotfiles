@@ -18,6 +18,8 @@ Scope {
     readonly property real horizontalCenterShare: 0.7
     readonly property real bounce: 34
     readonly property real pocketRoll: 12
+    readonly property real bodyLeft: phone.x
+    readonly property real bodyRight: phone.x + phone.width
 
     function show() {
         chosenScreen = Quickshell.screens.find(s => s.name === Hyprland.focusedMonitor?.name)

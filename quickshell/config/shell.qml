@@ -23,6 +23,8 @@ ShellRoot {
     Phone { id: phone }
     Pet {
         watching: phone.opened
+        watchedLeft: phone.bodyLeft
+        watchedRight: phone.bodyRight
         onPoked: phone.toggle()
     }
     Lock {}
