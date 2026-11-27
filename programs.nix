@@ -20,6 +20,7 @@
     gnupg
     podman
     podman-compose
+    python315
     ripgrep
   ];
 }
